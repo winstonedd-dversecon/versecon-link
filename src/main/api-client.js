@@ -28,8 +28,17 @@ class APIClient extends EventEmitter {
     }
 
     connectSocket(token) {
+        if (this.socket) {
+            this.socket.disconnect();
+        }
+
+        this.token = token;
+
+        // Production URL
         this.socket = io(this.baseUrl, {
-            query: { token }
+            query: { token },
+            reconnection: true,
+            reconnectionAttempts: 10
         });
 
         this.socket.on('connect', () => {
@@ -37,7 +46,18 @@ class APIClient extends EventEmitter {
             this.emit('status', { connected: true });
         });
 
+        this.socket.on('disconnect', () => {
+            console.log('[API] Socket Disconnected');
+            this.emit('status', { connected: false });
+        });
+
+        this.socket.on('connect_error', (err) => {
+            console.error('[API] Socket Connection Error:', err.message);
+            this.emit('status', { connected: false, error: err.message });
+        });
+
         this.socket.on('party:update', (data) => {
+            console.log('[API] Party Update Received', data);
             this.emit('party', data);
         });
 
@@ -49,7 +69,7 @@ class APIClient extends EventEmitter {
     async updateLocation(loc) {
         if (!this.token) return;
         try {
-            await axios.post(`${this.baseUrl}/api/me/location`, { location: loc }, {
+            await axios.post(`${this.baseUrl}/api/me/location`, { location: loc.value }, {
                 headers: { 'x-session-token': this.token }
             });
         } catch (e) {

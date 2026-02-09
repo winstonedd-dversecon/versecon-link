@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>VerseCon Overlay</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            background: rgba(0, 0, 0, 0);
+            /* Fully transparent */
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        /* HUD Modules */
+        .hud-module {
+            background: rgba(11, 12, 16, 0.85);
+            backdrop-filter: blur(8px);
+            border-left: 3px solid #ffa500;
+            padding: 10px 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            min-width: 200px;
+            transform: skewX(-5deg);
+            /* Sci-fi feel */
+            animation: fadeIn 0.5s ease;
+        }
+
+        .label {
+            font-size: 0.75rem;
+            color: #8892b0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+            transform: skewX(5deg);
+            /* Counter-skew text */
+        }
+
+        .value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            transform: skewX(5deg);
+        }
+
+        .value.highlight {
+            color: #ffa500;
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+        }
+
+        .value.cyan {
+            color: #00c8ff;
+            text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+
+        /* Party List */
+        .party-list {
+            margin-top: 5px;
+        }
+
+        .party-member {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+            transform: skewX(5deg);
+        }
+
+        .status-ok {
+            color: #00ff88;
+        }
+
+        .status-warn {
+            color: #ffaa00;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px) skewX(-5deg);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) skewX(-5deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hud-module">
+        <div class="label">CURRENT LOCATION</div>
+        <div class="value cyan" id="location">UNKNOWN SECTOR</div>
+    </div>
+
+    <div class="hud-module">
+        <div class="label">QUANTUM DRIVE</div>
+        <div class="value" id="state">IDLE</div>
+    </div>
+
+    <div class="hud-module" id="party-module">
+        <div class="label">SQUADRON STATUS</div>
+        <div class="party-list" id="party-list">
+            <div style="color:#666; font-style:italic;">No Signal</div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const elLocation = document.getElementById('location');
+        const elState = document.getElementById('state');
+        const elPartyList = document.getElementById('party-list');
+
+        ipcRenderer.on('log:update', (event, data) => {
+            if (data.type === 'LOCATION') elLocation.innerText = data.value.toUpperCase();
+            if (data.type === 'QUANTUM') {
+                elState.innerText = data.value;
+                elState.className = data.value === 'IN_TRAVEL' ? 'value highlight' : 'value';
+            }
+        });
+
+        ipcRenderer.on('api:party', (event, data) => {
+            if (data.members && data.members.length > 0) {
+                elPartyList.innerHTML = data.members.map(m => `
+                    <div class="party-member">
+                        <span>${m.name}</span>
+                        <span class="${m.onDuty ? 'status-ok' : 'status-warn'}">■</span>
+                    </div>
+                `).join('');
+            } else {
+                elPartyList.innerHTML = '<div style="color:#666; font-style:italic;">No Signal</div>';
+            }
+        });
+    </script>
+</body>
+
+</html>

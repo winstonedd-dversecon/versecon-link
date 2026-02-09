@@ -1,60 +1,87 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const LogWatcher = require('./log-watcher');
-const fs = require('fs');
+const APIClient = require('./api-client');
 
-let mainWindow;
+let dashboardWindow;
+let overlayWindow;
 
-function createWindow() {
-    mainWindow = new BrowserWindow({
-        width: 400,
-        height: 600,
-        frame: false, // Overlay style
-        transparent: true,
-        alwaysOnTop: true,
+function createWindows() {
+    // 1. Main Dashboard Window
+    dashboardWindow = new BrowserWindow({
+        width: 1000,
+        height: 700,
+        frame: false, // Custom frame in HTML? Or standard? Let's go standard for now for drag support effortlessly
+        title: 'VerseCon Link',
+        backgroundColor: '#0b0c10',
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
         }
     });
 
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    dashboardWindow.loadFile(path.join(__dirname, '../renderer/dashboard.html'));
 
-    // Log Watcher Integration
-    LogWatcher.on('gamestate', (data) => {
-        if (mainWindow) {
-            mainWindow.webContents.send('log:update', data);
-        }
+    // 2. Overlay Window (Transparent)
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+
+    overlayWindow = new BrowserWindow({
+        width: 300,
+        height: 500,
+        x: width - 320,
+        y: 50, // Top Right
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        resizable: class { return false
+    }, // effectively false
+        skipTaskbar: true,
+        webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+    }
     });
 
-    LogWatcher.on('status', (status) => {
-        if (mainWindow) mainWindow.webContents.send('log:status', status);
-    });
+overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay.html'));
 
-    // API Integration
-    const APIClient = require('./api-client');
-
-    // Forward API events to Renderer
-    APIClient.on('party', (data) => {
-        if (mainWindow) mainWindow.webContents.send('api:party', data);
-    });
-
-    // Start watching automatically
-    LogWatcher.start();
+    // Optional: Ignore mouse events? 
+    // If user wants click-through: overlayWindow.setIgnoreMouseEvents(true);
+    // For now, let's keep interactions enabled for moving/resizing if implemented.
 }
 
+// IPC Handlers
 ipcMain.on('app:login', (event, token) => {
-    const APIClient = require('./api-client');
     APIClient.token = token;
     APIClient.connectSocket(token);
 });
 
-app.whenReady().then(() => {
-    createWindow();
+ipcMain.on('app:toggle-overlay', () => {
+    if (overlayWindow.isVisible()) {
+        overlayWindow.hide();
+    } else {
+        overlayWindow.show();
+    }
+});
 
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    });
+
+// Logic: Broadcast to ALL windows
+function broadcast(channel, data) {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) dashboardWindow.webContents.send(channel, data);
+    if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.webContents.send(channel, data);
+}
+
+// Log Watcher Events
+LogWatcher.on('gamestate', (data) => broadcast('log:update', data));
+LogWatcher.on('status', (status) => broadcast('log:status', status));
+
+// API Events
+APIClient.on('party', (data) => broadcast('api:party', data));
+APIClient.on('status', (status) => broadcast('api:status', status)); // Needs to be added to APIClient
+
+app.whenReady().then(() => {
+    createWindows();
+    LogWatcher.start();
 });
 
 app.on('window-all-closed', () => {
