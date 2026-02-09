@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, dialog } = require('electron');
 const path = require('path');
 const LogWatcher = require('./log-watcher');
 const APIClient = require('./api-client');
@@ -61,6 +61,20 @@ ipcMain.on('app:toggle-overlay', () => {
     } else {
         overlayWindow.show();
     }
+});
+
+ipcMain.handle('app:select-log', async () => {
+    const result = await dialog.showOpenDialog(dashboardWindow, {
+        properties: ['openFile'],
+        filters: [{ name: 'Log Files', extensions: ['log', 'txt'] }]
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+        const selectedPath = result.filePaths[0];
+        LogWatcher.setPath(selectedPath);
+        return selectedPath;
+    }
+    return null;
 });
 
 
