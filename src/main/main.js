@@ -1,17 +1,25 @@
-const { app, BrowserWindow, ipcMain, screen, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, dialog, Tray, Menu, nativeImage, Notification } = require('electron');
 const path = require('path');
 const LogWatcher = require('./log-watcher');
 const APIClient = require('./api-client');
 
 let dashboardWindow;
 let overlayWindow;
+let alertWindow;
+let tray = null;
+let isQuitting = false;
+let dndMode = false;
+
+// ═══════════════════════════════════════════════════════
+// WINDOW CREATION
+// ═══════════════════════════════════════════════════════
 
 function createWindows() {
     // 1. Main Dashboard Window
     dashboardWindow = new BrowserWindow({
-        width: 1000,
-        height: 700,
-        frame: false, // Custom frame in HTML? Or standard? Let's go standard for now for drag support effortlessly
+        width: 1100,
+        height: 750,
+        frame: false,
         title: 'VerseCon Link',
         backgroundColor: '#0b0c10',
         webPreferences: {
@@ -22,15 +30,23 @@ function createWindows() {
 
     dashboardWindow.loadFile(path.join(__dirname, '../renderer/dashboard.html'));
 
-    // 2. Overlay Window (Transparent)
+    // Close-to-tray behavior
+    dashboardWindow.on('close', (e) => {
+        if (!isQuitting) {
+            e.preventDefault();
+            dashboardWindow.hide();
+        }
+    });
+
+    // 2. Overlay Window (Transparent HUD)
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
     overlayWindow = new BrowserWindow({
-        width: 300,
-        height: 500,
-        x: width - 320,
-        y: 50, // Top Right
+        width: 320,
+        height: 600,
+        x: width - 340,
+        y: 50,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -44,12 +60,134 @@ function createWindows() {
 
     overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay.html'));
 
-    // Optional: Ignore mouse events? 
-    // If user wants click-through: overlayWindow.setIgnoreMouseEvents(true);
-    // For now, let's keep interactions enabled for moving/resizing if implemented.
+    // 3. Alert Window (Full-screen transparent for HUD warnings)
+    alertWindow = new BrowserWindow({
+        width: primaryDisplay.size.width,
+        height: primaryDisplay.size.height,
+        x: 0,
+        y: 0,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        resizable: false,
+        skipTaskbar: true,
+        focusable: false,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+
+    alertWindow.loadFile(path.join(__dirname, '../renderer/alert.html'));
+    alertWindow.setIgnoreMouseEvents(true);
+    alertWindow.hide(); // Hidden by default, shown on alerts
 }
 
-// IPC Handlers
+// ═══════════════════════════════════════════════════════
+// SYSTEM TRAY
+// ═══════════════════════════════════════════════════════
+
+function createTray() {
+    // Create a simple 16x16 tray icon using nativeImage
+    const iconSize = 16;
+    const icon = nativeImage.createEmpty();
+
+    // Use a data URL for a simple orange circle icon
+    const canvas = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA0ElEQVQ4T2NkoBAwUqifYdAY8J+B4T8jI+N/BkZGJgZGxv8MDIz/GUBsJkYQm5GRiQHEBvGRxYDqGJHVwA1ghBvACHYBCzPLfwYmRqgBjP+ZGJkYQfxBYAAjyOv/wYGA2AgywDAwMIAMgHkB5AwUZ4DCgBEmBjUA5C1kcYpigJmJCRQFEDYoOFBDABYDDIwMYDaID/MCTB5kCCPYAAZkNSCbwM5AhoEFCCiGoGrAAUEhGECuZkQXYwIbAvIGVhv+w4MAuxgj2A0ENAFhLgAA4aVjEV2F5y4AAAAASUVORK5CYII=`;
+
+    tray = new Tray(nativeImage.createFromDataURL(canvas));
+    tray.setToolTip('VerseCon Link — Connected');
+
+    updateTrayMenu();
+
+    tray.on('click', () => {
+        if (dashboardWindow) {
+            if (dashboardWindow.isVisible()) {
+                dashboardWindow.focus();
+            } else {
+                dashboardWindow.show();
+            }
+        }
+    });
+}
+
+function updateTrayMenu() {
+    if (!tray) return;
+
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: 'Show Dashboard',
+            click: () => {
+                if (dashboardWindow) {
+                    dashboardWindow.show();
+                    dashboardWindow.focus();
+                }
+            }
+        },
+        {
+            label: overlayWindow && overlayWindow.isVisible() ? 'Hide Overlay' : 'Show Overlay',
+            click: () => {
+                if (overlayWindow) {
+                    overlayWindow.isVisible() ? overlayWindow.hide() : overlayWindow.show();
+                    updateTrayMenu();
+                }
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Do Not Disturb',
+            type: 'checkbox',
+            checked: dndMode,
+            click: (menuItem) => {
+                dndMode = menuItem.checked;
+                broadcast('app:dnd', { enabled: dndMode });
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Quit VerseCon Link',
+            click: () => {
+                isQuitting = true;
+                app.quit();
+            }
+        }
+    ]);
+
+    tray.setContextMenu(contextMenu);
+}
+
+function showTrayNotification(title, body, onClick = null) {
+    if (dndMode) return;
+    if (!Notification.isSupported()) return;
+
+    const notif = new Notification({
+        title,
+        body,
+        icon: nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA0ElEQVQ4T2NkoBAwUqifYdAY8J+B4T8jI+N/BkZGJgZGxv8MDIz/GUBsJkYQm5GRiQHEBvGRxYDqGJHVwA1ghBvACHYBCzPLfwYmRqgBjP+ZGJkYQfxBYAAjyOv/wYGA2AgywDAwMIAMgHkB5AwUZ4DCgBEmBjUA5C1kcYpigJmJCRQFEDYoOFBDABYDDIwMYDaID/MCTB5kCCPYAAZkNSCbwM5AhoEFCCiGoGrAAUEhGECuZkQXYwIbAvIGVhv+w4MAuxgj2A0ENAFhLgAA4aVjEV2F5y4AAAAASUVORK5CYII='),
+        silent: false
+    });
+
+    if (onClick) {
+        notif.on('click', onClick);
+    }
+
+    notif.show();
+}
+
+// Update tray tooltip with connection status
+function updateTrayStatus(logConnected, apiConnected) {
+    if (!tray) return;
+    const status = logConnected && apiConnected ? 'Connected'
+        : logConnected ? 'Game Log Active'
+            : apiConnected ? 'API Only'
+                : 'Disconnected';
+    tray.setToolTip(`VerseCon Link — ${status}`);
+}
+
+// ═══════════════════════════════════════════════════════
+// IPC HANDLERS
+// ═══════════════════════════════════════════════════════
+
 ipcMain.on('app:login', (event, token) => {
     APIClient.token = token;
     APIClient.connectSocket(token);
@@ -61,6 +199,7 @@ ipcMain.on('app:toggle-overlay', () => {
     } else {
         overlayWindow.show();
     }
+    updateTrayMenu();
 });
 
 ipcMain.handle('app:select-log', async () => {
@@ -83,25 +222,145 @@ ipcMain.handle('app:open-external', async (event, url) => {
     return true;
 });
 
+// Alert window control
+ipcMain.on('alert:show', (event, data) => {
+    if (alertWindow && !alertWindow.isDestroyed()) {
+        alertWindow.show();
+        alertWindow.webContents.send('alert:trigger', data);
+    }
+});
 
-// Logic: Broadcast to ALL windows
+ipcMain.on('alert:hide', () => {
+    if (alertWindow && !alertWindow.isDestroyed()) {
+        alertWindow.hide();
+    }
+});
+
+// Command module IPC
+ipcMain.on('command:send', (event, data) => {
+    // Forward command to API
+    if (APIClient.socket && APIClient.socket.connected) {
+        APIClient.socket.emit('command:send', data);
+    }
+    // Also broadcast locally for preview
+    broadcast('command:sent', data);
+});
+
+ipcMain.on('command:ack', (event, data) => {
+    if (APIClient.socket && APIClient.socket.connected) {
+        APIClient.socket.emit('command:ack', data);
+    }
+});
+
+// Unknown log management
+ipcMain.on('log:ignore-unknown', (event, key) => {
+    LogWatcher.ignoreUnknownPattern(key);
+});
+
+ipcMain.on('log:clear-unknowns', () => {
+    LogWatcher.clearUnknowns();
+});
+
+ipcMain.on('log:request-unknowns', () => {
+    LogWatcher.emitUnknowns();
+});
+
+// ═══════════════════════════════════════════════════════
+// BROADCAST (ALL WINDOWS)
+// ═══════════════════════════════════════════════════════
+
 function broadcast(channel, data) {
     if (dashboardWindow && !dashboardWindow.isDestroyed()) dashboardWindow.webContents.send(channel, data);
     if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.webContents.send(channel, data);
 }
 
+// ═══════════════════════════════════════════════════════
+// EVENT WIRING
+// ═══════════════════════════════════════════════════════
+
+// Track connection states for tray
+let logConnected = false;
+let apiConnected = false;
+
 // Log Watcher Events
-LogWatcher.on('gamestate', (data) => broadcast('log:update', data));
-LogWatcher.on('status', (status) => broadcast('log:status', status));
+LogWatcher.on('gamestate', (data) => {
+    broadcast('log:update', data);
+
+    // Critical alerts → show alert window + tray notification
+    if (data.type === 'STATUS') {
+        if (alertWindow && !alertWindow.isDestroyed()) {
+            alertWindow.show();
+            alertWindow.webContents.send('alert:trigger', data);
+        }
+        if (data.value === 'death') {
+            showTrayNotification('☠️ DEATH DETECTED', 'Your character has died.');
+        } else if (data.value === 'suffocating') {
+            showTrayNotification('🌡️ SUFFOCATING', 'Check your helmet seal!');
+        }
+    }
+
+    // Zone changes
+    if (data.type === 'ZONE' && data.value === 'armistice_leave') {
+        if (alertWindow && !alertWindow.isDestroyed()) {
+            alertWindow.show();
+            alertWindow.webContents.send('alert:trigger', { type: 'ZONE', value: 'armistice_leave' });
+        }
+    }
+});
+
+LogWatcher.on('status', (status) => {
+    logConnected = status.connected;
+    updateTrayStatus(logConnected, apiConnected);
+    broadcast('log:status', status);
+});
+
 LogWatcher.on('error', (err) => {
     console.error('[LogWatcher] Error:', err);
     broadcast('log:error', { message: typeof err === 'string' ? err : err.message || 'Unknown error' });
 });
-LogWatcher.on('login', (data) => broadcast('log:update', { type: 'LOGIN', value: 'ONLINE' }));
+
+LogWatcher.on('login', (data) => {
+    broadcast('log:update', { type: 'LOGIN', value: 'ONLINE', handle: data.handle });
+    showTrayNotification('🎮 Star Citizen', `Logged in as ${data.handle || 'Pilot'}`);
+});
+
+// Unknown log lines
+LogWatcher.on('unknown', (data) => {
+    broadcast('log:unknown', data);
+});
 
 // API Events
 APIClient.on('party', (data) => broadcast('api:party', data));
-APIClient.on('status', (status) => broadcast('api:status', status)); // Needs to be added to APIClient
+APIClient.on('status', (status) => {
+    apiConnected = status.connected;
+    updateTrayStatus(logConnected, apiConnected);
+    broadcast('api:status', status);
+});
+
+// Command events from server
+APIClient.on('command', (data) => {
+    broadcast('command:receive', data);
+    // Show alert for commands
+    if (alertWindow && !alertWindow.isDestroyed()) {
+        alertWindow.show();
+        alertWindow.webContents.send('alert:trigger', { type: 'COMMAND', value: data });
+    }
+    showTrayNotification(`📢 ${data.from || 'Command'}`, data.text || data.preset || 'New order received');
+});
+
+// VerseCon platform events
+APIClient.on('beacon', (data) => {
+    broadcast('vcon:beacon', data);
+    showTrayNotification('🆘 Beacon Alert', data.message || 'New beacon deployed');
+});
+APIClient.on('job', (data) => {
+    broadcast('vcon:job', data);
+    showTrayNotification('📜 Contract Available', data.message || 'New contract posted');
+});
+
+// ═══════════════════════════════════════════════════════
+// APP LIFECYCLE
+// ═══════════════════════════════════════════════════════
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -109,23 +368,22 @@ if (!gotTheLock) {
     app.quit();
 } else {
     app.on('second-instance', (event, commandLine, workingDirectory) => {
-        // Someone tried to run a second instance, we should focus our window.
         if (dashboardWindow) {
             if (dashboardWindow.isMinimized()) dashboardWindow.restore();
+            dashboardWindow.show();
             dashboardWindow.focus();
         }
 
-        // Extract token from protocol
         const url = commandLine.find(arg => arg.startsWith('versecon-link://'));
         if (url) handleDeepLink(url);
     });
 
     app.whenReady().then(() => {
         createWindows();
+        createTray();
         LogWatcher.start();
     });
 
-    // Handle macOS Deep Link
     app.on('open-url', (event, url) => {
         event.preventDefault();
         handleDeepLink(url);
@@ -135,7 +393,6 @@ if (!gotTheLock) {
 function handleDeepLink(url) {
     console.log('[Main] Received Deep Link:', url);
     try {
-        // Format: versecon-link://auth?token=XYZ
         const urlObj = new URL(url);
         const token = urlObj.searchParams.get('token');
         if (token) {
@@ -149,11 +406,15 @@ function handleDeepLink(url) {
     }
 }
 
+app.on('before-quit', () => {
+    isQuitting = true;
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// Register as default protocol client (dev mode check)
+// Register as default protocol client
 if (process.defaultApp) {
     if (process.argv.length >= 2) {
         app.setAsDefaultProtocolClient('versecon-link', process.execPath, [path.resolve(process.argv[1])]);

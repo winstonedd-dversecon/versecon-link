@@ -5,172 +5,423 @@
     <meta charset="UTF-8">
     <title>VerseCon Overlay</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-glass: rgba(11, 12, 16, 0.6);
+            --accent: #ffa500;
+            --cyan: #00c8ff;
+            --text-main: #e0e0e0;
+            --text-dim: #8892b0;
+            --success: #00ff88;
+            --danger: #ff4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            background: rgba(0, 0, 0, 0);
-            /* Fully transparent */
+            background: transparent;
             font-family: 'Rajdhani', sans-serif;
-            margin: 0;
-            padding: 20px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-            -webkit-app-region: drag;
+            color: var(--text-main);
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
-        /* HUD Modules */
         .hud-module {
-            background: rgba(11, 12, 16, 0.85);
+            background: var(--bg-glass);
             backdrop-filter: blur(8px);
-            border-left: 3px solid #ffa500;
-            padding: 10px 15px;
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            min-width: 200px;
-            transform: skewX(-5deg);
-            /* Sci-fi feel */
-            animation: fadeIn 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 3px solid var(--accent);
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            transform: skewX(-2deg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
         }
 
-        .label {
-            font-size: 0.75rem;
-            color: #8892b0;
+        .hud-label {
+            font-size: 0.6rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
-            transform: skewX(5deg);
-            /* Counter-skew text */
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            margin-bottom: 3px;
         }
 
-        .value {
-            font-size: 1.2rem;
+        .hud-value {
+            font-size: 1.05rem;
             font-weight: 700;
-            color: #fff;
-            transform: skewX(5deg);
+            color: white;
         }
 
-        .value.highlight {
-            color: #ffa500;
-            text-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+        /* Module accent colors */
+        .mod-location {
+            border-left-color: var(--cyan);
         }
 
-        .value.cyan {
-            color: #00c8ff;
-            text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        .mod-location .hud-value {
+            color: var(--cyan);
         }
 
-        /* Party List */
-        .party-list {
-            margin-top: 5px;
+        .mod-quantum {
+            border-left-color: var(--accent);
         }
 
-        .party-member {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9rem;
-            margin-bottom: 2px;
-            transform: skewX(5deg);
+        .mod-quantum .hud-value {
+            color: var(--accent);
         }
 
-        .status-ok {
-            color: #00ff88;
+        .mod-zone {
+            border-left-color: var(--success);
         }
 
-        .status-warn {
+        .mod-zone .hud-value {
+            color: var(--success);
+        }
+
+        .mod-party {
+            border-left-color: #a855f7;
+        }
+
+        .mod-party .hud-value {
+            color: #a855f7;
+        }
+
+        .mod-command {
+            border-left-color: var(--accent);
+            background: rgba(255, 165, 0, 0.1);
+            animation: commandGlow 1s ease-in-out 3;
+        }
+
+        .mod-command .hud-value {
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .mod-status {
+            border-left-color: var(--danger);
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .mod-status .hud-value {
+            color: var(--danger);
+        }
+
+        .mod-connection {
+            border-left-color: #888;
+        }
+
+        /* Quantum glow effect */
+        .quantum-engaged {
+            border-left-color: var(--accent);
+            box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);
+        }
+
+        .quantum-engaged .hud-value {
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.6);
+        }
+
+        /* Zone transitions */
+        .zone-armistice .hud-value {
+            color: var(--success);
+        }
+
+        .zone-caution .hud-value {
             color: #ffaa00;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px) skewX(-5deg);
+        .zone-monitored .hud-value {
+            color: var(--cyan);
+        }
+
+        .zone-kia .hud-value {
+            color: var(--danger);
+        }
+
+        /* Party members */
+        .party-member {
+            font-size: 0.8rem;
+            padding: 2px 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .party-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* ACK button (not click-through) */
+        .ack-btn {
+            background: linear-gradient(45deg, var(--accent), #ff8800);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            font-weight: 700;
+            font-family: inherit;
+            text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 5px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .ack-btn:hover {
+            filter: brightness(1.2);
+        }
+
+        /* Command log in overlay */
+        .cmd-feed {
+            max-height: 100px;
+            overflow-y: auto;
+            margin-top: 5px;
+        }
+
+        .cmd-feed-item {
+            font-size: 0.75rem;
+            padding: 3px 0;
+            color: var(--text-dim);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .cmd-feed-item .cmd-order {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        @keyframes commandGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
             }
 
-            to {
-                opacity: 1;
-                transform: translateX(0) skewX(-5deg);
+            50% {
+                box-shadow: 0 0 20px rgba(255, 165, 0, 0.4);
             }
+        }
+
+        ::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
         }
     </style>
 </head>
 
 <body>
-    <div class="hud-module">
-        <div class="label">CURRENT LOCATION</div>
-        <div class="value cyan" id="location">UNKNOWN SECTOR</div>
+    <!-- Location -->
+    <div class="hud-module mod-location" id="mod-location">
+        <div class="hud-label">Current Location</div>
+        <div class="hud-value" id="hud-location">LOADING...</div>
     </div>
 
-    <div class="hud-module">
-        <div class="label">QUANTUM DRIVE</div>
-        <div class="value" id="state">IDLE</div>
+    <!-- Quantum Drive -->
+    <div class="hud-module mod-quantum" id="mod-quantum">
+        <div class="hud-label">Quantum Drive</div>
+        <div class="hud-value" id="hud-quantum">IDLE</div>
     </div>
 
-    <div class="hud-module">
-        <div class="label">ZONE STATUS</div>
-        <div class="value" id="zone" style="font-size: 0.9rem;">—</div>
+    <!-- Zone Status -->
+    <div class="hud-module mod-zone" id="mod-zone">
+        <div class="hud-label">Zone Status</div>
+        <div class="hud-value" id="hud-zone">—</div>
     </div>
 
-    <div class="hud-module" id="party-module">
-        <div class="label">SQUADRON STATUS</div>
-        <div class="party-list" id="party-list">
-            <div style="color:#666; font-style:italic;">No Signal</div>
+    <!-- Player Status -->
+    <div class="hud-module mod-status" id="mod-status" style="display:none;">
+        <div class="hud-label">Alert</div>
+        <div class="hud-value" id="hud-status">—</div>
+    </div>
+
+    <!-- Connection -->
+    <div class="hud-module mod-connection" id="mod-connection">
+        <div class="hud-label">Connection</div>
+        <div class="hud-value" id="hud-connection">SEARCHING...</div>
+    </div>
+
+    <!-- Party / Squadron -->
+    <div class="hud-module mod-party" id="mod-party">
+        <div class="hud-label">Squadron <span id="party-count" style="color:#aaa;">(0)</span></div>
+        <div id="party-list">
+            <div class="hud-value" style="font-size:0.8rem; color: var(--text-dim);">No Signal</div>
         </div>
+    </div>
+
+    <!-- Active Command -->
+    <div class="hud-module mod-command" id="mod-command" style="display:none;">
+        <div class="hud-label">Active Order</div>
+        <div class="hud-value" id="hud-command-text">—</div>
+        <div style="font-size: 0.7rem; color: var(--text-dim);" id="hud-command-from">—</div>
+        <button class="ack-btn" id="ack-btn" onclick="ackCommand()">✓ ACK</button>
+        <div class="cmd-feed" id="cmd-feed"></div>
     </div>
 
     <script>
         const { ipcRenderer } = require('electron');
-        const elLocation = document.getElementById('location');
-        const elState = document.getElementById('state');
-        const elZone = document.getElementById('zone');
-        const elPartyList = document.getElementById('party-list');
 
-        ipcRenderer.on('log:update', (event, data) => {
+        let lastCommandId = null;
+
+        // ═══ GAME LOG UPDATES ═══
+        ipcRenderer.on('log:update', (e, data) => {
             switch (data.type) {
                 case 'LOCATION':
-                    elLocation.innerText = data.value.toUpperCase().trim();
-                    break;
                 case 'LOCATION_HINT':
-                    elLocation.innerText = data.value.toUpperCase();
+                    document.getElementById('hud-location').textContent = data.value;
                     break;
+
                 case 'QUANTUM':
-                    elState.innerText = data.value === 'entered' ? 'ENGAGED' : 'IDLE';
-                    elState.className = data.value === 'entered' ? 'value highlight' : 'value';
+                    const qMod = document.getElementById('mod-quantum');
+                    const qVal = document.getElementById('hud-quantum');
+                    if (data.value === 'entered') {
+                        qVal.textContent = 'ENGAGED';
+                        qMod.classList.add('quantum-engaged');
+                    } else {
+                        qVal.textContent = 'IDLE';
+                        qMod.classList.remove('quantum-engaged');
+                    }
                     break;
+
                 case 'ZONE':
+                    const zMod = document.getElementById('mod-zone');
+                    const zVal = document.getElementById('hud-zone');
+                    zMod.className = 'hud-module mod-zone';
                     if (data.value === 'armistice_enter') {
-                        elZone.innerText = '🛡️ ARMISTICE';
-                        elZone.style.color = '#00ff88';
+                        zVal.textContent = '🛡️ ARMISTICE — SAFE';
+                        zMod.classList.add('zone-armistice');
                     } else if (data.value === 'armistice_leave') {
-                        elZone.innerText = '⚠️ CAUTION';
-                        elZone.style.color = '#ffaa00';
+                        zVal.textContent = '⚠️ CAUTION — WEAPONS HOT';
+                        zMod.classList.add('zone-caution');
                     } else if (data.value === 'monitored_enter') {
-                        elZone.innerText = '📡 MONITORED';
-                        elZone.style.color = '#00c8ff';
+                        zVal.textContent = '📡 MONITORED SPACE';
+                        zMod.classList.add('zone-monitored');
                     }
                     break;
+
                 case 'STATUS':
+                    const sMod = document.getElementById('mod-status');
+                    const sVal = document.getElementById('hud-status');
+                    sMod.style.display = 'block';
                     if (data.value === 'death') {
-                        elZone.innerText = '💀 KIA';
-                        elZone.style.color = '#ff4444';
+                        sVal.textContent = '💀 KILLED IN ACTION';
+                        document.getElementById('mod-zone').className = 'hud-module mod-zone zone-kia';
+                        document.getElementById('hud-zone').textContent = '☠️ KIA';
+                    } else if (data.value === 'suffocating') {
+                        sVal.textContent = '😵 SUFFOCATING';
+                    } else if (data.value === 'depressurizing') {
+                        sVal.textContent = '💨 DEPRESSURIZATION';
                     }
+                    // Auto-hide after 10s
+                    setTimeout(() => { sMod.style.display = 'none'; }, 10000);
+                    break;
+
+                case 'CONNECTION':
+                    document.getElementById('hud-connection').textContent = data.value;
+                    break;
+
+                case 'LOGIN':
+                    document.getElementById('hud-connection').textContent = `ONLINE — ${data.handle || 'Connected'}`;
+                    break;
+
+                case 'EQUIPMENT':
+                    // don't clutter overlay with equipment
                     break;
             }
         });
 
-        ipcRenderer.on('api:party', (event, data) => {
+        // ═══ PARTY ═══
+        ipcRenderer.on('api:party', (e, data) => {
+            const list = document.getElementById('party-list');
+            const count = document.getElementById('party-count');
+
             if (data.members && data.members.length > 0) {
-                elPartyList.innerHTML = data.members.map(m => `
+                count.textContent = `(${data.members.length})`;
+                list.innerHTML = data.members.map(m => `
                     <div class="party-member">
-                        <span>${m.name}</span>
-                        <span class="${m.onDuty ? 'status-ok' : 'status-warn'}">■</span>
+                        <span class="party-dot" style="background: ${m.online ? 'var(--success)' : '#555'}"></span>
+                        ${m.name || m.handle || 'Unknown'}
                     </div>
                 `).join('');
             } else {
-                elPartyList.innerHTML = '<div style="color:#666; font-style:italic;">No Signal</div>';
+                count.textContent = '(0)';
+                list.innerHTML = '<div class="hud-value" style="font-size:0.8rem; color: var(--text-dim);">No Signal</div>';
             }
+        });
+
+        // ═══ CONNECTION STATUS ═══
+        ipcRenderer.on('log:status', (e, data) => {
+            if (data.connected) {
+                document.getElementById('hud-connection').textContent = 'GAME LOG ACTIVE';
+                document.getElementById('mod-connection').style.borderLeftColor = 'var(--success)';
+            } else {
+                document.getElementById('hud-connection').textContent = 'SEARCHING...';
+                document.getElementById('mod-connection').style.borderLeftColor = '#888';
+            }
+        });
+
+        ipcRenderer.on('api:status', (e, status) => {
+            const conn = document.getElementById('hud-connection');
+            if (status.connected) {
+                conn.textContent = conn.textContent.includes('LOG') ? conn.textContent + ' | API ✓' : 'API CONNECTED';
+            }
+        });
+
+        // ═══ COMMAND MODULE ═══
+        ipcRenderer.on('command:receive', (e, data) => {
+            const cmdMod = document.getElementById('mod-command');
+            const cmdText = document.getElementById('hud-command-text');
+            const cmdFrom = document.getElementById('hud-command-from');
+            const ackBtn = document.getElementById('ack-btn');
+
+            cmdMod.style.display = 'block';
+            cmdText.textContent = data.preset || data.text || 'ATTENTION';
+            cmdFrom.textContent = `FROM: ${(data.from || 'COMMAND').toUpperCase()} → ${(data.target || 'ALL').toUpperCase()}`;
+            lastCommandId = data.id || Date.now();
+            ackBtn.style.display = 'inline-block';
+
+            // Reset glow animation
+            cmdMod.style.animation = 'none';
+            cmdMod.offsetHeight;
+            cmdMod.style.animation = 'commandGlow 1s ease-in-out 3';
+
+            // Add to command feed
+            addCmdFeed(data);
+        });
+
+        function addCmdFeed(data) {
+            const feed = document.getElementById('cmd-feed');
+            const time = new Date().toLocaleTimeString([], { hour12: false });
+            const item = document.createElement('div');
+            item.className = 'cmd-feed-item';
+            item.innerHTML = `<span style="color:#888">${time}</span> <span class="cmd-order">${data.preset || data.text}</span>`;
+            feed.prepend(item);
+            if (feed.children.length > 10) feed.lastElementChild.remove();
+        }
+
+        function ackCommand() {
+            if (lastCommandId) {
+                ipcRenderer.send('command:ack', { commandId: lastCommandId });
+                document.getElementById('ack-btn').style.display = 'none';
+                document.getElementById('hud-command-from').textContent += ' — ✓ ACKNOWLEDGED';
+            }
+        }
+
+        // ═══ DND MODE ═══
+        ipcRenderer.on('app:dnd', (e, data) => {
+            // Could dim overlay or show DND indicator
         });
     </script>
 </body>

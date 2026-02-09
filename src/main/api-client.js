@@ -5,7 +5,7 @@ const { EventEmitter } = require('events');
 class APIClient extends EventEmitter {
     constructor() {
         super();
-        this.baseUrl = 'https://versecon.com'; // Production URL
+        this.baseUrl = 'https://versecon.space'; // Production URL
         // this.baseUrl = 'http://localhost:3000'; // Dev URL (configurable)
         this.socket = null;
         this.token = null;
@@ -13,17 +13,6 @@ class APIClient extends EventEmitter {
     }
 
     async login(rsiHandle) {
-        // For MVP, we might need a way to grab the token or login flow.
-        // Since this is a local app, we can maybe ask user to paste an API Key or Token?
-        // OR, we use the existing web auth flow (open browser, callback).
-
-        // SIMPLEST MVP: User pastes their Session Token from the website (found in cookies/localstorage)
-        // Advanced: Electron Oauth.
-
-        // Let's assume Config for now, or just public data?
-        // Public data is enough for "Target User" party info if we have an endpoint.
-
-        // But to see "My Party", we need to be auth'd.
         console.log('[API] Login logic placeholder');
     }
 
@@ -34,11 +23,11 @@ class APIClient extends EventEmitter {
 
         this.token = token;
 
-        // Production URL
         this.socket = io(this.baseUrl, {
             query: { token },
             reconnection: true,
-            reconnectionAttempts: 10
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000
         });
 
         this.socket.on('connect', () => {
@@ -46,9 +35,9 @@ class APIClient extends EventEmitter {
             this.emit('status', { connected: true });
         });
 
-        this.socket.on('disconnect', () => {
-            console.log('[API] Socket Disconnected');
-            this.emit('status', { connected: false });
+        this.socket.on('disconnect', (reason) => {
+            console.log('[API] Socket Disconnected:', reason);
+            this.emit('status', { connected: false, reason });
         });
 
         this.socket.on('connect_error', (err) => {
@@ -56,13 +45,51 @@ class APIClient extends EventEmitter {
             this.emit('status', { connected: false, error: err.message });
         });
 
+        // ═══ PARTY / SOCIAL ═══
         this.socket.on('party:update', (data) => {
             console.log('[API] Party Update Received', data);
             this.emit('party', data);
         });
 
+        // ═══ VERSECON PLATFORM EVENTS ═══
+        this.socket.on('job:created', (data) => {
+            console.log('[API] New Contract:', data);
+            this.emit('job', { ...data, eventType: 'created' });
+        });
+
         this.socket.on('job:update', (data) => {
-            this.emit('job', data);
+            this.emit('job', { ...data, eventType: 'update' });
+        });
+
+        this.socket.on('beacon:created', (data) => {
+            console.log('[API] New Beacon:', data);
+            this.emit('beacon', data);
+        });
+
+        this.socket.on('party:created', (data) => {
+            console.log('[API] New Operation/LFG:', data);
+            this.emit('party_event', data);
+        });
+
+        this.socket.on('trade:match', (data) => {
+            console.log('[API] Trade Match:', data);
+            this.emit('trade', data);
+        });
+
+        // ═══ COMMAND MODULE ═══
+        this.socket.on('command:receive', (data) => {
+            console.log('[API] Command Received:', data);
+            this.emit('command', data);
+        });
+
+        this.socket.on('command:status', (data) => {
+            console.log('[API] Command ACK Status:', data);
+            this.emit('command_status', data);
+        });
+
+        // ═══ NOTIFICATIONS ═══
+        this.socket.on('notification', (data) => {
+            this.emit('notification', data);
         });
     }
 
@@ -74,6 +101,35 @@ class APIClient extends EventEmitter {
             });
         } catch (e) {
             console.error('[API] Failed to push location', e.message);
+        }
+    }
+
+    async sendCommand(commandData) {
+        if (!this.token) return;
+        try {
+            await axios.post(`${this.baseUrl}/api/command/send`, commandData, {
+                headers: { 'x-session-token': this.token }
+            });
+        } catch (e) {
+            console.error('[API] Failed to send command', e.message);
+            // Fallback: emit via socket
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('command:send', commandData);
+            }
+        }
+    }
+
+    async ackCommand(commandId) {
+        if (!this.token) return;
+        try {
+            await axios.post(`${this.baseUrl}/api/command/ack`, { commandId }, {
+                headers: { 'x-session-token': this.token }
+            });
+        } catch (e) {
+            console.error('[API] Failed to ACK command', e.message);
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('command:ack', { commandId });
+            }
         }
     }
 }

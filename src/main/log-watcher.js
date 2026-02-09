@@ -10,42 +10,114 @@ class LogWatcher extends EventEmitter {
         this.filePath = null;
         this.isWatching = false;
         this.lastSize = 0;
-        this.lastLocationHint = null; // Debounce location hints
-        this.seenLocations = new Set(); // Deduplicate location hints during initial read
+        this.lastLocationHint = null;
+        this.seenLocations = new Set();
 
-        // Regex Patterns
+        // Unknown log discovery
+        this.unknownGroups = new Map(); // key -> { sample, count, firstSeen, lastSeen }
+        this.unknownIgnored = new Set(); // user-ignored patterns
+        this.captureUnknowns = true;
+
+        // Noise filter — skip extremely common/uninteresting CryEngine lines
+        this.noisePatterns = [
+            /^\s*$/,
+            /^\[/,  // timestamp-only lines
+            /CryAnimation/i,
+            /CEntityComponentPhysics/i,
+            /SEntityPhysics/i,
+            /CParticleEffect/i,
+            /CFlowGraph/i,
+            /CryAction/i,
+            /streaming/i,
+            /^<\d{4}/,  // timestamp prefix lines
+            /pak_cache/i,
+            /CIG\s*$/,
+            /^\s*\d+\.\d+/,  // bare numbers
+        ];
+
+        // Regex Patterns — sourced from real SC 4.6 Game.log analysis
         this.patterns = {
-            login: /Cloud Imperium Games Public Auth Service/i,
+            // === LOGIN & IDENTITY ===
             login_success: /CDisciplineServiceExternal::OnLoginStatusChanged.*LoggedIn/,
-            location: /Global location: <(.*?)>/, // Legacy
-            location_obj: /data\/objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//, // New Object Container Tracking
+            login_completed: /LoginCompleted.*message/,
+            legacy_login: /Legacy login response.*Handle\[(\w+)\]/,  // RSI Handle
+            player_geid: /playerGEID=(\d+)/,
+            account_id: /accountId[=:](\d+)/,
+            username: /username (\w+) signedIn (\d)/,
+            character_name: /name (\w+) - state STATE_CURRENT/,
+
+            // === SYSTEM INFO ===
+            gpu_info: /GPU: Vendor = (\w+)/,
+            cpu_info: /Host CPU: (.+)/,
+            ram_info: /(\d+)MB physical memory installed/,
+            game_version: /Branch: (.+)/,
+            build_id: /Changelist: (\d+)/,
+            resolution: /Current display mode is (\d+x\d+)/,
+
+            // === CONNECTION & NETWORK ===
+            connection_state: /\{SET_CONNECTION_STATE\} state \[(\w+)\]/,
+            server_connect: /CSessionManager::OnClientConnected/,
+            network_hostname: /network hostname: (.+)/,
+            network_ip: /ip:(\d+\.\d+\.\d+\.\d+)/,
+
+            // === LOCATION & NAVIGATION ===
+            location: /Global location: <(.*?)>/,
+            location_obj: /objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//,
+            loading_level: /Loading level (\w+)/,
+            loading_screen: /CGlobalGameUI::OpenLoadingScreen/,
+
+            // === QUANTUM DRIVE ===
             quantum_enter: /Quantum Travel: Entering/i,
             quantum_exit: /Quantum Travel: Exiting/i,
 
-            // Zones via HUD Notifications
+            // === ZONES ===
             armistice_enter: /SHUDEvent_OnNotification.*Entering Armistice Zone/i,
             armistice_leave: /SHUDEvent_OnNotification.*Leaving Armistice Zone/i,
             monitored_enter: /SHUDEvent_OnNotification.*Entered Monitored Space/i,
 
-            // Status
+            // === PLAYER STATUS ===
             suffocating: /Player.*started suffocating/i,
             depressurizing: /Player.*started depressurization/i,
             die: /Actor Death/i,
 
-            // Combat
-            vehicle_spawn: /Vehicle Spawned: (.*?) - (.*?)/
+            // === INVENTORY / EQUIPMENT ===
+            attachment: /AttachmentReceived.*Player\[(\w+)\].*Attachment\[([^\]]+)\].*Port\[(\w+)\]/,
+
+            // === VEHICLES & SHIPS ===
+            vehicle_spawn: /Vehicle Spawned: (.*?) - (.*?)/,
+
+            // === HARDWARE ===
+            joystick: /Connected joystick\d+:\s+(.+?)\s*\{/,
+
+            // === MISSIONS / CONTRACTS ===
+            contract_gen: /CContractGenerator.*seed (\d+)/,
+
+            // === SOCIAL / PARTY ===
+            group_update: /Update group cache.*(\w+)/,
+            social_subscribe: /SubscribeToPlayerSocial.*player (\d+)/,
+            friend_subscribe: /SubscribeToFriendMessages.*player (\d+)/,
+
+            // === ENTITLEMENTS ===
+            entitlement_count: /Started processing (\d+) entitlements/,
         };
     }
 
     findLogFile() {
         const candidates = [];
 
-        // Windows paths
+        // Windows paths — IMPORTANT: The folder is "StarCitizen" (no space) on most installs
         const drivers = ['C:', 'D:', 'E:', 'F:'];
         const winPaths = [
+            // Standard RSI Launcher installs (NO space in StarCitizen)
+            'Program Files/Roberts Space Industries/StarCitizen/LIVE/Game.log',
+            'Program Files/Roberts Space Industries/StarCitizen/PTU/Game.log',
+            'Program Files/Roberts Space Industries/StarCitizen/EPTU/Game.log',
+            // Legacy / alternate installs (WITH space)
             'Program Files/Roberts Space Industries/Star Citizen/LIVE/Game.log',
-            'Roberts Space Industries/Star Citizen/LIVE/Game.log',
-            'StarCitizen/LIVE/Game.log'
+            'Program Files/Roberts Space Industries/Star Citizen/PTU/Game.log',
+            // Custom install locations
+            'Roberts Space Industries/StarCitizen/LIVE/Game.log',
+            'StarCitizen/LIVE/Game.log',
         ];
         for (const drive of drivers) {
             for (const p of winPaths) {
@@ -178,14 +250,70 @@ class LogWatcher extends EventEmitter {
         if (!line || !line.trim()) return false;
         let matched = false;
 
-        // 1. Location (Global)
+        // === PLAYER IDENTITY (only emit once during initial read) ===
+        const legacyLogin = line.match(this.patterns.legacy_login);
+        if (legacyLogin) {
+            this.emit('gamestate', { type: 'PLAYER_NAME', value: legacyLogin[1] });
+            this.emit('login', { status: 'connected', handle: legacyLogin[1] });
+            return true;
+        }
+
+        const usernameMatch = line.match(this.patterns.username);
+        if (usernameMatch) {
+            this.emit('gamestate', { type: 'USERNAME', value: usernameMatch[1] });
+            return true;
+        }
+
+        // === SYSTEM INFO (emit during initial read only) ===
+        if (initialRead) {
+            const gpuMatch = line.match(this.patterns.gpu_info);
+            if (gpuMatch) { this.emit('gamestate', { type: 'SYSTEM_GPU', value: gpuMatch[1] }); return true; }
+
+            const cpuMatch = line.match(this.patterns.cpu_info);
+            if (cpuMatch) { this.emit('gamestate', { type: 'SYSTEM_CPU', value: cpuMatch[1].trim() }); return true; }
+
+            const ramMatch = line.match(this.patterns.ram_info);
+            if (ramMatch) { this.emit('gamestate', { type: 'SYSTEM_RAM', value: `${ramMatch[1]}MB` }); return true; }
+
+            const versionMatch = line.match(this.patterns.game_version);
+            if (versionMatch) { this.emit('gamestate', { type: 'GAME_VERSION', value: versionMatch[1].trim() }); return true; }
+
+            const buildMatch = line.match(this.patterns.build_id);
+            if (buildMatch) { this.emit('gamestate', { type: 'BUILD_ID', value: buildMatch[1] }); return true; }
+
+            const resMatch = line.match(this.patterns.resolution);
+            if (resMatch) { this.emit('gamestate', { type: 'RESOLUTION', value: resMatch[1] }); return true; }
+
+            const joystickMatch = line.match(this.patterns.joystick);
+            if (joystickMatch) { this.emit('gamestate', { type: 'JOYSTICK', value: joystickMatch[1].trim() }); return true; }
+        }
+
+        // === CONNECTION STATE ===
+        const connMatch = line.match(this.patterns.connection_state);
+        if (connMatch) {
+            this.emit('gamestate', { type: 'CONNECTION', value: connMatch[1] });
+            matched = true;
+        }
+
+        if (this.patterns.server_connect.test(line)) {
+            this.emit('gamestate', { type: 'CONNECTION', value: 'IN_GAME' });
+            matched = true;
+        }
+
+        // === LOADING ===
+        if (this.patterns.loading_screen.test(line)) {
+            this.emit('gamestate', { type: 'LOADING', value: 'started' });
+            matched = true;
+        }
+
+        // === LOCATION (Global) ===
         const locMatch = line.match(this.patterns.location);
         if (locMatch) {
             this.emit('gamestate', { type: 'LOCATION', value: locMatch[1].trim() });
             return true;
         }
 
-        // 2. Quantum
+        // === QUANTUM ===
         if (this.patterns.quantum_enter.test(line)) {
             this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
             matched = true;
@@ -194,7 +322,7 @@ class LogWatcher extends EventEmitter {
             matched = true;
         }
 
-        // 3. Zone State (Armistice / Monitored)
+        // === ZONE STATE ===
         if (this.patterns.armistice_enter.test(line)) {
             this.emit('gamestate', { type: 'ZONE', value: 'armistice_enter' });
             matched = true;
@@ -206,7 +334,7 @@ class LogWatcher extends EventEmitter {
             matched = true;
         }
 
-        // 4. Player Status (Suffocation / Death Proxy)
+        // === PLAYER STATUS ===
         if (this.patterns.suffocating.test(line)) {
             this.emit('gamestate', { type: 'STATUS', value: 'suffocating' });
             matched = true;
@@ -218,20 +346,29 @@ class LogWatcher extends EventEmitter {
             matched = true;
         }
 
-        // 5. Login Status
+        // === INVENTORY / EQUIPMENT ===
+        const attachMatch = line.match(this.patterns.attachment);
+        if (attachMatch) {
+            this.emit('gamestate', {
+                type: 'EQUIPMENT',
+                value: { player: attachMatch[1], item: attachMatch[2], port: attachMatch[3] }
+            });
+            matched = true;
+        }
+
+        // === LOGIN SUCCESS ===
         if (this.patterns.login_success.test(line)) {
             this.emit('login', { status: 'connected' });
             matched = true;
         }
 
-        // 6. Fallback Location (Object Containers) - deduplicated
+        // === LOCATION HINT (Object Containers) - deduplicated ===
         const objMatch = line.match(this.patterns.location_obj);
         if (objMatch) {
             const system = objMatch[1];
             const location = objMatch[2];
             const key = `${system}/${location}`;
 
-            // During initial read: deduplicate (there are thousands of these)
             if (initialRead) {
                 if (!this.seenLocations.has(key)) {
                     this.seenLocations.add(key);
@@ -239,7 +376,6 @@ class LogWatcher extends EventEmitter {
                     matched = true;
                 }
             } else {
-                // Live mode: only emit if different from last
                 if (key !== this.lastLocationHint) {
                     this.lastLocationHint = key;
                     this.emit('gamestate', { type: 'LOCATION_HINT', value: key });
@@ -248,7 +384,75 @@ class LogWatcher extends EventEmitter {
             }
         }
 
+        // === UNKNOWN LINE CAPTURE ===
+        if (!matched && this.captureUnknowns && !initialRead) {
+            this.captureUnknownLine(line);
+        }
+
         return matched;
+    }
+
+    // Group unknown lines by their first significant keyword
+    captureUnknownLine(line) {
+        // Skip noise
+        for (const noise of this.noisePatterns) {
+            if (noise.test(line)) return;
+        }
+
+        // Skip very short lines
+        if (line.trim().length < 20) return;
+
+        // Extract group key: first class/function name or significant identifier
+        const cleaned = line.replace(/^<[^>]+>\s*/, '').trim(); // Strip timestamp
+        const keyMatch = cleaned.match(/^([A-Z][A-Za-z0-9_:]+)/); // CClassName::Method style
+        const key = keyMatch ? keyMatch[1].substring(0, 50) : cleaned.substring(0, 40);
+
+        // Check if ignored
+        if (this.unknownIgnored.has(key)) return;
+
+        const now = new Date().toISOString();
+        if (this.unknownGroups.has(key)) {
+            const group = this.unknownGroups.get(key);
+            group.count++;
+            group.lastSeen = now;
+        } else {
+            // Cap at 200 groups
+            if (this.unknownGroups.size >= 200) {
+                // Remove oldest
+                const oldest = this.unknownGroups.keys().next().value;
+                this.unknownGroups.delete(oldest);
+            }
+            this.unknownGroups.set(key, {
+                group: key,
+                sample: cleaned.substring(0, 200),
+                count: 1,
+                firstSeen: now,
+                lastSeen: now
+            });
+        }
+
+        // Emit periodically (every 50 new unknowns)
+        const total = Array.from(this.unknownGroups.values()).reduce((s, g) => s + g.count, 0);
+        if (total % 50 === 0) {
+            this.emitUnknowns();
+        }
+    }
+
+    emitUnknowns() {
+        const groups = Array.from(this.unknownGroups.values())
+            .sort((a, b) => b.count - a.count);
+        this.emit('unknown', { groups, totalGroups: groups.length });
+    }
+
+    ignoreUnknownPattern(key) {
+        this.unknownIgnored.add(key);
+        this.unknownGroups.delete(key);
+        this.emitUnknowns();
+    }
+
+    clearUnknowns() {
+        this.unknownGroups.clear();
+        this.emitUnknowns();
     }
 }
 

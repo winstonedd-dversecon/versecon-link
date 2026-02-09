@@ -15,6 +15,9 @@
             --text-main: #e0e0e0;
             --text-dim: #8892b0;
             --border: rgba(255, 255, 255, 0.1);
+            --danger: #ff4444;
+            --success: #00ff88;
+            --cyan: #00c8ff;
         }
 
         body {
@@ -28,7 +31,6 @@
             user-select: none;
         }
 
-        /* Drag Region */
         .title-bar-drag {
             -webkit-app-region: drag;
         }
@@ -37,13 +39,13 @@
             -webkit-app-region: no-drag;
         }
 
-        /* Glassmorphism Sidebar */
+        /* ═══ SIDEBAR ═══ */
         .sidebar {
-            width: 280px;
-            background: rgba(11, 12, 16, 0.85);
+            width: 260px;
+            background: rgba(11, 12, 16, 0.9);
             backdrop-filter: blur(12px);
             border-right: 1px solid var(--border);
-            padding: 25px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
@@ -51,34 +53,35 @@
         }
 
         .brand {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: white;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 0 0 10px var(--accent-glow);
             border-left: 4px solid var(--accent);
-            padding-left: 15px;
+            padding-left: 12px;
         }
 
         .menu-item {
-            padding: 12px 15px;
-            margin-bottom: 8px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
             border-radius: 6px;
             cursor: pointer;
             color: var(--text-dim);
-            font-size: 1.1rem;
+            font-size: 1rem;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 10px;
+            position: relative;
         }
 
         .menu-item:hover {
             background: rgba(255, 255, 255, 0.05);
             color: white;
-            transform: translateX(5px);
+            transform: translateX(3px);
         }
 
         .menu-item.active {
@@ -87,21 +90,36 @@
             color: var(--accent);
         }
 
-        /* Status Module */
+        .badge {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* ═══ STATUS BOX ═══ */
         .status-box {
             margin-top: auto;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
         }
 
         .status-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
         }
 
         .status-label {
@@ -119,38 +137,35 @@
         }
 
         .dot.on {
-            background: #00ff88;
-            color: #00ff88;
+            background: var(--success);
+            color: var(--success);
         }
 
         .dot.off {
-            background: #ff4444;
-            color: #ff4444;
+            background: var(--danger);
+            color: var(--danger);
         }
 
-        /* Main Area */
+        /* ═══ MAIN AREA ═══ */
         .main {
             flex: 1;
-            padding: 30px;
+            padding: 25px;
             display: flex;
             flex-direction: column;
-            background-image: url('https://robertsspaceindustries.com/media/u078028m5q1wcr/source.jpg');
-            /* Subtle Texture */
-            background-size: cover;
-            background-blend-mode: overlay;
+            overflow: hidden;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--border);
         }
 
         h2 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -158,27 +173,26 @@
         }
 
         .subtitle {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-dim);
         }
 
-        /* Feed Styling */
+        /* ═══ FEED ═══ */
         .feed-container {
             flex: 1;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(5px);
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid var(--border);
-            padding: 20px;
-            scroll-behavior: smooth;
+            padding: 15px;
         }
 
         .feed-item {
             display: grid;
-            grid-template-columns: 80px 40px 1fr;
+            grid-template-columns: 70px 36px 1fr;
             align-items: center;
-            padding: 15px;
+            padding: 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             animation: slideIn 0.4s ease forwards;
             opacity: 0;
@@ -188,21 +202,21 @@
         .feed-time {
             font-family: monospace;
             color: var(--text-dim);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .feed-icon {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             text-align: center;
             background: rgba(255, 255, 255, 0.05);
-            width: 32px;
-            height: 32px;
-            line-height: 32px;
-            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            border-radius: 5px;
         }
 
         .feed-text {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: #ddd;
         }
 
@@ -212,15 +226,14 @@
             text-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
         }
 
-        /* Controls */
+        /* ═══ CONTROLS ═══ */
         input.modern-input {
             background: rgba(0, 0, 0, 0.5);
             border: 1px solid var(--border);
             color: white;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
             width: 100%;
-            margin-top: 10px;
             font-family: inherit;
         }
 
@@ -233,27 +246,185 @@
             background: linear-gradient(45deg, #ffa500, #ff8800);
             color: #000;
             border: none;
-            padding: 12px;
-            width: 100%;
-            margin-top: 10px;
+            padding: 10px 16px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
-            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
             cursor: pointer;
             transition: all 0.2s;
             -webkit-app-region: no-drag;
+            font-family: inherit;
         }
 
         button.cyber-btn:hover {
             filter: brightness(1.2);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 165, 0, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 165, 0, 0.4);
         }
 
-        /* Scrollbar */
+        button.cyber-btn.small {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+        }
+
+        button.cyber-btn.danger {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+
+        button.cyber-btn.success {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #000;
+        }
+
+        /* ═══ COMMAND BUTTONS ═══ */
+        .cmd-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .cmd-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 8px;
+            cursor: pointer;
+            text-align: center;
+            color: var(--text-dim);
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        .cmd-btn:hover {
+            border-color: var(--accent);
+            color: white;
+            background: rgba(255, 165, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .cmd-btn .cmd-icon {
+            font-size: 1.4rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* ═══ UNKNOWN PATTERNS ═══ */
+        .unknown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .unknown-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .unknown-key {
+            color: var(--cyan);
+            font-family: monospace;
+            font-size: 0.8rem;
+            flex: 1;
+            margin-right: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .unknown-count {
+            color: var(--accent);
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .unknown-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .unknown-actions button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #aaa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .unknown-actions button:hover {
+            background: rgba(255, 165, 0, 0.2);
+            color: white;
+        }
+
+        /* ═══ COMMAND LOG ═══ */
+        .cmd-log-item {
+            padding: 8px 12px;
+            border-left: 3px solid var(--accent);
+            margin-bottom: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .cmd-log-from {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .cmd-log-text {
+            font-size: 1rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .cmd-log-target {
+            font-size: 0.75rem;
+            color: var(--cyan);
+        }
+
+        .cmd-log-ack {
+            font-size: 0.75rem;
+            color: var(--success);
+            margin-top: 2px;
+        }
+
+        /* ═══ TARGET SELECTOR ═══ */
+        select.target-select {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        select.target-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* ═══ SECTION TITLE ═══ */
+        .section-title {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 15px 0 8px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ═══ SCROLLBAR ═══ */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
 
         ::-webkit-scrollbar-track {
@@ -262,7 +433,7 @@
 
         ::-webkit-scrollbar-thumb {
             background: #333;
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
@@ -275,6 +446,19 @@
                 transform: translateX(0);
             }
         }
+
+        /* Hide views by default */
+        .view {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            padding: 25px;
+            overflow: hidden;
+        }
+
+        .view.active {
+            display: flex;
+        }
     </style>
 </head>
 
@@ -285,8 +469,15 @@
         <div class="menu-item active no-drag" id="nav-dashboard" onclick="switchTab('dashboard')">
             <span>📊</span> Dashboard
         </div>
+        <div class="menu-item no-drag" id="nav-vcon" onclick="switchTab('vcon')">
+            <span>🌐</span> VerseCon Feed
+        </div>
+        <div class="menu-item no-drag" id="nav-command" onclick="switchTab('command')">
+            <span>📢</span> Command
+        </div>
         <div class="menu-item no-drag" id="nav-config" onclick="switchTab('config')">
-            <span>⚙️</span> Configuration
+            <span>⚙️</span> Settings
+            <span class="badge" id="unknown-badge" style="display:none;">0</span>
         </div>
         <div class="menu-item no-drag" onclick="toggleOverlay()">
             <span>📺</span> Toggle Overlay
@@ -294,45 +485,42 @@
 
         <div style="flex:1"></div>
 
-        <div style="margin-bottom: 20px;" class="no-drag">
-            <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 5px;">VERSECON AUTH</div>
-
+        <div style="margin-bottom: 15px;" class="no-drag">
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px;">VERSECON AUTH</div>
             <div id="auth-ui-guest">
-                <button class="cyber-btn no-drag" onclick="openLogin()">Login with VerseCon</button>
-                <div style="font-size: 0.7rem; color: #666; margin-top: 5px; text-align: center;">
-                    Opens browser to authenticate
-                </div>
+                <button class="cyber-btn no-drag" style="width:100%; margin:0;" onclick="openLogin()">Login with
+                    VerseCon</button>
+                <div style="font-size: 0.65rem; color: #555; margin-top: 4px; text-align: center;">Opens browser to
+                    authenticate</div>
             </div>
-
             <div id="auth-ui-user"
-                style="display:none; background: rgba(0,255,136,0.1); padding: 10px; border-radius: 6px; border: 1px solid #00ff88;">
-                <div style="color: #00ff88; font-weight: bold; font-size: 0.9rem;">✓ Authenticated</div>
-                <div style="font-size: 0.7rem; color: #aaa;" id="auth-token-display">Session Active</div>
+                style="display:none; background: rgba(0,255,136,0.1); padding: 8px; border-radius: 6px; border: 1px solid #00ff88;">
+                <div style="color: #00ff88; font-weight: bold; font-size: 0.85rem;">✓ Authenticated</div>
+                <div style="font-size: 0.65rem; color: #aaa;" id="auth-token-display">Session Active</div>
             </div>
         </div>
 
         <div class="status-box">
             <div class="status-row">
                 <div class="status-label"><span class="dot off" id="status-log-dot"></span> Game Log</div>
-                <span id="status-log-text" style="font-size:0.8rem;">Searching...</span>
+                <span id="status-log-text" style="font-size:0.75rem;">Searching...</span>
             </div>
             <div class="status-row">
                 <div class="status-label"><span class="dot off" id="status-api-dot"></span> API Link</div>
-                <span id="status-api-text" style="font-size:0.8rem;">Disconnected</span>
+                <span id="status-api-text" style="font-size:0.75rem;">Disconnected</span>
             </div>
         </div>
     </div>
 
-    <!-- DASHBOARD VIEW -->
-    <div class="main" id="view-dashboard">
+    <!-- ═══════════ DASHBOARD VIEW ═══════════ -->
+    <div class="view active" id="view-dashboard">
         <div class="header">
             <div>
                 <h2>Operations Live Feed</h2>
                 <div class="subtitle">Real-time telemetry from Star Citizen</div>
             </div>
-            <div style="font-family: monospace; color: var(--accent);">V.1.0.0</div>
+            <div style="font-family: monospace; color: var(--accent);">V.2.0.0</div>
         </div>
-
         <div class="feed-container" id="event-feed">
             <div class="feed-item">
                 <span class="feed-time">SYSTEM</span>
@@ -342,37 +530,145 @@
         </div>
     </div>
 
-    <!-- CONFIG VIEW -->
-    <div class="main" id="view-config" style="display: none;">
+    <!-- ═══════════ VERSECON FEED VIEW ═══════════ -->
+    <div class="view" id="view-vcon">
         <div class="header">
             <div>
-                <h2>Configuration</h2>
-                <div class="subtitle">System Settings & Paths</div>
+                <h2>VerseCon Feed</h2>
+                <div class="subtitle">Live contracts, beacons, operations & LFG from the platform</div>
+            </div>
+        </div>
+        <div class="feed-container" id="vcon-feed">
+            <div class="feed-item">
+                <span class="feed-time">SYSTEM</span>
+                <span class="feed-icon">🌐</span>
+                <span class="feed-text">Connect to VerseCon to receive live platform updates...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ COMMAND CENTER VIEW ═══════════ -->
+    <div class="view" id="view-command">
+        <div class="header">
+            <div>
+                <h2>Command Center</h2>
+                <div class="subtitle">Issue orders to teams and individuals</div>
             </div>
         </div>
 
-        <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
-            <h3 style="margin-top:0;">Game Log Path</h3>
-            <p style="color: var(--text-dim); font-size: 0.9rem;">
-                VerseCon Link needs to read your Star Citizen <code>Game.log</code> file to detect your location and
-                status.
-            </p>
-
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <input type="text" id="config-log-path" class="modern-input" style="margin-top:0;" readonly
-                    placeholder="No file selected">
-                <button class="cyber-btn" style="width: auto; margin-top:0;"
-                    onclick="selectLogFile()">Browse...</button>
+        <div style="overflow-y: auto; flex:1;">
+            <div class="section-title">Quick Orders</div>
+            <div class="cmd-grid">
+                <div class="cmd-btn" onclick="sendPresetCommand('RTB')"><span class="cmd-icon">🏠</span>RTB</div>
+                <div class="cmd-btn" onclick="sendPresetCommand('DEFEND')"><span class="cmd-icon">🛡️</span>Defend</div>
+                <div class="cmd-btn" onclick="sendPresetCommand('ENGAGE')"><span class="cmd-icon">🎯</span>Engage</div>
+                <div class="cmd-btn" onclick="sendPresetCommand('FALL BACK')"><span class="cmd-icon">⬅️</span>Fall Back
+                </div>
+                <div class="cmd-btn" onclick="sendPresetCommand('REGROUP')"><span class="cmd-icon">🔄</span>Regroup
+                </div>
+                <div class="cmd-btn" onclick="sendPresetCommand('HOLD FIRE')"><span class="cmd-icon">✋</span>Hold Fire
+                </div>
+                <div class="cmd-btn" onclick="sendPresetCommand('ESCORT')"><span class="cmd-icon">🚀</span>Escort</div>
+                <div class="cmd-btn" onclick="sendPresetCommand('COVER ME')"><span class="cmd-icon">🔥</span>Cover Me
+                </div>
+                <div class="cmd-btn" onclick="sendPresetCommand('ALL CLEAR')"><span class="cmd-icon">✅</span>All Clear
+                </div>
+                <div class="cmd-btn" onclick="sendPresetCommand('EMERGENCY')" style="border-color: var(--danger);"><span
+                        class="cmd-icon">🆘</span>SOS</div>
             </div>
 
-            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                <h4 style="margin:0 0 10px 0; color: #888;">Manual Token (Legacy)</h4>
-                <div style="display: flex; gap: 5px;">
-                    <input type="password" id="api-token-manual" placeholder="Paste token here if login fails"
-                        style="background:#222; border:1px solid #444; color:#888; padding:5px; border-radius:4px; flex:1;">
-                    <button
-                        style="width:auto; padding:5px 10px; background:#444; color:#fff; border:none; border-radius:4px; cursor:pointer;"
-                        onclick="loginManual()">Set</button>
+            <div class="section-title">Custom Command</div>
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <select class="target-select" id="cmd-target" style="min-width: 120px;">
+                    <option value="ALL">🌐 All Teams</option>
+                    <option value="ALPHA">🏷️ Alpha</option>
+                    <option value="BRAVO">🏷️ Bravo</option>
+                    <option value="CHARLIE">🏷️ Charlie</option>
+                    <option value="DELTA">🏷️ Delta</option>
+                </select>
+                <input class="modern-input" id="cmd-custom-text" placeholder="Type custom order..."
+                    style="flex:1; margin:0;">
+                <button class="cyber-btn" onclick="sendCustomCommand()" style="width:auto; margin:0;">Send</button>
+            </div>
+
+            <div class="section-title">Command Log</div>
+            <div class="feed-container" id="command-log" style="flex:1; min-height: 200px;">
+                <div style="color: #555; font-style: italic; padding: 10px;">No commands issued yet...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ CONFIGURATION VIEW ═══════════ -->
+    <div class="view" id="view-config">
+        <div class="header">
+            <div>
+                <h2>Configuration</h2>
+                <div class="subtitle">Settings, Log Path & Unknown Events</div>
+            </div>
+        </div>
+
+        <div style="overflow-y: auto; flex:1;">
+            <!-- Game Log Path -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Game Log Path</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="config-log-path" class="modern-input" style="margin:0;" readonly
+                        placeholder="No file selected">
+                    <button class="cyber-btn" style="width: auto; margin:0;" onclick="selectLogFile()">Browse</button>
+                </div>
+            </div>
+
+            <!-- Manual Token -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Manual Token (Legacy)</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="password" id="api-token-manual" class="modern-input"
+                        placeholder="Paste token here if login fails" style="margin:0; flex:1;">
+                    <button class="cyber-btn" style="width:auto; margin:0;" onclick="loginManual()">Set</button>
+                </div>
+            </div>
+
+            <!-- Sound Settings -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Sound & Alerts</div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Alert Sounds</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="sound-enabled" checked
+                            onchange="toggleSounds()"> Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Volume</span>
+                    <input type="range" id="sound-volume" min="0" max="100" value="70" style="width: 120px;"
+                        oninput="updateVolume()">
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">HUD Warnings</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="hud-warnings-enabled" checked>
+                        Enabled</label>
+                </div>
+            </div>
+
+            <!-- Unknown Log Discovery -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="section-title" style="margin-top: 0; border-bottom: none;">Unknown Log Events <span
+                            id="unknown-count-label" style="color: var(--accent);">(0)</span></div>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="cyber-btn small" onclick="refreshUnknowns()">Refresh</button>
+                        <button class="cyber-btn small danger" onclick="clearUnknowns()">Clear All</button>
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: #666; margin-bottom: 10px;">
+                    Log lines that don't match any tracked pattern appear here. Review them and click "Track" to create
+                    a new pattern.
+                </div>
+                <div class="feed-container" id="unknown-list" style="max-height: 300px; padding: 0;">
+                    <div style="color: #555; font-style: italic; padding: 15px; text-align: center;">No unknown patterns
+                        detected yet. Play the game to discover new log events.</div>
                 </div>
             </div>
         </div>
@@ -381,61 +677,60 @@
     <script>
         const { ipcRenderer } = require('electron');
 
-        // UI Elements
-        const feed = document.getElementById('event-feed');
-        const configLogPath = document.getElementById('config-log-path');
-        const authGuest = document.getElementById('auth-ui-guest');
-        const authUser = document.getElementById('auth-ui-user');
+        // ═══ STATE ═══
+        let soundEnabled = true;
+        let soundVolume = 0.7;
+        let unknownCount = 0;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // Tabs
+        // ═══ TAB SWITCHING ═══
         function switchTab(tab) {
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            if (tab === 'dashboard') document.getElementById('nav-dashboard').classList.add('active');
-            if (tab === 'config') document.getElementById('nav-config').classList.add('active');
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
 
-            document.getElementById('view-dashboard').style.display = tab === 'dashboard' ? 'flex' : 'none';
-            document.getElementById('view-config').style.display = tab === 'config' ? 'flex' : 'none';
+            document.getElementById(`nav-${tab}`).classList.add('active');
+            document.getElementById(`view-${tab}`).classList.add('active');
         }
 
-        // Logic
-        function openLogin() {
-            console.log('[Dashboard] openLogin clicked!');
-            // Point to main login for now until deep link page is live
-            ipcRenderer.invoke('app:open-external', 'https://versecon.com/login').then(() => {
-                console.log('[Dashboard] openExternal resolved');
-                addFeedItem('🔑', 'Opening browser... Please login and copy your token.');
-            }).catch(err => {
-                console.error('[Dashboard] openExternal failed:', err);
-                addFeedItem('❌', 'Failed to open browser: ' + err.message);
-            });
-        }
+        // ═══ SOUND SYSTEM ═══
+        function playSound(type = 'notification', duration = 150) {
+            if (!soundEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                gain.gain.value = soundVolume * 0.3;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
 
-        function loginManual() {
-            const token = document.getElementById('api-token-manual').value;
-            if (token) {
-                console.log('Sending token:', token);
-                ipcRenderer.send('app:login', token);
-                // Simulate auth success UI (in real app, wait for api:status)
-                authGuest.style.display = 'none';
-                authUser.style.display = 'block';
-                addFeedItem('🔒', 'Manual token set.');
+                const sounds = {
+                    notification: { freq: 880, type: 'sine', dur: 150 },
+                    alert_death: { freq: 200, type: 'sawtooth', dur: 800 },
+                    alert_status: { freq: 440, type: 'triangle', dur: 400 },
+                    alert_zone: { freq: 660, type: 'sine', dur: 250 },
+                    command: { freq: 1000, type: 'square', dur: 100 },
+                    beacon: { freq: 500, type: 'sine', dur: 300 },
+                    contract: { freq: 700, type: 'sine', dur: 200 },
+                    sos: { freq: 300, type: 'sawtooth', dur: 600 },
+                };
+
+                const s = sounds[type] || sounds.notification;
+                osc.frequency.value = s.freq;
+                osc.type = s.type;
+
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + s.dur / 1000);
+                osc.stop(audioCtx.currentTime + s.dur / 1000);
+            } catch (e) {
+                console.error('Sound error:', e);
             }
         }
 
-        function toggleOverlay() {
-            ipcRenderer.send('app:toggle-overlay');
-        }
+        function toggleSounds() { soundEnabled = document.getElementById('sound-enabled').checked; }
+        function updateVolume() { soundVolume = document.getElementById('sound-volume').value / 100; }
 
-        function selectLogFile() {
-            ipcRenderer.invoke('app:select-log').then(path => {
-                if (path) {
-                    configLogPath.value = path;
-                    addFeedItem('⚙️', `Log path manually set to: ${path}`);
-                }
-            });
-        }
-
-        function addFeedItem(icon, text) {
+        // ═══ FEED HELPERS ═══
+        function addFeedItem(feedId, icon, text) {
+            const feed = document.getElementById(feedId);
             const time = new Date().toLocaleTimeString([], { hour12: false });
             const item = document.createElement('div');
             item.className = 'feed-item';
@@ -445,77 +740,280 @@
                 <span class="feed-text">${text}</span>
             `;
             feed.prepend(item);
-            if (feed.children.length > 100) feed.lastElementChild.remove();
+            if (feed.children.length > 150) feed.lastElementChild.remove();
         }
 
-        // Listeners
+        function addDashItem(icon, text) { addFeedItem('event-feed', icon, text); }
+        function addVconItem(icon, text) { addFeedItem('vcon-feed', icon, text); }
+
+        // ═══ AUTH ═══
+        function openLogin() {
+            console.log('[Dashboard] openLogin clicked!');
+            ipcRenderer.invoke('app:open-external', 'https://versecon.space/api/auth/discord/login').then(() => {
+                addDashItem('🔑', 'Opening browser... Please login.');
+            }).catch(err => {
+                addDashItem('❌', 'Failed to open browser: ' + err.message);
+            });
+        }
+
+        function loginManual() {
+            const token = document.getElementById('api-token-manual').value;
+            if (token) {
+                ipcRenderer.send('app:login', token);
+                document.getElementById('auth-ui-guest').style.display = 'none';
+                document.getElementById('auth-ui-user').style.display = 'block';
+                addDashItem('🔒', 'Manual token set.');
+            }
+        }
+
+        function toggleOverlay() { ipcRenderer.send('app:toggle-overlay'); }
+
+        function selectLogFile() {
+            ipcRenderer.invoke('app:select-log').then(path => {
+                if (path) {
+                    document.getElementById('config-log-path').value = path;
+                    addDashItem('⚙️', `Log path set: ${path}`);
+                }
+            });
+        }
+
+        // ═══ COMMAND MODULE ═══
+        function sendPresetCommand(preset) {
+            const target = document.getElementById('cmd-target').value;
+            const data = { preset, target, timestamp: Date.now() };
+            ipcRenderer.send('command:send', data);
+            addCommandLog(preset, target, 'YOU');
+            playSound(preset === 'EMERGENCY' ? 'sos' : 'command');
+        }
+
+        function sendCustomCommand() {
+            const text = document.getElementById('cmd-custom-text').value.trim();
+            if (!text) return;
+            const target = document.getElementById('cmd-target').value;
+            const data = { text, target, timestamp: Date.now() };
+            ipcRenderer.send('command:send', data);
+            addCommandLog(text, target, 'YOU');
+            document.getElementById('cmd-custom-text').value = '';
+            playSound('command');
+        }
+
+        function addCommandLog(text, target, from) {
+            const log = document.getElementById('command-log');
+            // Remove placeholder
+            const placeholder = log.querySelector('div[style]');
+            if (placeholder && placeholder.textContent.includes('No commands')) placeholder.remove();
+
+            const time = new Date().toLocaleTimeString([], { hour12: false });
+            const item = document.createElement('div');
+            item.className = 'cmd-log-item';
+            item.innerHTML = `
+                <div class="cmd-log-from">${time} — FROM: ${from}</div>
+                <div class="cmd-log-text">${text}</div>
+                <div class="cmd-log-target">→ ${target}</div>
+                <div class="cmd-log-ack" id="ack-${Date.now()}">⏳ Awaiting ACK...</div>
+            `;
+            log.prepend(item);
+        }
+
+        // ═══ UNKNOWN LOG DISCOVERY ═══
+        function renderUnknowns(groups) {
+            const list = document.getElementById('unknown-list');
+            unknownCount = groups.length;
+            document.getElementById('unknown-count-label').textContent = `(${unknownCount})`;
+
+            // Update badge
+            const badge = document.getElementById('unknown-badge');
+            if (unknownCount > 0) {
+                badge.style.display = 'inline';
+                badge.textContent = unknownCount;
+            } else {
+                badge.style.display = 'none';
+            }
+
+            if (groups.length === 0) {
+                list.innerHTML = '<div style="color: #555; font-style: italic; padding: 15px; text-align: center;">No unknown patterns detected yet.</div>';
+                return;
+            }
+
+            list.innerHTML = groups.slice(0, 50).map(g => `
+                <div class="unknown-item">
+                    <span class="unknown-key" title="${g.sample}">${g.group}</span>
+                    <span class="unknown-count">${g.count}x</span>
+                    <div class="unknown-actions">
+                        <button onclick="copyUnknown('${g.sample.replace(/'/g, "\\'")}')">📋</button>
+                        <button onclick="ignoreUnknown('${g.group}')">🚫</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copyUnknown(text) {
+            navigator.clipboard.writeText(text).then(() => addDashItem('📋', 'Copied to clipboard'));
+        }
+
+        function ignoreUnknown(key) {
+            ipcRenderer.send('log:ignore-unknown', key);
+        }
+
+        function refreshUnknowns() {
+            ipcRenderer.send('log:request-unknowns');
+        }
+
+        function clearUnknowns() {
+            ipcRenderer.send('log:clear-unknowns');
+        }
+
+        // ═══ EVENT LISTENERS ═══
+
+        // Game log events
         ipcRenderer.on('log:status', (e, data) => {
             const dot = document.getElementById('status-log-dot');
             const txt = document.getElementById('status-log-text');
             if (data.connected) {
-                dot.className = 'dot on';
-                txt.innerText = 'Active';
-                configLogPath.value = data.path || 'Auto-detected';
-                if (data.path) addFeedItem('📂', `Hooked into Game.log at <span class="feed-highlight">${data.path}</span>`);
+                dot.className = 'dot on'; txt.innerText = 'Active';
+                document.getElementById('config-log-path').value = data.path || 'Auto-detected';
+                if (data.path) addDashItem('📂', `Game.log: <span class="feed-highlight">${data.path}</span>`);
             } else {
-                dot.className = 'dot off';
-                txt.innerText = 'Searching';
+                dot.className = 'dot off'; txt.innerText = 'Searching';
             }
         });
 
         ipcRenderer.on('log:update', (e, data) => {
             switch (data.type) {
                 case 'LOCATION':
-                    addFeedItem('📍', `Location: <span class="feed-highlight">${data.value}</span>`);
+                    addDashItem('📍', `Location: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'LOCATION_HINT':
-                    addFeedItem('🗺️', `Area Loaded: <span class="feed-highlight">${data.value}</span>`);
+                    addDashItem('🗺️', `Area: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'QUANTUM':
-                    addFeedItem('🚀', `Quantum Drive: <span class="feed-highlight">${data.value === 'entered' ? 'ENGAGED' : 'DISENGAGED'}</span>`);
+                    addDashItem('🚀', `Quantum: <span class="feed-highlight">${data.value === 'entered' ? 'ENGAGED' : 'DISENGAGED'}</span>`);
+                    playSound('alert_zone');
                     break;
                 case 'ZONE':
-                    if (data.value === 'armistice_enter') addFeedItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span> — Combat Prohibited');
-                    else if (data.value === 'armistice_leave') addFeedItem('⚠️', 'Left <span class="feed-highlight">Armistice Zone</span> — Caution Advised');
-                    else if (data.value === 'monitored_enter') addFeedItem('📡', 'Entered <span class="feed-highlight">Monitored Space</span>');
+                    if (data.value === 'armistice_enter') { addDashItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span>'); }
+                    else if (data.value === 'armistice_leave') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
+                    else if (data.value === 'monitored_enter') { addDashItem('📡', 'Entered <span class="feed-highlight">Monitored Space</span>'); }
                     break;
                 case 'STATUS':
-                    if (data.value === 'suffocating') addFeedItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span> — Check helmet seal!');
-                    else if (data.value === 'depressurizing') addFeedItem('💨', '<span class="feed-highlight" style="color:#ff4444">DEPRESSURIZATION</span> detected');
-                    else if (data.value === 'death') addFeedItem('💀', '<span class="feed-highlight" style="color:#ff4444">DEATH DETECTED</span>');
+                    if (data.value === 'suffocating') { addDashItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span>'); playSound('alert_status'); }
+                    else if (data.value === 'depressurizing') { addDashItem('💨', '<span class="feed-highlight" style="color:#ff4444">DEPRESSURIZATION</span>'); playSound('alert_status'); }
+                    else if (data.value === 'death') { addDashItem('💀', '<span class="feed-highlight" style="color:#ff4444">DEATH DETECTED</span>'); playSound('alert_death'); }
                     break;
                 case 'LOGIN':
-                    addFeedItem('👋', 'Session Started: Login Detected');
+                    addDashItem('👋', `Session: <span class="feed-highlight">${data.handle || 'Login Detected'}</span>`);
+                    break;
+                case 'PLAYER_NAME':
+                    addDashItem('🎮', `Pilot: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'CONNECTION':
+                    addDashItem('🔗', `Connection: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'LOADING':
+                    addDashItem('⏳', 'Loading screen...');
+                    break;
+                case 'SYSTEM_GPU':
+                    addDashItem('🖥️', `GPU: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'SYSTEM_CPU':
+                    addDashItem('🖥️', `CPU: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'SYSTEM_RAM':
+                    addDashItem('🖥️', `RAM: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'GAME_VERSION':
+                    addDashItem('📦', `SC Branch: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'RESOLUTION':
+                    addDashItem('🖥️', `Display: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'JOYSTICK':
+                    addDashItem('🕹️', `Controller: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'EQUIPMENT':
+                    addDashItem('🎒', `Loadout: <span class="feed-highlight">${data.value.item}</span> → ${data.value.port}`);
                     break;
             }
         });
 
         ipcRenderer.on('log:error', (e, data) => {
-            addFeedItem('❌', `<span style="color:#ff4444">${data.message}</span>`);
+            addDashItem('❌', `<span style="color:#ff4444">${data.message}</span>`);
             document.getElementById('status-log-dot').className = 'dot off';
             document.getElementById('status-log-text').innerText = 'Error';
         });
 
+        // Unknown log events
+        ipcRenderer.on('log:unknown', (e, data) => {
+            renderUnknowns(data.groups || []);
+        });
+
+        // API connection
         ipcRenderer.on('api:status', (e, status) => {
             const dot = document.getElementById('status-api-dot');
             const txt = document.getElementById('status-api-text');
             if (status.connected) {
-                dot.className = 'dot on';
-                txt.innerText = 'Secure';
-                addFeedItem('✅', 'VerseCon API Connection Established');
+                dot.className = 'dot on'; txt.innerText = 'Secure';
+                addDashItem('✅', 'VerseCon API Connected');
+            } else {
+                dot.className = 'dot off'; txt.innerText = 'Disconnected';
             }
         });
 
+        // Party data
         ipcRenderer.on('api:party', (e, data) => {
-            addFeedItem('👥', `Party Data Sync: <span class="feed-highlight">${data.members.length} Members</span>`);
+            addDashItem('👥', `Party: <span class="feed-highlight">${data.members ? data.members.length : 0} Members</span>`);
         });
 
-        // New: Listen for successful auth from Main process (Deep Link)
+        // VerseCon platform events
+        ipcRenderer.on('vcon:beacon', (e, data) => {
+            addVconItem('🆘', `<span class="feed-highlight" style="color:#FF2E63">BEACON</span> — ${data.message || 'Distress signal!'}`);
+            playSound('beacon');
+        });
+
+        ipcRenderer.on('vcon:job', (e, data) => {
+            addVconItem('📜', `<span class="feed-highlight">CONTRACT</span> — ${data.message || 'New contract posted'}`);
+            playSound('contract');
+        });
+
+        ipcRenderer.on('vcon:party_event', (e, data) => {
+            const icon = data.type === 'LFG' ? '🎮' : '🎯';
+            const label = data.type === 'LFG' ? 'LFG' : 'OPERATION';
+            addVconItem(icon, `<span class="feed-highlight">${label}</span> — ${data.message || 'New event'}`);
+            playSound('notification');
+        });
+
+        ipcRenderer.on('vcon:trade', (e, data) => {
+            addVconItem('💰', `<span class="feed-highlight" style="color:#22C55E">TRADE MATCH</span> — ${data.message || 'Price alert'}`);
+            playSound('notification');
+        });
+
+        // Command events
+        ipcRenderer.on('command:receive', (e, data) => {
+            addCommandLog(data.preset || data.text, data.target || 'YOU', data.from || 'COMMAND');
+            playSound(data.preset === 'EMERGENCY' ? 'sos' : 'command');
+            // Also show in dashboard feed
+            addDashItem('📢', `<span class="feed-highlight" style="color:#ffa500">ORDER: ${data.preset || data.text}</span> from ${data.from || 'Command'}`);
+        });
+
+        ipcRenderer.on('command:sent', (e, data) => {
+            // Visual confirmation
+        });
+
+        // Auth deep link
         ipcRenderer.on('auth:success', (e, token) => {
-            console.log('Auth success via deep link!');
-            authGuest.style.display = 'none';
-            authUser.style.display = 'block';
-            addFeedItem('✅', 'Authentication Successful via Browser!');
+            document.getElementById('auth-ui-guest').style.display = 'none';
+            document.getElementById('auth-ui-user').style.display = 'block';
+            addDashItem('✅', 'Authenticated via Browser!');
+        });
+
+        // DND toggle
+        ipcRenderer.on('app:dnd', (e, data) => {
+            addDashItem('🔕', data.enabled ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF');
+        });
+
+        // Keyboard shortcut for sending commands
+        document.getElementById('cmd-custom-text').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendCustomCommand();
         });
     </script>
 </body>
