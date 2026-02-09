@@ -82,6 +82,12 @@ class LogWatcher extends EventEmitter {
         this.emit('status', { connected: false });
     }
 
+    setPath(newPath) {
+        console.log(`[LogWatcher] Switching to manual path: ${newPath}`);
+        this.stop();
+        this.start(newPath);
+    }
+
     processLine(line) {
         // 1. Location
         const locMatch = line.match(this.patterns.location);
