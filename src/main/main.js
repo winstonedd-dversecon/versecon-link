@@ -34,16 +34,15 @@ function createWindows() {
         frame: false,
         transparent: true,
         alwaysOnTop: true,
-        resizable: class { return false
-    }, // effectively false
+        resizable: false,
         skipTaskbar: true,
         webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false
-    }
+            nodeIntegration: true,
+            contextIsolation: false
+        }
     });
 
-overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay.html'));
+    overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay.html'));
 
     // Optional: Ignore mouse events? 
     // If user wants click-through: overlayWindow.setIgnoreMouseEvents(true);
