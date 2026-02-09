@@ -28,6 +28,15 @@
             user-select: none;
         }
 
+        /* Drag Region */
+        .title-bar-drag {
+            -webkit-app-region: drag;
+        }
+
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
+
         /* Glassmorphism Sidebar */
         .sidebar {
             width: 280px;
@@ -269,16 +278,16 @@
 </head>
 
 <body>
-    <div class="sidebar">
+    <div class="sidebar title-bar-drag">
         <div class="brand">VerseCon <span style="color:white; font-weight:300;">Link</span></div>
 
-        <div class="menu-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
+        <div class="menu-item active no-drag" id="nav-dashboard" onclick="switchTab('dashboard')">
             <span>📊</span> Dashboard
         </div>
-        <div class="menu-item" id="nav-config" onclick="switchTab('config')">
+        <div class="menu-item no-drag" id="nav-config" onclick="switchTab('config')">
             <span>⚙️</span> Configuration
         </div>
-        <div class="menu-item" onclick="toggleOverlay()">
+        <div class="menu-item no-drag" onclick="toggleOverlay()">
             <span>📺</span> Toggle Overlay
         </div>
 
@@ -389,11 +398,9 @@
 
         // Logic
         function openLogin() {
-            // In the future, this URL will trigger the Discord/RSI Oauth flow and redirect to versecon-link://
-            // For now, we simulate or point to a placeholder
-            // Replace with REAL AUTH URL when backend is ready: https://versecon.com/api/auth/link
-            shell.openExternal('https://versecon.com/link-login');
-            addFeedItem('🔑', 'Opening browser for authentication...');
+            // Point to main login for now until deep link page is live
+            shell.openExternal('https://versecon.com/login');
+            addFeedItem('🔑', 'Opening browser... Please login and copy your token.');
         }
 
         function loginManual() {
