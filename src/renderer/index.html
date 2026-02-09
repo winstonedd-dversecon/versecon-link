@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>VerseCon Link</title>
+    <style>
+        body {
+            background: rgba(0, 0, 0, 0.5);
+            /* Semi-transparent */
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            border-left: 4px solid #ffa500;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #ffa500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+
+        .label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .value {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        #location {
+            color: #00c8ff;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>VerseCon Link</h1>
+    <div class="status" id="connection-status">Searching for Game.log...</div>
+
+    <div class="data-row">
+        <span class="label">LOCATION</span>
+        <span class="value" id="location">UNKNOWN</span>
+    </div>
+    <div class="data-row">
+        <span class="label">STATE</span>
+        <span class="value" id="state">IDLE</span>
+    </div>
+
+    <div id="party-container" style="margin-top: 20px; border-top: 1px solid #555; padding-top: 10px;">
+        <span class="label">PARTY MEMBERS</span>
+        <div id="party-list" style="margin-top: 5px; font-size: 0.9rem;">
+            <div style="color: #666;">No active party</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; border-top: 1px solid #555; padding-top: 10px;">
+        <input type="text" id="api-token" placeholder="Paste Session Token"
+            style="background: rgba(0,0,0,0.5); border: 1px solid #555; color: #fff; padding: 5px; width: 200px;">
+        <button onclick="login()"
+            style="background: #ffa500; border: none; padding: 5px 10px; cursor: pointer;">CONNECT</button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        const elStatus = document.getElementById('connection-status');
+        const elLocation = document.getElementById('location');
+        const elState = document.getElementById('state');
+        const elPartyList = document.getElementById('party-list');
+
+        function login() {
+            const token = document.getElementById('api-token').value;
+            if (token) ipcRenderer.send('app:login', token);
+        }
+
+        ipcRenderer.on('log:status', (event, data) => {
+            if (data.connected) {
+                elStatus.innerText = 'CONNECTED';
+                elStatus.style.color = '#00ff00';
+            } else {
+                elStatus.innerText = 'DISCONNECTED';
+                elStatus.style.color = '#ff0000';
+            }
+        });
+
+        ipcRenderer.on('log:update', (event, data) => {
+            if (data.type === 'LOCATION') {
+                elLocation.innerText = data.value;
+            } else if (data.type === 'QUANTUM') {
+                elState.innerText = data.value;
+                elState.style.color = data.value === 'IN_TRAVEL' ? '#00c8ff' : '#fff';
+            }
+        });
+
+        ipcRenderer.on('api:party', (event, data) => {
+            console.log('Party Update:', data);
+            if (data.members && data.members.length > 0) {
+                elPartyList.innerHTML = data.members.map(m =>
+                    `<div style="display:flex; justify-content:space-between;">
+                        <span>${m.name}</span>
+                        <span style="color:${m.onDuty ? '#00ff00' : '#888'}">${m.status || 'OK'}</span>
+                     </div>`
+                ).join('');
+            } else {
+                elPartyList.innerHTML = '<div style="color: #666;">No active party</div>';
+            }
+        });
+    </script>
+</body>
+
+</html>

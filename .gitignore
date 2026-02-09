@@ -1,0 +1,10 @@
+node_modules
+dist
+release
+build
+.env
+User Data
+Game.log
+*.log
+.DS_Store
+thumbs.db
