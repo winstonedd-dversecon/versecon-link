@@ -1497,54 +1497,61 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = !isDisabled;
-                checkbox.onchange = (e) => togglePattern(key, e.target.checked);
-
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(key));
-
-                const status = document.createElement('span');
-                status.style.fontSize = '0.7rem';
-                if (isDisabled) {
-                    status.textContent = 'DISABLED';
-                    status.style.color = '#ff4444';
-                } else if (isOverridden) {
-                    status.textContent = 'MODIFIED';
-                    status.style.color = 'var(--accent)';
-                } else {
-                    status.textContent = 'DEFAULT';
-                    status.style.color = '#666';
-                }
-
-                header.appendChild(label);
-                header.appendChild(status);
-
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'modern-input';
-                input.style.cssText = 'font-family: monospace; font-size: 0.75rem; margin: 0; width: 100%; color: ' + (isOverridden ? 'var(--text)' : '#888');
-                input.value = currentValue;
-                input.onchange = (e) => updatePatternRegex(key, e.target.value);
-                if (isDisabled) {
-                    input.disabled = true;
-                    input.style.opacity = '0.5';
-                }
-
-                div.appendChild(header);
-                div.appendChild(input);
-                list.appendChild(div);
             });
+        }
+
+        function renderBuiltinList() {
+            if (!builtinList) return;
+            builtinList.innerHTML = Object.entries(builtinPatterns).map(([key, regexSource]) => {
+                const override = patternOverrides[key] || {};
+                const isDisabled = override.disabled;
+                const customRegex = override.regex || regexSource;
+                const customMsg = override.message || ''; // New: Message Override
+
+                return `
+                <div class="map-item" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="color: var(--accent); font-weight: bold;">${key}</span>
+                        <label style="font-size: 0.8rem; cursor: pointer;">
+                            <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
+                        </label>
+                    </div>
+                    <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 5px;"
+                        value="${escapeHtml(customRegex)}"
+                        onchange="updatePatternRegex('${key}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}
+                        placeholder="Regex Pattern">
+                    
+                    <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
+                        value="${escapeHtml(customMsg)}"
+                        onchange="updatePatternMessage('${key}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}
+                        placeholder="[Default Alert Text] - Type to override message...">
+                </div>
+            `;
+            }).join('');
         }
 
         function togglePattern(key, enabled) {
             if (!patternOverrides[key]) patternOverrides[key] = {};
             patternOverrides[key].disabled = !enabled;
-            renderBuiltinPatterns();
+            // If re-enabling and no other overrides, maybe clean up?
+            // For now just save state.
+            savePatternOverrides();
+            renderBuiltinList();
         }
 
-        function updatePatternRegex(key, regex) {
+        function updatePatternRegex(key, value) {
             if (!patternOverrides[key]) patternOverrides[key] = {};
-            patternOverrides[key].regex = regex;
-            renderBuiltinPatterns();
+            patternOverrides[key].regex = value;
+            // If value matches default, strictly we could remove it, but explicit override is safer for user intent
+            savePatternOverrides();
+        }
+
+        function updatePatternMessage(key, value) {
+            if (!patternOverrides[key]) patternOverrides[key] = {};
+            patternOverrides[key].message = value;
+            savePatternOverrides();
         }
 
         async function savePatternOverrides() {

@@ -502,6 +502,13 @@ APIClient.on('job', (data) => {
     showTrayNotification('📜 Contract Available', data.message || 'New contract posted');
 });
 
+// v2.2 - Generic Notification Tunnel (Fixes missing toasts)
+APIClient.on('notification', (data) => {
+    // data = { title, message, type: 'info|success|warning|error' }
+    broadcast('vcon:notification', data);
+    showTrayNotification(data.title || 'VerseCon Alert', data.message);
+});
+
 // ═══════════════════════════════════════════════════════
 // IPC HANDLERS - CONFIG
 // ═══════════════════════════════════════════════════════
