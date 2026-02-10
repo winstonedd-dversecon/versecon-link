@@ -315,33 +315,53 @@
         /* ═══ UNKNOWN PATTERNS ═══ */
         .unknown-item {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 4px;
             padding: 10px 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.8rem;
+            transition: background 0.2s;
         }
 
         .unknown-item:hover {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 165, 0, 0.05);
+        }
+
+        .unknown-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .unknown-key {
-            color: var(--cyan);
-            font-family: monospace;
-            font-size: 0.8rem;
             flex: 1;
-            margin-right: 10px;
+            color: var(--accent);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 0.8rem;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
+        .unknown-sample {
+            font-family: 'Courier New', monospace;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+
         .unknown-count {
-            color: var(--accent);
-            font-weight: 700;
+            color: var(--text-dim);
+            font-size: 0.7rem;
             min-width: 40px;
-            text-align: center;
+            text-align: right;
         }
 
         .unknown-actions {
@@ -350,18 +370,48 @@
         }
 
         .unknown-actions button {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #aaa;
-            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            padding: 2px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         .unknown-actions button:hover {
-            background: rgba(255, 165, 0, 0.2);
-            color: white;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .unknown-actions button.btn-ignore:hover {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        /* ═══ ALERT COOLDOWN SLIDERS ═══ */
+        .cooldown-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .cooldown-row label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            min-width: 120px;
+        }
+
+        .cooldown-row input[type=range] {
+            flex: 1;
+        }
+
+        .cooldown-row .cooldown-val {
+            font-size: 0.7rem;
+            color: var(--accent);
+            min-width: 30px;
+            text-align: right;
         }
 
         /* ═══ COMMAND LOG ═══ */
@@ -651,6 +701,45 @@
                 </div>
             </div>
 
+            <!-- Alert Cooldowns -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Alert Cooldowns</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Ignore repeated alerts within the
+                    cooldown period (e.g., brief zone changes).</div>
+                <div class="cooldown-row">
+                    <label>Suffocating</label>
+                    <input type="range" id="cd-suffocating" min="0" max="30" value="5"
+                        oninput="updateCooldown('suffocating', this.value)">
+                    <span class="cooldown-val" id="cd-suffocating-val">5s</span>
+                </div>
+                <div class="cooldown-row">
+                    <label>Depressurizing</label>
+                    <input type="range" id="cd-depressurizing" min="0" max="30" value="5"
+                        oninput="updateCooldown('depressurizing', this.value)">
+                    <span class="cooldown-val" id="cd-depressurizing-val">5s</span>
+                </div>
+            </div>
+
+            <!-- Ship Image -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Ship Image (Overlay)</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Set a custom ship image to display on
+                    the overlay when you board a ship.</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="ship-image-path" class="modern-input" style="margin:0; flex:1;" readonly
+                        placeholder="No image selected">
+                    <button class="cyber-btn" style="width:auto; margin:0;" onclick="selectShipImage()">Browse</button>
+                    <button class="cyber-btn small danger" onclick="clearShipImage()">Clear</button>
+                </div>
+                <div id="ship-preview" style="margin-top: 8px; display:none;">
+                    <img id="ship-preview-img"
+                        style="max-width: 200px; max-height: 80px; border-radius: 6px; border: 1px solid var(--border);"
+                        alt="Ship preview">
+                </div>
+            </div>
+
             <!-- Unknown Log Discovery -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
@@ -663,10 +752,9 @@
                     </div>
                 </div>
                 <div style="font-size: 0.75rem; color: #666; margin-bottom: 10px;">
-                    Log lines that don't match any tracked pattern appear here. Review them and click "Track" to create
-                    a new pattern.
+                    Unmatched log events appear here. <b>📋 Copy</b> the sample to analyze, or <b>🚫 Ignore</b> to hide.
                 </div>
-                <div class="feed-container" id="unknown-list" style="max-height: 300px; padding: 0;">
+                <div class="feed-container" id="unknown-list" style="max-height: 400px; padding: 0;">
                     <div style="color: #555; font-style: italic; padding: 15px; text-align: center;">No unknown patterns
                         detected yet. Play the game to discover new log events.</div>
                 </div>
@@ -815,8 +903,16 @@
             log.prepend(item);
         }
 
-        // ═══ UNKNOWN LOG DISCOVERY ═══
+        // ═══ UNKNOWN LOG DISCOVERY (Fixed: event delegation, full sample display) ═══
+        // Store groups data for event delegation
+        let unknownGroupsData = [];
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
         function renderUnknowns(groups) {
+            unknownGroupsData = groups;
             const list = document.getElementById('unknown-list');
             unknownCount = groups.length;
             document.getElementById('unknown-count-label').textContent = `(${unknownCount})`;
@@ -835,25 +931,37 @@
                 return;
             }
 
-            list.innerHTML = groups.slice(0, 50).map(g => `
+            list.innerHTML = groups.slice(0, 50).map((g, i) => `
                 <div class="unknown-item">
-                    <span class="unknown-key" title="${g.sample}">${g.group}</span>
-                    <span class="unknown-count">${g.count}x</span>
-                    <div class="unknown-actions">
-                        <button onclick="copyUnknown('${g.sample.replace(/'/g, "\\'")}')">📋</button>
-                        <button onclick="ignoreUnknown('${g.group}')">🚫</button>
+                    <div class="unknown-header">
+                        <span class="unknown-key">${escapeHtml(g.group)}</span>
+                        <span class="unknown-count">${g.count}x</span>
+                        <div class="unknown-actions">
+                            <button class="btn-copy" data-idx="${i}" title="Copy full log line">📋</button>
+                            <button class="btn-ignore" data-idx="${i}" title="Ignore this pattern">🚫</button>
+                        </div>
                     </div>
+                    <div class="unknown-sample" title="${escapeHtml(g.sample)}">${escapeHtml(g.sample)}</div>
                 </div>
             `).join('');
         }
 
-        function copyUnknown(text) {
-            navigator.clipboard.writeText(text).then(() => addDashItem('📋', 'Copied to clipboard'));
-        }
+        // Event delegation for unknown log buttons (fixes broken inline onclick)
+        document.getElementById('unknown-list').addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            const idx = parseInt(btn.dataset.idx);
+            if (isNaN(idx) || !unknownGroupsData[idx]) return;
 
-        function ignoreUnknown(key) {
-            ipcRenderer.send('log:ignore-unknown', key);
-        }
+            if (btn.classList.contains('btn-copy')) {
+                navigator.clipboard.writeText(unknownGroupsData[idx].sample)
+                    .then(() => addDashItem('📋', 'Copied to clipboard'))
+                    .catch(() => addDashItem('❌', 'Copy failed'));
+            } else if (btn.classList.contains('btn-ignore')) {
+                ipcRenderer.send('log:ignore-unknown', unknownGroupsData[idx].group);
+                addDashItem('🚫', `Ignored: ${unknownGroupsData[idx].group.substring(0, 40)}`);
+            }
+        });
 
         function refreshUnknowns() {
             ipcRenderer.send('log:request-unknowns');
@@ -861,6 +969,39 @@
 
         function clearUnknowns() {
             ipcRenderer.send('log:clear-unknowns');
+        }
+
+        // ═══ ALERT COOLDOWNS ═══
+        function updateCooldown(alertType, seconds) {
+            document.getElementById(`cd-${alertType}-val`).textContent = `${seconds}s`;
+            ipcRenderer.send('alert:set-cooldown', { alertType, cooldownMs: seconds * 1000 });
+        }
+
+        // Initialize cooldowns from defaults
+        updateCooldown('suffocating', 5);
+        updateCooldown('depressurizing', 5);
+
+        // ═══ SHIP IMAGE ═══
+        function selectShipImage() {
+            ipcRenderer.invoke('app:select-ship-image').then(path => {
+                if (path) {
+                    document.getElementById('ship-image-path').value = path;
+                    document.getElementById('ship-preview').style.display = 'block';
+                    document.getElementById('ship-preview-img').src = path;
+                    // Broadcast to overlay
+                    ipcRenderer.send('app:login', ''); // slight hack, we directly use broadcast
+                    // Actually, send via main → overlay
+                    localStorage.setItem('shipImagePath', path);
+                    addDashItem('🖼️', `Ship image set: ${path.split(/[\\/]/).pop()}`);
+                }
+            });
+        }
+
+        function clearShipImage() {
+            document.getElementById('ship-image-path').value = '';
+            document.getElementById('ship-preview').style.display = 'none';
+            localStorage.removeItem('shipImagePath');
+            addDashItem('🖼️', 'Ship image cleared');
         }
 
         // ═══ EVENT LISTENERS ═══
@@ -906,14 +1047,94 @@
                 case 'PLAYER_NAME':
                     addDashItem('🎮', `Pilot: <span class="feed-highlight">${data.value}</span>`);
                     break;
+                case 'CHARACTER_NAME':
+                    addDashItem('👤', `Character: <span class="feed-highlight">${data.value}</span>`);
+                    break;
                 case 'CONNECTION':
                     addDashItem('🔗', `Connection: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'LOADING':
                     addDashItem('⏳', 'Loading screen...');
                     break;
+                // ═══ NEW: Server & Environment ═══
+                case 'SERVER_ENV':
+                    addDashItem('🌍', `Server: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'SERVER_REGION':
+                    addDashItem('🌐', `Region: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'SESSION_ID':
+                    addDashItem('🔑', `Session: <span class="feed-highlight" style="font-size:0.7rem">${data.value.substring(0, 12)}...</span>`);
+                    break;
+                // ═══ NEW: Ship Events ═══
+                case 'SHIP_ENTER':
+                    addDashItem('🚀', `Boarded: <span class="feed-highlight" style="color:#00c8ff">${data.value}</span>`);
+                    playSound('notification');
+                    break;
+                case 'SHIP_EXIT':
+                    addDashItem('🚶', `Exited ship: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'SHIP_CURRENT':
+                    addDashItem('🚀', `Current ship: <span class="feed-highlight" style="color:#00c8ff">${data.value}</span>`);
+                    break;
+                case 'VEHICLE_SPAWN':
+                    addDashItem('🛸', `Vehicle spawned: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                // ═══ NEW: Game Join/Leave ═══
+                case 'GAME_JOIN':
+                    addDashItem('🎮', '<span class="feed-highlight" style="color:#00ff88">CONNECTED TO SERVER</span>');
+                    playSound('notification');
+                    break;
+                case 'GAME_LEAVE':
+                    addDashItem('🚪', '<span class="feed-highlight" style="color:#ffaa00">DISCONNECTED</span>');
+                    playSound('alert_status');
+                    break;
+                case 'GAME_RESTART':
+                    addDashItem('🔄', '<span class="feed-highlight">Game restarting...</span>');
+                    break;
+                // ═══ NEW: Missions ═══
+                case 'MISSION':
+                    const mIcons = { accepted: '📋', completed: '✅', failed: '❌' };
+                    const mColors = { accepted: '#00c8ff', completed: '#00ff88', failed: '#ff4444' };
+                    addDashItem(mIcons[data.value] || '📋', `Mission <span class="feed-highlight" style="color:${mColors[data.value] || '#ffa500'}">${data.value.toUpperCase()}</span>`);
+                    playSound('notification');
+                    break;
+                // ═══ NEW: Insurance ═══
+                case 'INSURANCE_CLAIM':
+                    addDashItem('🛡️', `<span class="feed-highlight" style="color:#a855f7">INSURANCE CLAIM</span>`);
+                    playSound('alert_status');
+                    break;
+                // ═══ NEW: Docking ═══
+                case 'DOCKING':
+                    addDashItem('🔗', `Docking <span class="feed-highlight">${data.value}</span>`);
+                    playSound('notification');
+                    break;
+                // ═══ NEW: Inventory ═══
+                case 'INVENTORY':
+                    addDashItem('📦', `Inventory <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                // ═══ NEW: Medical & Spawn ═══
+                case 'MEDICAL_BED':
+                    addDashItem('🏥', '<span class="feed-highlight" style="color:#00c8ff">Medical Bed</span>');
+                    break;
+                case 'SPAWN_SET':
+                case 'SPAWN_POINT':
+                    addDashItem('📍', `Spawn: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                // ═══ NEW: Party ═══
+                case 'PARTY_INVITE':
+                    addDashItem('📩', '<span class="feed-highlight" style="color:#ffa500">Party invite pending</span>');
+                    playSound('notification');
+                    break;
+                case 'ACCOUNT_LOGIN':
+                    addDashItem('✅', '<span class="feed-highlight" style="color:#00ff88">Account Login Success</span>');
+                    break;
+                // System info
                 case 'SYSTEM_GPU':
                     addDashItem('🖥️', `GPU: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'SYSTEM_VRAM':
+                    addDashItem('🖥️', `VRAM: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'SYSTEM_CPU':
                     addDashItem('🖥️', `CPU: <span class="feed-highlight">${data.value}</span>`);

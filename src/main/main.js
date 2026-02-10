@@ -42,11 +42,15 @@ function createWindows() {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
+    // Load saved overlay position or use default
+    const savedX = parseInt(process.env.OVERLAY_X) || (width - 340);
+    const savedY = parseInt(process.env.OVERLAY_Y) || 50;
+
     overlayWindow = new BrowserWindow({
         width: 320,
-        height: 600,
-        x: width - 340,
-        y: 50,
+        height: 700,
+        x: savedX,
+        y: savedY,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -222,6 +226,19 @@ ipcMain.handle('app:open-external', async (event, url) => {
     return true;
 });
 
+// Select ship image
+ipcMain.handle('app:select-ship-image', async () => {
+    const result = await dialog.showOpenDialog(dashboardWindow, {
+        properties: ['openFile'],
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }]
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+        return result.filePaths[0];
+    }
+    return null;
+});
+
 // Alert window control
 ipcMain.on('alert:show', (event, data) => {
     if (alertWindow && !alertWindow.isDestroyed()) {
@@ -234,6 +251,25 @@ ipcMain.on('alert:hide', () => {
     if (alertWindow && !alertWindow.isDestroyed()) {
         alertWindow.hide();
     }
+});
+
+// Overlay movement
+ipcMain.on('overlay:move', (event, { x, y }) => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.setPosition(Math.round(x), Math.round(y));
+    }
+});
+
+ipcMain.on('overlay:get-position', (event) => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        const pos = overlayWindow.getPosition();
+        event.reply('overlay:position', { x: pos[0], y: pos[1] });
+    }
+});
+
+// Alert cooldown settings
+ipcMain.on('alert:set-cooldown', (event, { alertType, cooldownMs }) => {
+    LogWatcher.setAlertCooldown(alertType, cooldownMs);
 });
 
 // Command module IPC
@@ -305,6 +341,44 @@ LogWatcher.on('gamestate', (data) => {
             alertWindow.show();
             alertWindow.webContents.send('alert:trigger', { type: 'ZONE', value: 'armistice_leave' });
         }
+    }
+
+    // Ship events - tray notification
+    if (data.type === 'SHIP_ENTER') {
+        showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
+    } else if (data.type === 'SHIP_EXIT') {
+        showTrayNotification('🚀 Ship Exited', `Left: ${data.value}`);
+    }
+
+    // Mission events
+    if (data.type === 'MISSION') {
+        const icons = { accepted: '📋', completed: '✅', failed: '❌' };
+        showTrayNotification(`${icons[data.value] || '📋'} Mission ${data.value}`, data.detail || 'Mission update');
+    }
+
+    // Insurance
+    if (data.type === 'INSURANCE_CLAIM') {
+        showTrayNotification('🛡️ Insurance Claim', data.value || 'Claim filed');
+    }
+
+    // Docking
+    if (data.type === 'DOCKING') {
+        showTrayNotification('🔗 Docking', data.value === 'granted' ? 'Docking granted!' : 'Docking requested');
+    }
+
+    // Game join/leave
+    if (data.type === 'GAME_JOIN') {
+        showTrayNotification('🎮 Game Joined', 'Connected to server');
+    } else if (data.type === 'GAME_LEAVE') {
+        showTrayNotification('🎮 Game Left', 'Disconnected from server');
+    }
+
+    // Medical
+    if (data.type === 'MEDICAL_BED') {
+        showTrayNotification('🏥 Medical Bed', 'Entered medical bed');
+    }
+    if (data.type === 'SPAWN_SET') {
+        showTrayNotification('📍 Spawn Point Set', data.value || 'New spawn location');
     }
 });
 

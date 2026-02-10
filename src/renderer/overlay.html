@@ -15,6 +15,7 @@
             --text-dim: #8892b0;
             --success: #00ff88;
             --danger: #ff4444;
+            --purple: #a855f7;
         }
 
         * {
@@ -31,13 +32,67 @@
             overflow-x: hidden;
         }
 
+        /* ═══ DRAG HANDLE ═══ */
+        .drag-handle {
+            background: linear-gradient(90deg, rgba(255, 165, 0, 0.3), transparent);
+            border: 1px solid rgba(255, 165, 0, 0.2);
+            border-radius: 4px 4px 0 0;
+            padding: 4px 10px;
+            cursor: grab;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            user-select: none;
+            -webkit-app-region: no-drag;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .drag-handle .grip {
+            font-size: 0.5rem;
+            letter-spacing: 2px;
+            color: var(--accent);
+            opacity: 0.6;
+        }
+
+        .drag-handle .label {
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+        }
+
+        .drag-handle .lock-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            font-size: 0.6rem;
+            padding: 1px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .drag-handle .lock-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .drag-handle .lock-btn.locked {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        /* ═══ HUD MODULES ═══ */
         .hud-module {
             background: var(--bg-glass);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-left: 3px solid var(--accent);
             padding: 10px 14px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             transform: skewX(-2deg);
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
             transition: all 0.3s ease;
@@ -58,370 +113,547 @@
         }
 
         /* Module accent colors */
-        .mod-location {
+        .hud-module.ship {
             border-left-color: var(--cyan);
         }
 
-        .mod-location .hud-value {
-            color: var(--cyan);
-        }
-
-        .mod-quantum {
-            border-left-color: var(--accent);
-        }
-
-        .mod-quantum .hud-value {
-            color: var(--accent);
-        }
-
-        .mod-zone {
+        .hud-module.party {
             border-left-color: var(--success);
         }
 
-        .mod-zone .hud-value {
-            color: var(--success);
-        }
-
-        .mod-party {
-            border-left-color: #a855f7;
-        }
-
-        .mod-party .hud-value {
-            color: #a855f7;
-        }
-
-        .mod-command {
-            border-left-color: var(--accent);
-            background: rgba(255, 165, 0, 0.1);
-            animation: commandGlow 1s ease-in-out 3;
-        }
-
-        .mod-command .hud-value {
-            color: var(--accent);
-            font-size: 1.1rem;
-        }
-
-        .mod-status {
+        .hud-module.cmd {
             border-left-color: var(--danger);
-            background: rgba(255, 0, 0, 0.1);
         }
 
-        .mod-status .hud-value {
-            color: var(--danger);
+        .hud-module.spawn {
+            border-left-color: var(--purple);
         }
 
-        .mod-connection {
+        .hud-module.server {
             border-left-color: #888;
         }
 
-        /* Quantum glow effect */
-        .quantum-engaged {
-            border-left-color: var(--accent);
-            box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);
+        /* Ship image */
+        .ship-image {
+            width: 100%;
+            max-height: 80px;
+            object-fit: contain;
+            border-radius: 4px;
+            margin-top: 5px;
+            opacity: 0.85;
         }
 
-        .quantum-engaged .hud-value {
-            text-shadow: 0 0 10px rgba(255, 165, 0, 0.6);
+        /* ═══ STATUS DOTS ═══ */
+        .status-row {
+            display: flex;
+            gap: 8px;
+            padding: 4px 10px;
+            margin-bottom: 6px;
         }
 
-        /* Zone transitions */
-        .zone-armistice .hud-value {
-            color: var(--success);
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff4444;
+            display: inline-block;
+            margin-right: 4px;
+            vertical-align: middle;
         }
 
-        .zone-caution .hud-value {
-            color: #ffaa00;
+        .status-dot.online {
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
         }
 
-        .zone-monitored .hud-value {
-            color: var(--cyan);
+        .status-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .zone-kia .hud-value {
+        /* ═══ COMMAND DISPLAY ═══ */
+        .active-command {
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.4);
+            border-left: 3px solid var(--danger);
+            padding: 10px;
+            margin-bottom: 6px;
+            animation: cmdPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes cmdPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 5px rgba(255, 68, 68, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+            }
+        }
+
+        .cmd-text {
+            font-size: 1.1rem;
+            font-weight: 700;
             color: var(--danger);
+            text-transform: uppercase;
         }
 
-        /* Party members */
+        .cmd-from {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+        }
+
+        .ack-btn {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 5px;
+            font-family: inherit;
+        }
+
+        .ack-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* ═══ PARTY MEMBERS ═══ */
+        .party-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
         .party-member {
-            font-size: 0.8rem;
-            padding: 2px 0;
+            font-size: 0.75rem;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 5px;
         }
 
-        .party-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--success);
-        }
-
-        /* ACK button (not click-through) */
-        .ack-btn {
-            background: linear-gradient(45deg, var(--accent), #ff8800);
-            color: #000;
-            border: none;
-            padding: 6px 12px;
-            font-weight: 700;
-            font-family: inherit;
-            text-transform: uppercase;
-            cursor: pointer;
-            margin-top: 5px;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-        }
-
-        .ack-btn:hover {
-            filter: brightness(1.2);
-        }
-
-        /* Command log in overlay */
-        .cmd-feed {
-            max-height: 100px;
-            overflow-y: auto;
-            margin-top: 5px;
-        }
-
-        .cmd-feed-item {
-            font-size: 0.75rem;
-            padding: 3px 0;
+        /* ═══ FEED ENTRIES ═══ */
+        .feed-entry {
+            font-size: 0.65rem;
             color: var(--text-dim);
+            padding: 2px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
 
-        .cmd-feed-item .cmd-order {
-            color: var(--accent);
-            font-weight: 600;
+        .feed-entry .icon {
+            margin-right: 4px;
         }
 
-        @keyframes commandGlow {
-
-            0%,
-            100% {
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        /* ═══ ANIMATIONS ═══ */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
             }
 
-            50% {
-                box-shadow: 0 0 20px rgba(255, 165, 0, 0.4);
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
 
-        ::-webkit-scrollbar {
-            width: 3px;
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
         }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
+        /* Hidden by default */
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 
 <body>
-    <!-- Location -->
-    <div class="hud-module mod-location" id="mod-location">
-        <div class="hud-label">Current Location</div>
-        <div class="hud-value" id="hud-location">LOADING...</div>
+    <!-- Drag Handle -->
+    <div class="drag-handle" id="dragHandle">
+        <span class="grip">⣿⣿⣿</span>
+        <span class="label">VerseCon HUD</span>
+        <button class="lock-btn" id="lockBtn" title="Lock/Unlock position">🔓</button>
     </div>
 
-    <!-- Quantum Drive -->
-    <div class="hud-module mod-quantum" id="mod-quantum">
-        <div class="hud-label">Quantum Drive</div>
-        <div class="hud-value" id="hud-quantum">IDLE</div>
+    <!-- Connection Status -->
+    <div class="status-row">
+        <span><span class="status-dot" id="status-log"></span><span class="status-label">Log</span></span>
+        <span><span class="status-dot" id="status-api"></span><span class="status-label">API</span></span>
+        <span><span class="status-dot" id="status-game"></span><span class="status-label">Game</span></span>
     </div>
 
-    <!-- Zone Status -->
-    <div class="hud-module mod-zone" id="mod-zone">
-        <div class="hud-label">Zone Status</div>
-        <div class="hud-value" id="hud-zone">—</div>
+    <!-- Server Info -->
+    <div class="hud-module server" id="mod-server">
+        <div class="hud-label">Server</div>
+        <div class="hud-value" id="val-server">—</div>
     </div>
 
-    <!-- Player Status -->
-    <div class="hud-module mod-status" id="mod-status" style="display:none;">
-        <div class="hud-label">Alert</div>
-        <div class="hud-value" id="hud-status">—</div>
+    <!-- Current Ship -->
+    <div class="hud-module ship" id="mod-ship">
+        <div class="hud-label">Current Ship</div>
+        <div class="hud-value" id="val-ship">On Foot</div>
+        <img class="ship-image hidden" id="ship-img" alt="Ship">
     </div>
 
-    <!-- Connection -->
-    <div class="hud-module mod-connection" id="mod-connection">
-        <div class="hud-label">Connection</div>
-        <div class="hud-value" id="hud-connection">SEARCHING...</div>
-    </div>
-
-    <!-- Party / Squadron -->
-    <div class="hud-module mod-party" id="mod-party">
-        <div class="hud-label">Squadron <span id="party-count" style="color:#aaa;">(0)</span></div>
-        <div id="party-list">
-            <div class="hud-value" style="font-size:0.8rem; color: var(--text-dim);">No Signal</div>
+    <!-- Party / Crew -->
+    <div class="hud-module party" id="mod-party">
+        <div class="hud-label">Party <span id="party-count" style="color: var(--success);">(0)</span></div>
+        <div class="party-list" id="party-list">
+            <div style="color: var(--text-dim); font-size: 0.7rem;">Solo</div>
         </div>
     </div>
 
+    <!-- Spawn Point -->
+    <div class="hud-module spawn" id="mod-spawn">
+        <div class="hud-label">Spawn Point</div>
+        <div class="hud-value" id="val-spawn">Unknown</div>
+    </div>
+
     <!-- Active Command -->
-    <div class="hud-module mod-command" id="mod-command" style="display:none;">
-        <div class="hud-label">Active Order</div>
-        <div class="hud-value" id="hud-command-text">—</div>
-        <div style="font-size: 0.7rem; color: var(--text-dim);" id="hud-command-from">—</div>
-        <button class="ack-btn" id="ack-btn" onclick="ackCommand()">✓ ACK</button>
-        <div class="cmd-feed" id="cmd-feed"></div>
+    <div class="active-command hidden" id="mod-command">
+        <div class="hud-label">⚡ Active Order</div>
+        <div class="cmd-text" id="cmd-text">—</div>
+        <div class="cmd-from" id="cmd-from"></div>
+        <button class="ack-btn" id="ack-btn">ACK ✓</button>
+    </div>
+
+    <!-- Player Status (Critical) -->
+    <div class="hud-module hidden" id="mod-alert" style="border-left-color: var(--danger);">
+        <div class="hud-label">⚠️ Alert</div>
+        <div class="hud-value" id="val-alert" style="color: var(--danger);">—</div>
+    </div>
+
+    <!-- Location -->
+    <div class="hud-module">
+        <div class="hud-label">Location</div>
+        <div class="hud-value" id="val-location">—</div>
+    </div>
+
+    <!-- Recent Feed (mini) -->
+    <div class="hud-module" style="padding: 6px 10px;">
+        <div class="hud-label">Event Feed</div>
+        <div id="feed-list" style="max-height: 100px; overflow-y: auto;"></div>
     </div>
 
     <script>
         const { ipcRenderer } = require('electron');
 
-        let lastCommandId = null;
+        // State
+        let currentShip = null;
+        let shipImagePath = null;
+        let partyMembers = [];
+        let activeCommand = null;
+        let isDragging = false;
+        let isLocked = false;
+        let dragOffset = { x: 0, y: 0 };
 
-        // ═══ GAME LOG UPDATES ═══
+        // ═══ DRAG FUNCTIONALITY ═══
+        const dragHandle = document.getElementById('dragHandle');
+        const lockBtn = document.getElementById('lockBtn');
+
+        dragHandle.addEventListener('mousedown', (e) => {
+            if (isLocked) return;
+            isDragging = true;
+            dragOffset.x = e.screenX;
+            dragOffset.y = e.screenY;
+
+            // Get current window position
+            ipcRenderer.send('overlay:get-position');
+        });
+
+        let windowPos = { x: 0, y: 0 };
+        ipcRenderer.on('overlay:position', (e, pos) => {
+            windowPos = pos;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.screenX - dragOffset.x;
+            const dy = e.screenY - dragOffset.y;
+            ipcRenderer.send('overlay:move', {
+                x: windowPos.x + dx,
+                y: windowPos.y + dy
+            });
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        lockBtn.addEventListener('click', () => {
+            isLocked = !isLocked;
+            lockBtn.textContent = isLocked ? '🔒' : '🔓';
+            lockBtn.classList.toggle('locked', isLocked);
+        });
+
+        // ═══ FEED HELPER ═══
+        function addFeedEntry(icon, text) {
+            const list = document.getElementById('feed-list');
+            const entry = document.createElement('div');
+            entry.className = 'feed-entry slide-in';
+            entry.innerHTML = `<span class="icon">${icon}</span> ${text}`;
+            list.insertBefore(entry, list.firstChild);
+            // Keep max 15 entries
+            while (list.children.length > 15) {
+                list.removeChild(list.lastChild);
+            }
+        }
+
+        // ═══ ACK BUTTON ═══
+        document.getElementById('ack-btn').addEventListener('click', () => {
+            if (activeCommand) {
+                ipcRenderer.send('command:ack', { id: activeCommand.id });
+                document.getElementById('mod-command').classList.add('hidden');
+                activeCommand = null;
+                addFeedEntry('✅', 'Order acknowledged');
+            }
+        });
+
+        // ═══ EVENT HANDLERS ═══
+        ipcRenderer.on('log:status', (e, data) => {
+            document.getElementById('status-log').classList.toggle('online', data.connected);
+        });
+
+        ipcRenderer.on('api:status', (e, data) => {
+            document.getElementById('status-api').classList.toggle('online', data.connected);
+        });
+
+        // Main game event handler
         ipcRenderer.on('log:update', (e, data) => {
             switch (data.type) {
+                // Server
+                case 'SERVER_ENV':
+                    document.getElementById('val-server').textContent = data.value;
+                    document.getElementById('status-game').classList.add('online');
+                    break;
+
+                case 'SESSION_ID':
+                    // Append session to server display
+                    const serverEl = document.getElementById('val-server');
+                    if (serverEl.textContent !== '—') {
+                        serverEl.textContent = serverEl.textContent.split(' ')[0] + ' 🔗';
+                    }
+                    break;
+
+                // Ship
+                case 'SHIP_ENTER':
+                    currentShip = data.value;
+                    document.getElementById('val-ship').textContent = data.value;
+                    const shipImg = document.getElementById('ship-img');
+                    if (shipImagePath) {
+                        shipImg.src = shipImagePath;
+                        shipImg.classList.remove('hidden');
+                    }
+                    addFeedEntry('🚀', `Boarded: ${data.value}`);
+                    break;
+
+                case 'SHIP_EXIT':
+                    currentShip = null;
+                    document.getElementById('val-ship').textContent = 'On Foot';
+                    document.getElementById('ship-img').classList.add('hidden');
+                    addFeedEntry('🚶', `Exited: ${data.value}`);
+                    break;
+
+                case 'SHIP_CURRENT':
+                    currentShip = data.value;
+                    document.getElementById('val-ship').textContent = data.value;
+                    break;
+
+                case 'VEHICLE_SPAWN':
+                    addFeedEntry('🚀', `Vehicle spawned: ${data.value}`);
+                    break;
+
+                // Location
                 case 'LOCATION':
                 case 'LOCATION_HINT':
-                    document.getElementById('hud-location').textContent = data.value;
+                    document.getElementById('val-location').textContent = data.value;
                     break;
 
-                case 'QUANTUM':
-                    const qMod = document.getElementById('mod-quantum');
-                    const qVal = document.getElementById('hud-quantum');
-                    if (data.value === 'entered') {
-                        qVal.textContent = 'ENGAGED';
-                        qMod.classList.add('quantum-engaged');
-                    } else {
-                        qVal.textContent = 'IDLE';
-                        qMod.classList.remove('quantum-engaged');
-                    }
+                // Spawn
+                case 'SPAWN_SET':
+                case 'SPAWN_POINT':
+                    document.getElementById('val-spawn').textContent = data.value;
+                    addFeedEntry('📍', `Spawn: ${data.value}`);
                     break;
 
-                case 'ZONE':
-                    const zMod = document.getElementById('mod-zone');
-                    const zVal = document.getElementById('hud-zone');
-                    zMod.className = 'hud-module mod-zone';
-                    if (data.value === 'armistice_enter') {
-                        zVal.textContent = '🛡️ ARMISTICE — SAFE';
-                        zMod.classList.add('zone-armistice');
-                    } else if (data.value === 'armistice_leave') {
-                        zVal.textContent = '⚠️ CAUTION — WEAPONS HOT';
-                        zMod.classList.add('zone-caution');
-                    } else if (data.value === 'monitored_enter') {
-                        zVal.textContent = '📡 MONITORED SPACE';
-                        zMod.classList.add('zone-monitored');
-                    }
-                    break;
-
+                // Status alerts
                 case 'STATUS':
-                    const sMod = document.getElementById('mod-status');
-                    const sVal = document.getElementById('hud-status');
-                    sMod.style.display = 'block';
+                    const alertMod = document.getElementById('mod-alert');
+                    const alertVal = document.getElementById('val-alert');
+                    alertMod.classList.remove('hidden');
+
                     if (data.value === 'death') {
-                        sVal.textContent = '💀 KILLED IN ACTION';
-                        document.getElementById('mod-zone').className = 'hud-module mod-zone zone-kia';
-                        document.getElementById('hud-zone').textContent = '☠️ KIA';
+                        alertVal.textContent = '☠️ DEATH';
+                        alertVal.style.color = '#ff4444';
+                        addFeedEntry('☠️', 'Death detected');
                     } else if (data.value === 'suffocating') {
-                        sVal.textContent = '😵 SUFFOCATING';
+                        alertVal.textContent = '🌡️ SUFFOCATING';
+                        alertVal.style.color = '#00c8ff';
+                        addFeedEntry('🌡️', 'Suffocating!');
                     } else if (data.value === 'depressurizing') {
-                        sVal.textContent = '💨 DEPRESSURIZATION';
+                        alertVal.textContent = '💨 DEPRESSURIZING';
+                        alertVal.style.color = '#ffaa00';
+                        addFeedEntry('💨', 'Depressurizing');
                     }
+
                     // Auto-hide after 10s
-                    setTimeout(() => { sMod.style.display = 'none'; }, 10000);
+                    setTimeout(() => {
+                        alertMod.classList.add('hidden');
+                    }, 10000);
                     break;
 
+                // Zone
+                case 'ZONE':
+                    if (data.value === 'armistice_enter') {
+                        addFeedEntry('🛡️', 'Entered Safe Zone');
+                    } else if (data.value === 'armistice_leave') {
+                        addFeedEntry('⚠️', 'Leaving Armistice Zone!');
+                    } else if (data.value === 'monitored_enter') {
+                        addFeedEntry('📡', 'Entered Monitored Space');
+                    }
+                    break;
+
+                // Quantum
+                case 'QUANTUM':
+                    addFeedEntry(data.value === 'entered' ? '🌌' : '🛑', `Quantum ${data.value}`);
+                    break;
+
+                // Connection
                 case 'CONNECTION':
-                    document.getElementById('hud-connection').textContent = data.value;
+                    document.getElementById('status-game').classList.toggle('online',
+                        data.value === 'CONNECTED' || data.value === 'IN_GAME');
+                    if (data.value === 'IN_GAME') addFeedEntry('🎮', 'Connected to game');
                     break;
 
+                case 'GAME_JOIN':
+                    document.getElementById('status-game').classList.add('online');
+                    addFeedEntry('🎮', 'Joined game');
+                    break;
+
+                case 'GAME_LEAVE':
+                    document.getElementById('status-game').classList.remove('online');
+                    addFeedEntry('🚪', 'Left game');
+                    break;
+
+                case 'GAME_RESTART':
+                    document.getElementById('status-game').classList.remove('online');
+                    addFeedEntry('🔄', 'Game restarting...');
+                    break;
+
+                // Login
                 case 'LOGIN':
-                    document.getElementById('hud-connection').textContent = `ONLINE — ${data.handle || 'Connected'}`;
+                    addFeedEntry('🟢', `Online: ${data.handle || 'Pilot'}`);
                     break;
 
+                case 'PLAYER_NAME':
+                    addFeedEntry('👤', `Handle: ${data.value}`);
+                    break;
+
+                // Missions
+                case 'MISSION':
+                    const mIcons = { accepted: '📋', completed: '✅', failed: '❌' };
+                    addFeedEntry(mIcons[data.value] || '📋', `Mission ${data.value}`);
+                    break;
+
+                // Insurance
+                case 'INSURANCE_CLAIM':
+                    addFeedEntry('🛡️', 'Insurance claim filed');
+                    break;
+
+                // Docking
+                case 'DOCKING':
+                    addFeedEntry('🔗', `Docking ${data.value}`);
+                    break;
+
+                // Inventory
+                case 'INVENTORY':
+                    addFeedEntry(data.value === 'opened' ? '📦' : '📦', `Inventory ${data.value}`);
+                    break;
+
+                // Medical
+                case 'MEDICAL_BED':
+                    addFeedEntry('🏥', 'Medical bed entered');
+                    break;
+
+                // Party
+                case 'PARTY_INVITE':
+                    addFeedEntry('📩', 'Party invite pending');
+                    break;
+
+                // Equipment
                 case 'EQUIPMENT':
-                    // don't clutter overlay with equipment
+                    addFeedEntry('🎒', `${data.value.item.split('_')[0]} → ${data.value.port}`);
                     break;
             }
         });
 
-        // ═══ PARTY ═══
-        ipcRenderer.on('api:party', (e, data) => {
-            const list = document.getElementById('party-list');
-            const count = document.getElementById('party-count');
-
-            if (data.members && data.members.length > 0) {
-                count.textContent = `(${data.members.length})`;
-                list.innerHTML = data.members.map(m => `
-                    <div class="party-member">
-                        <span class="party-dot" style="background: ${m.online ? 'var(--success)' : '#555'}"></span>
-                        ${m.name || m.handle || 'Unknown'}
-                    </div>
-                `).join('');
-            } else {
-                count.textContent = '(0)';
-                list.innerHTML = '<div class="hud-value" style="font-size:0.8rem; color: var(--text-dim);">No Signal</div>';
-            }
-        });
-
-        // ═══ CONNECTION STATUS ═══
-        ipcRenderer.on('log:status', (e, data) => {
-            if (data.connected) {
-                document.getElementById('hud-connection').textContent = 'GAME LOG ACTIVE';
-                document.getElementById('mod-connection').style.borderLeftColor = 'var(--success)';
-            } else {
-                document.getElementById('hud-connection').textContent = 'SEARCHING...';
-                document.getElementById('mod-connection').style.borderLeftColor = '#888';
-            }
-        });
-
-        ipcRenderer.on('api:status', (e, status) => {
-            const conn = document.getElementById('hud-connection');
-            if (status.connected) {
-                conn.textContent = conn.textContent.includes('LOG') ? conn.textContent + ' | API ✓' : 'API CONNECTED';
-            }
-        });
-
-        // ═══ COMMAND MODULE ═══
+        // Command from server or local
         ipcRenderer.on('command:receive', (e, data) => {
+            activeCommand = data;
             const cmdMod = document.getElementById('mod-command');
-            const cmdText = document.getElementById('hud-command-text');
-            const cmdFrom = document.getElementById('hud-command-from');
-            const ackBtn = document.getElementById('ack-btn');
-
-            cmdMod.style.display = 'block';
-            cmdText.textContent = data.preset || data.text || 'ATTENTION';
-            cmdFrom.textContent = `FROM: ${(data.from || 'COMMAND').toUpperCase()} → ${(data.target || 'ALL').toUpperCase()}`;
-            lastCommandId = data.id || Date.now();
-            ackBtn.style.display = 'inline-block';
-
-            // Reset glow animation
-            cmdMod.style.animation = 'none';
-            cmdMod.offsetHeight;
-            cmdMod.style.animation = 'commandGlow 1s ease-in-out 3';
-
-            // Add to command feed
-            addCmdFeed(data);
+            cmdMod.classList.remove('hidden');
+            document.getElementById('cmd-text').textContent = data.text || data.preset || 'ORDER';
+            document.getElementById('cmd-from').textContent = data.from ? `from ${data.from}` : '';
+            addFeedEntry('📢', data.text || data.preset);
         });
 
-        function addCmdFeed(data) {
-            const feed = document.getElementById('cmd-feed');
-            const time = new Date().toLocaleTimeString([], { hour12: false });
-            const item = document.createElement('div');
-            item.className = 'cmd-feed-item';
-            item.innerHTML = `<span style="color:#888">${time}</span> <span class="cmd-order">${data.preset || data.text}</span>`;
-            feed.prepend(item);
-            if (feed.children.length > 10) feed.lastElementChild.remove();
-        }
+        ipcRenderer.on('command:sent', (e, data) => {
+            addFeedEntry('📢', `Sent: ${data.text || data.preset}`);
+        });
 
-        function ackCommand() {
-            if (lastCommandId) {
-                ipcRenderer.send('command:ack', { commandId: lastCommandId });
-                document.getElementById('ack-btn').style.display = 'none';
-                document.getElementById('hud-command-from').textContent += ' — ✓ ACKNOWLEDGED';
+        // VerseCon events
+        ipcRenderer.on('vcon:beacon', (e, data) => {
+            addFeedEntry('🆘', data.message || 'Beacon alert');
+        });
+
+        ipcRenderer.on('vcon:job', (e, data) => {
+            addFeedEntry('📜', data.message || 'Contract posted');
+        });
+
+        // Party updates
+        ipcRenderer.on('api:party', (e, data) => {
+            if (data.members) {
+                partyMembers = data.members;
+                const list = document.getElementById('party-list');
+                const count = document.getElementById('party-count');
+                count.textContent = `(${partyMembers.length})`;
+
+                if (partyMembers.length === 0) {
+                    list.innerHTML = '<div style="color: var(--text-dim); font-size: 0.7rem;">Solo</div>';
+                } else {
+                    list.innerHTML = partyMembers.map(m => `
+                        <div class="party-member">
+                            <span class="status-dot ${m.online ? 'online' : ''}"></span>
+                            ${m.name || m.handle || 'Unknown'}
+                        </div>
+                    `).join('');
+                }
             }
-        }
+        });
 
-        // ═══ DND MODE ═══
+        // Ship image setting from dashboard
+        ipcRenderer.on('settings:ship-image', (e, path) => {
+            shipImagePath = path;
+            const img = document.getElementById('ship-img');
+            if (currentShip && path) {
+                img.src = path;
+                img.classList.remove('hidden');
+            }
+        });
+
+        // DND mode
         ipcRenderer.on('app:dnd', (e, data) => {
-            // Could dim overlay or show DND indicator
+            // Could dim the overlay, etc.
         });
     </script>
 </body>

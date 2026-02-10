@@ -13,26 +13,71 @@ class LogWatcher extends EventEmitter {
         this.lastLocationHint = null;
         this.seenLocations = new Set();
 
+        // Current state tracking
+        this.currentShip = null;
+        this.currentServer = null;
+        this.spawnPoint = null;
+        this.partyMembers = new Set();
+
         // Unknown log discovery
         this.unknownGroups = new Map(); // key -> { sample, count, firstSeen, lastSeen }
         this.unknownIgnored = new Set(); // user-ignored patterns
         this.captureUnknowns = true;
 
-        // Noise filter — skip extremely common/uninteresting CryEngine lines
+        // Alert cooldowns: { alertType: { cooldownMs, lastFired } }
+        this.alertCooldowns = {};
+
+        // Noise filter — skip extremely common/uninteresting CryEngine INTERNAL lines
+        // IMPORTANT: Do NOT filter [Notice], [Error], [Trace] — those contain game events!
         this.noisePatterns = [
             /^\s*$/,
-            /^\[/,  // timestamp-only lines
             /CryAnimation/i,
             /CEntityComponentPhysics/i,
             /SEntityPhysics/i,
             /CParticleEffect/i,
             /CFlowGraph/i,
             /CryAction/i,
-            /streaming/i,
-            /^<\d{4}/,  // timestamp prefix lines
             /pak_cache/i,
+            /^\s*\d+\.\d+\s*$/,  // bare numbers only
+            /PSOCacheGen/i,
+            /VK_LAYER_/,
+            /\[VK_INFO\]/,
+            /\[VK\] Available Vulkan/,
+            /grpc\.\w+=/,          // gRPC config lines
+            /RegisterUniverseHierarchy/,
+            /ContextEstablisher/,  // Loading state machine spam
+            /CContextEstablisher/,
+            /CVARS.*Not Whitelisted/,
+            /Subsumption.*ErrorReporter/,
+            /SubsumptionManager/,
             /CIG\s*$/,
-            /^\s*\d+\.\d+/,  // bare numbers
+            /^\s*-\s+Adapter index/,
+            /^\s*-\s+Dedicated video memory/,
+            /^\s*-\s+Feature level/,
+            /^\s*-\s+Displays connected/,
+            /^\s*-\s+Suitable rendering/,
+            /grpc\.primary_user_agent/,
+            /grpc\.http2/,
+            /grpc\.max_/,
+            /grpc\.keepalive/,
+            /grpc\.default_compression/,
+            /===== PSOs Skipped/,
+            /SysSpec mismatch/,
+            /Shader not found/,
+            /Technique not found/,
+            /Unsupported PSO/,
+            /RegisterOCHierarchyData/,
+            /WaitForOCHierarchyData/,
+            /CacheSolarSystemStreaming/,
+            /BindSolarSystem/,
+            /BindAlwaysStreamedIn/,
+            /BindAllStreamable/,
+            /GrantPlayerOwnedTokens/,
+            /ModelWaitForViews/,
+            /SeedingProcessor/,
+            /Entity Bury Request/,
+            /DestroyEntity.*Aggregate/,
+            /Failed to attach to itemport/,
         ];
 
         // Regex Patterns — sourced from real SC 4.6 Game.log analysis
@@ -44,19 +89,29 @@ class LogWatcher extends EventEmitter {
             player_geid: /playerGEID=(\d+)/,
             account_id: /accountId[=:](\d+)/,
             username: /username (\w+) signedIn (\d)/,
-            character_name: /name (\w+) - state STATE_CURRENT/,
+            character_name: /AccountLoginCharacterStatus_Character.*name (\w+)\s*-\s*state STATE_CURRENT/,
+            account_login_success: /\{SET_ACCOUNT_STATE\} state \[kAccountLoginSuccess\]/,
 
             // === SYSTEM INFO ===
             gpu_info: /GPU: Vendor = (\w+)/,
+            gpu_detail: /Logging video adapters[\s\S]*?- (\w[\w\s]+?) \(vendor/,
+            gpu_vram: /GPU: DedicatedVidMemMB = (\d+)/,
             cpu_info: /Host CPU: (.+)/,
             ram_info: /(\d+)MB physical memory installed/,
             game_version: /Branch: (.+)/,
             build_id: /Changelist: (\d+)/,
             resolution: /Current display mode is (\d+x\d+)/,
 
+            // === SERVER & ENVIRONMENT ===
+            server_env: /\[Trace\] Environment:\s+(\w+)/,
+            server_session: /@session:\s+'([^']+)'/,
+            server_region: /grpc-client-endpoint-override='https:\/\/(\w+)-/,
+
             // === CONNECTION & NETWORK ===
             connection_state: /\{SET_CONNECTION_STATE\} state \[(\w+)\]/,
             server_connect: /CSessionManager::OnClientConnected/,
+            server_disconnect: /CSessionManager::RequestFrontEnd.*Started/,
+            game_disconnect: /\[disconnectlight\]/,
             network_hostname: /network hostname: (.+)/,
             network_ip: /ip:(\d+\.\d+\.\d+\.\d+)/,
 
@@ -65,6 +120,7 @@ class LogWatcher extends EventEmitter {
             location_obj: /objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//,
             loading_level: /Loading level (\w+)/,
             loading_screen: /CGlobalGameUI::OpenLoadingScreen/,
+            loading_game_mode: /Loading GameModeRecord='(\w+)'/,
 
             // === QUANTUM DRIVE ===
             quantum_enter: /Quantum Travel: Entering/i,
@@ -80,6 +136,28 @@ class LogWatcher extends EventEmitter {
             depressurizing: /Player.*started depressurization/i,
             die: /Actor Death/i,
 
+            // === SHIPS & VEHICLES ===
+            ship_control_release: /[Rr]eleas(?:ing|ed?) control token.*?(?:for|of)\s+['"]*([^'"<>\n]+)/i,
+            ship_vehicle_spawn: /Vehicle\s+(?:Spawn|Spawned)[:\s]+(.+)/i,
+            ship_starmap_fail: /GetStarMapNodeForEntity.*?'([^']+)'/,
+            ship_enter_vehicle: /VehicleComponent.*?entering.*?(\w+_\w+)/i,
+
+            // === INSURANCE ===
+            insurance_claim: /[Ii]nsurance.*?[Cc]laim(?:ed|ing)?.*?([A-Z][a-z]+(?:_\w+)?)?/,
+
+            // === DOCKING ===
+            docking_request: /[Dd]ocking.*[Rr]equest(?:ed)?|[Rr]equest.*[Dd]ocking/,
+            docking_granted: /[Dd]ocking.*[Gg]ranted|[Ll]anding.*[Pp]ad.*[Aa]ssigned/,
+
+            // === INVENTORY ===
+            inventory_open: /[Oo]pening\s+[Ii]nventory|[Ii]nventory.*[Oo]pen(?:ed)?/,
+            inventory_close: /[Rr]elinquish(?:ing|ed)?\s+[Ii]nventory|[Ii]nventory.*[Cc]lose/,
+
+            // === MEDICAL & SPAWN ===
+            medical_bed: /[Mm]edical\s*[Bb]ed|[Mm]edBed|[Rr]egeneration\s*[Pp]od/,
+            imprint_transplant: /[Tt]ransplant.*[Ii]mprint|[Ss]et.*[Ss]pawn(?:ing)?\s*(?:[Pp]oint|[Ll]ocation)?.*?(?:at|to|:)\s*(.+)/i,
+            spawn_location: /[Rr]esolve[Ss]pawn[Ll]ocation.*?(?:zone|location).*?(\w+)/i,
+
             // === INVENTORY / EQUIPMENT ===
             attachment: /AttachmentReceived.*Player\[(\w+)\].*Attachment\[([^\]]+)\].*Port\[(\w+)\]/,
 
@@ -91,11 +169,15 @@ class LogWatcher extends EventEmitter {
 
             // === MISSIONS / CONTRACTS ===
             contract_gen: /CContractGenerator.*seed (\d+)/,
+            mission_accepted: /[Mm]ission.*[Aa]ccept|[Cc]ontract.*[Aa]ccept/i,
+            mission_completed: /[Mm]ission.*[Cc]omplet|[Cc]ontract.*[Cc]omplet/i,
+            mission_failed: /[Mm]ission.*[Ff]ail|[Cc]ontract.*[Ff]ail/i,
 
             // === SOCIAL / PARTY ===
-            group_update: /Update group cache.*(\w+)/,
+            group_update: /Update group cache.*(Success|Start)/,
             social_subscribe: /SubscribeToPlayerSocial.*player (\d+)/,
             friend_subscribe: /SubscribeToFriendMessages.*player (\d+)/,
+            party_invite: /NotifyPendingInvitations/,
 
             // === ENTITLEMENTS ===
             entitlement_count: /Started processing (\d+) entitlements/,
@@ -105,17 +187,15 @@ class LogWatcher extends EventEmitter {
     findLogFile() {
         const candidates = [];
 
-        // Windows paths — IMPORTANT: The folder is "StarCitizen" (no space) on most installs
+        // Windows paths
         const drivers = ['C:', 'D:', 'E:', 'F:'];
         const winPaths = [
-            // Standard RSI Launcher installs (NO space in StarCitizen)
             'Program Files/Roberts Space Industries/StarCitizen/LIVE/Game.log',
             'Program Files/Roberts Space Industries/StarCitizen/PTU/Game.log',
             'Program Files/Roberts Space Industries/StarCitizen/EPTU/Game.log',
-            // Legacy / alternate installs (WITH space)
+            'Program Files/Roberts Space Industries/StarCitizen/TECH-PREVIEW/Game.log',
             'Program Files/Roberts Space Industries/Star Citizen/LIVE/Game.log',
             'Program Files/Roberts Space Industries/Star Citizen/PTU/Game.log',
-            // Custom install locations
             'Roberts Space Industries/StarCitizen/LIVE/Game.log',
             'StarCitizen/LIVE/Game.log',
         ];
@@ -192,6 +272,9 @@ class LogWatcher extends EventEmitter {
         }
         console.log(`[LogWatcher] Initial scan complete: ${matchCount} events found in ${existingLines.length} lines`);
 
+        // Emit initial state after scan
+        this.emitCurrentState();
+
         // STEP 2: Watch for NEW lines appended to the file
         try {
             const stat = fs.statSync(this.filePath);
@@ -222,6 +305,9 @@ class LogWatcher extends EventEmitter {
                     // File was truncated (game restarted), reset
                     console.log('[LogWatcher] File truncated - game may have restarted');
                     this.lastSize = curr.size;
+                    this.currentShip = null;
+                    this.currentServer = null;
+                    this.emit('gamestate', { type: 'GAME_RESTART', value: 'restarted' });
                 }
             });
 
@@ -229,6 +315,19 @@ class LogWatcher extends EventEmitter {
             console.log('[LogWatcher] Now watching for new log entries...');
         } catch (e) {
             this.emit('error', `Failed to watch file: ${e.message}`);
+        }
+    }
+
+    // Emit accumulated state (for initial read)
+    emitCurrentState() {
+        if (this.currentShip) {
+            this.emit('gamestate', { type: 'SHIP_CURRENT', value: this.currentShip });
+        }
+        if (this.currentServer) {
+            this.emit('gamestate', { type: 'SERVER_ENV', value: this.currentServer });
+        }
+        if (this.spawnPoint) {
+            this.emit('gamestate', { type: 'SPAWN_POINT', value: this.spawnPoint });
         }
     }
 
@@ -244,6 +343,21 @@ class LogWatcher extends EventEmitter {
         console.log(`[LogWatcher] Switching to manual path: ${newPath}`);
         this.stop();
         this.start(newPath);
+    }
+
+    // Set alert cooldown (from Settings)
+    setAlertCooldown(alertType, cooldownMs) {
+        this.alertCooldowns[alertType] = { cooldownMs, lastFired: 0 };
+    }
+
+    // Check if alert should be suppressed
+    shouldSuppressAlert(alertType) {
+        const cd = this.alertCooldowns[alertType];
+        if (!cd || cd.cooldownMs <= 0) return false;
+        const now = Date.now();
+        if (now - cd.lastFired < cd.cooldownMs) return true;
+        cd.lastFired = now;
+        return false;
     }
 
     processLine(line, initialRead = false) {
@@ -264,10 +378,40 @@ class LogWatcher extends EventEmitter {
             return true;
         }
 
+        // Character name from login sequence
+        const charMatch = line.match(this.patterns.character_name);
+        if (charMatch) {
+            this.emit('gamestate', { type: 'CHARACTER_NAME', value: charMatch[1] });
+            return true;
+        }
+
+        // === SERVER / ENVIRONMENT ===
+        const envMatch = line.match(this.patterns.server_env);
+        if (envMatch) {
+            this.currentServer = envMatch[1];
+            this.emit('gamestate', { type: 'SERVER_ENV', value: envMatch[1] });
+            return true;
+        }
+
+        const sessionMatch = line.match(this.patterns.server_session);
+        if (sessionMatch) {
+            this.emit('gamestate', { type: 'SESSION_ID', value: sessionMatch[1] });
+            return true;
+        }
+
+        const regionMatch = line.match(this.patterns.server_region);
+        if (regionMatch) {
+            this.emit('gamestate', { type: 'SERVER_REGION', value: regionMatch[1] });
+            return true;
+        }
+
         // === SYSTEM INFO (emit during initial read only) ===
         if (initialRead) {
             const gpuMatch = line.match(this.patterns.gpu_info);
             if (gpuMatch) { this.emit('gamestate', { type: 'SYSTEM_GPU', value: gpuMatch[1] }); return true; }
+
+            const vramMatch = line.match(this.patterns.gpu_vram);
+            if (vramMatch) { this.emit('gamestate', { type: 'SYSTEM_VRAM', value: `${vramMatch[1]}MB` }); return true; }
 
             const cpuMatch = line.match(this.patterns.cpu_info);
             if (cpuMatch) { this.emit('gamestate', { type: 'SYSTEM_CPU', value: cpuMatch[1].trim() }); return true; }
@@ -297,12 +441,25 @@ class LogWatcher extends EventEmitter {
 
         if (this.patterns.server_connect.test(line)) {
             this.emit('gamestate', { type: 'CONNECTION', value: 'IN_GAME' });
+            this.emit('gamestate', { type: 'GAME_JOIN', value: 'joined' });
+            matched = true;
+        }
+
+        // Game disconnect / leave
+        if (this.patterns.server_disconnect.test(line)) {
+            this.emit('gamestate', { type: 'GAME_LEAVE', value: 'disconnected' });
             matched = true;
         }
 
         // === LOADING ===
         if (this.patterns.loading_screen.test(line)) {
             this.emit('gamestate', { type: 'LOADING', value: 'started' });
+            matched = true;
+        }
+
+        const gameModeMatch = line.match(this.patterns.loading_game_mode);
+        if (gameModeMatch) {
+            this.emit('gamestate', { type: 'GAME_MODE', value: gameModeMatch[1] });
             matched = true;
         }
 
@@ -336,13 +493,85 @@ class LogWatcher extends EventEmitter {
 
         // === PLAYER STATUS ===
         if (this.patterns.suffocating.test(line)) {
-            this.emit('gamestate', { type: 'STATUS', value: 'suffocating' });
+            if (!this.shouldSuppressAlert('suffocating')) {
+                this.emit('gamestate', { type: 'STATUS', value: 'suffocating' });
+            }
             matched = true;
         } else if (this.patterns.depressurizing.test(line)) {
-            this.emit('gamestate', { type: 'STATUS', value: 'depressurizing' });
+            if (!this.shouldSuppressAlert('depressurizing')) {
+                this.emit('gamestate', { type: 'STATUS', value: 'depressurizing' });
+            }
             matched = true;
         } else if (this.patterns.die.test(line)) {
             this.emit('gamestate', { type: 'STATUS', value: 'death' });
+            matched = true;
+        }
+
+        // === SHIPS & VEHICLES ===
+        const shipReleaseMatch = line.match(this.patterns.ship_control_release);
+        if (shipReleaseMatch) {
+            const shipName = shipReleaseMatch[1].trim();
+            this.currentShip = null;
+            this.emit('gamestate', { type: 'SHIP_EXIT', value: shipName });
+            matched = true;
+        }
+
+        const shipStarmapMatch = line.match(this.patterns.ship_starmap_fail);
+        if (shipStarmapMatch) {
+            const shipName = shipStarmapMatch[1].trim();
+            this.currentShip = shipName;
+            this.emit('gamestate', { type: 'SHIP_ENTER', value: shipName });
+            matched = true;
+        }
+
+        const vehicleSpawnMatch = line.match(this.patterns.ship_vehicle_spawn);
+        if (vehicleSpawnMatch && !matched) {
+            this.emit('gamestate', { type: 'VEHICLE_SPAWN', value: vehicleSpawnMatch[1].trim() });
+            matched = true;
+        }
+
+        // === INSURANCE ===
+        if (this.patterns.insurance_claim.test(line)) {
+            this.emit('gamestate', { type: 'INSURANCE_CLAIM', value: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
+            matched = true;
+        }
+
+        // === DOCKING ===
+        if (this.patterns.docking_request.test(line)) {
+            this.emit('gamestate', { type: 'DOCKING', value: 'requested' });
+            matched = true;
+        } else if (this.patterns.docking_granted.test(line)) {
+            this.emit('gamestate', { type: 'DOCKING', value: 'granted' });
+            matched = true;
+        }
+
+        // === INVENTORY ===
+        if (this.patterns.inventory_open.test(line)) {
+            this.emit('gamestate', { type: 'INVENTORY', value: 'opened' });
+            matched = true;
+        } else if (this.patterns.inventory_close.test(line)) {
+            this.emit('gamestate', { type: 'INVENTORY', value: 'closed' });
+            matched = true;
+        }
+
+        // === MEDICAL & SPAWN ===
+        if (this.patterns.medical_bed.test(line)) {
+            this.emit('gamestate', { type: 'MEDICAL_BED', value: 'entered' });
+            matched = true;
+        }
+
+        const imprintMatch = line.match(this.patterns.imprint_transplant);
+        if (imprintMatch) {
+            const loc = imprintMatch[1] ? imprintMatch[1].trim() : 'Unknown';
+            this.spawnPoint = loc;
+            this.emit('gamestate', { type: 'SPAWN_SET', value: loc });
+            matched = true;
+        }
+
+        const spawnMatch = line.match(this.patterns.spawn_location);
+        if (spawnMatch && !this.spawnPoint) {
+            this.spawnPoint = spawnMatch[1];
+            this.emit('gamestate', { type: 'SPAWN_POINT', value: spawnMatch[1] });
             matched = true;
         }
 
@@ -359,6 +588,29 @@ class LogWatcher extends EventEmitter {
         // === LOGIN SUCCESS ===
         if (this.patterns.login_success.test(line)) {
             this.emit('login', { status: 'connected' });
+            matched = true;
+        }
+
+        if (this.patterns.account_login_success.test(line)) {
+            this.emit('gamestate', { type: 'ACCOUNT_LOGIN', value: 'success' });
+            matched = true;
+        }
+
+        // === MISSIONS ===
+        if (this.patterns.mission_accepted.test(line)) {
+            this.emit('gamestate', { type: 'MISSION', value: 'accepted', detail: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
+            matched = true;
+        } else if (this.patterns.mission_completed.test(line)) {
+            this.emit('gamestate', { type: 'MISSION', value: 'completed', detail: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
+            matched = true;
+        } else if (this.patterns.mission_failed.test(line)) {
+            this.emit('gamestate', { type: 'MISSION', value: 'failed', detail: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
+            matched = true;
+        }
+
+        // === PARTY INVITES ===
+        if (this.patterns.party_invite.test(line)) {
+            this.emit('gamestate', { type: 'PARTY_INVITE', value: 'pending' });
             matched = true;
         }
 
@@ -392,7 +644,7 @@ class LogWatcher extends EventEmitter {
         return matched;
     }
 
-    // Group unknown lines by their first significant keyword
+    // Improved unknown line grouping — shows actual log content
     captureUnknownLine(line) {
         // Skip noise
         for (const noise of this.noisePatterns) {
@@ -400,12 +652,43 @@ class LogWatcher extends EventEmitter {
         }
 
         // Skip very short lines
-        if (line.trim().length < 20) return;
+        const trimmed = line.trim();
+        if (trimmed.length < 15) return;
 
-        // Extract group key: first class/function name or significant identifier
-        const cleaned = line.replace(/^<[^>]+>\s*/, '').trim(); // Strip timestamp
-        const keyMatch = cleaned.match(/^([A-Z][A-Za-z0-9_:]+)/); // CClassName::Method style
-        const key = keyMatch ? keyMatch[1].substring(0, 50) : cleaned.substring(0, 40);
+        // Strip timestamp prefix: <2026-02-09T23:19:26.021Z>
+        let cleaned = trimmed.replace(/^<\d{4}-\d{2}-\d{2}T[\d:.]+Z>\s*/, '');
+
+        // Strip severity prefix: [Notice] [Error] [Trace] [Warning]
+        cleaned = cleaned.replace(/^\[(Notice|Error|Trace|Warning|Info)\]\s*/, '');
+
+        // Extract a meaningful group key
+        let key;
+
+        // Try 1: <EventName> pattern (most SC events)
+        const eventMatch = cleaned.match(/^<([^>]{3,60})>/);
+        if (eventMatch) {
+            key = eventMatch[1];
+        }
+        // Try 2: CClassName::Method or CClassName pattern
+        else {
+            const classMatch = cleaned.match(/^(C?[A-Z][A-Za-z0-9]+(?:::[A-Za-z0-9_]+)?)/);
+            if (classMatch && classMatch[1].length > 3) {
+                key = classMatch[1];
+            }
+            // Try 3: [Tag] prefix
+            else {
+                const tagMatch = cleaned.match(/^\[([^\]]{2,40})\]/);
+                if (tagMatch) {
+                    key = `[${tagMatch[1]}]`;
+                }
+                // Try 4: First meaningful phrase (up to 60 chars, at word boundary)
+                else {
+                    const phrase = cleaned.substring(0, 80);
+                    const wordBound = phrase.lastIndexOf(' ', 60);
+                    key = wordBound > 20 ? phrase.substring(0, wordBound) : phrase.substring(0, 60);
+                }
+            }
+        }
 
         // Check if ignored
         if (this.unknownIgnored.has(key)) return;
@@ -415,16 +698,20 @@ class LogWatcher extends EventEmitter {
             const group = this.unknownGroups.get(key);
             group.count++;
             group.lastSeen = now;
+            // Update sample if this line is more descriptive
+            if (cleaned.length > group.sample.length && cleaned.length <= 300) {
+                group.sample = cleaned;
+            }
         } else {
             // Cap at 200 groups
             if (this.unknownGroups.size >= 200) {
-                // Remove oldest
+                // Remove oldest group
                 const oldest = this.unknownGroups.keys().next().value;
                 this.unknownGroups.delete(oldest);
             }
             this.unknownGroups.set(key, {
                 group: key,
-                sample: cleaned.substring(0, 200),
+                sample: cleaned.substring(0, 300),
                 count: 1,
                 firstSeen: now,
                 lastSeen: now
