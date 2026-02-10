@@ -751,13 +751,7 @@
                         id="new-ship-filename"></span></div>
             </div>
 
-            <!-- Manual Log Patterns (v2.2) -->
-            <div
-                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
-                <div class="section-title" style="margin-top: 0;">Manual Log Patterns</div>
-                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Add custom Regex patterns to detect
-                    events.
-                </div>
+
 
             <!-- Manual Log Patterns (v2.2) -->
             <div
@@ -769,11 +763,13 @@
 
                 <div id="pattern-list"
                     style="margin-bottom: 10px; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 4px;">
-                    <div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No custom patterns defined.</div>
+                    <div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No custom patterns
+                        defined.</div>
                 </div>
 
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="new-pattern-regex" class="modern-input" placeholder="Regex (e.g. /Time: (\d+)%)" style="flex:2; margin:0;">
+                    <input type="text" id="new-pattern-regex" class="modern-input"
+                        placeholder="Regex (e.g. /Time: (\d+)%)" style="flex:2; margin:0;">
                     <select id="new-pattern-level" class="modern-input" style="flex:1; margin:0; padding: 0 5px;">
                         <option value="INFO">Info (Blue)</option>
                         <option value="WARN">Warning (Orange)</option>
@@ -781,8 +777,10 @@
                     </select>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="new-pattern-msg" class="modern-input" placeholder="Alert Message (Use $1 for value)" style="flex:1; margin:0;">
-                    <button class="cyber-btn" style="width: auto; margin:0;" onclick="addCustomPattern()">Add Pattern</button>
+                    <input type="text" id="new-pattern-msg" class="modern-input"
+                        placeholder="Alert Message (Use $1 for value)" style="flex:1; margin:0;">
+                    <button class="cyber-btn" style="width: auto; margin:0;" onclick="addCustomPattern()">Add
+                        Pattern</button>
                 </div>
             </div>
 
@@ -1048,7 +1046,7 @@
         }
 
         function getColorForLevel(level) {
-            switch(level) {
+            switch (level) {
                 case 'INFO': return '#4FC3F7';
                 case 'WARN': return '#FFA726';
                 case 'CRITICAL': return '#FF5252';
@@ -1069,7 +1067,7 @@
                 // If input manually wrapped in slashes, use as is. If not, assume body.
                 // But JS `new RegExp` takes string.
                 // We'll trust user input but validate.
-                new RegExp(regex); 
+                new RegExp(regex);
             } catch (e) {
                 return alert('Invalid Regex: ' + e.message);
             }
