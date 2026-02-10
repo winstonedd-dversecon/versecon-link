@@ -508,6 +508,7 @@ ipcMain.handle('settings:get-default-patterns', async () => {
 ipcMain.handle('settings:get-pattern-overrides', async () => config.patternOverrides || {});
 
 ipcMain.handle('settings:save-pattern-overrides', async (event, overrides) => {
+    console.log('[Main] Saving pattern overrides:', JSON.stringify(overrides));
     config.patternOverrides = overrides;
     saveConfig();
     LogWatcher.setPatternOverrides(overrides);

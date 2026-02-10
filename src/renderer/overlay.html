@@ -641,6 +641,24 @@
             }
         });
 
+        // v2.2 - CRITICAL FIX: Listed for Broadcasted Commands via Alert Trigger
+        ipcRenderer.on('alert:trigger', (e, data) => {
+            if (data.type === 'COMMAND') {
+                const cmdData = data.value;
+                activeCommand = cmdData;
+                const cmdMod = document.getElementById('mod-command');
+                cmdMod.classList.remove('hidden');
+                document.getElementById('cmd-text').textContent = cmdData.text || cmdData.preset || 'ORDER';
+                document.getElementById('cmd-from').textContent = cmdData.from ? `from ${cmdData.from}` : '';
+                addFeedEntry('📢', cmdData.text || cmdData.preset);
+
+                // Auto-hide command after 15s
+                setTimeout(() => {
+                    cmdMod.classList.add('hidden');
+                }, 15000);
+            }
+        });
+
         // Ship image setting from dashboard
         ipcRenderer.on('settings:ship-image', (e, path) => {
             shipImagePath = path;
