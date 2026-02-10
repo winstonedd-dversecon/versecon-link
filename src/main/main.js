@@ -432,6 +432,24 @@ LogWatcher.on('gamestate', (data) => {
     if (data.type === 'SPAWN_SET') {
         showTrayNotification('📍 Spawn Point Set', data.value || 'New spawn location');
     }
+    // v2.2 - Custom Alerts (User Defined)
+    if (data.type === 'CUSTOM') {
+        // Show Tray Notification for all custom matches
+        showTrayNotification(data.message || 'Custom Alert', data.value);
+
+        // Trigger Global Overlay Alert for WARNING/CRITICAL levels
+        if (['CRITICAL', 'WARNING'].includes(data.level)) {
+            if (alertWindow && !alertWindow.isDestroyed()) {
+                alertWindow.show();
+                alertWindow.webContents.send('alert:trigger', {
+                    type: 'CUSTOM',
+                    level: data.level,
+                    message: data.message,
+                    value: data.value
+                });
+            }
+        }
+    }
 });
 
 LogWatcher.on('status', (status) => {
