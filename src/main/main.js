@@ -311,6 +311,17 @@ ipcMain.on('command:send', (event, data) => {
     }
     // Also broadcast locally for preview
     broadcast('command:sent', data);
+
+    // v2.2 - Broadcast to Overlay/Alert Windows if requested
+    if (data.broadcast) {
+        if (alertWindow && !alertWindow.isDestroyed()) {
+            alertWindow.show();
+            alertWindow.webContents.send('alert:trigger', { type: 'COMMAND', value: data });
+        }
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.webContents.send('alert:trigger', { type: 'COMMAND', value: data });
+        }
+    }
 });
 
 ipcMain.on('command:ack', (event, data) => {

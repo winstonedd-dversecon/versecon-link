@@ -569,7 +569,7 @@
                 <h2>Operations Live Feed</h2>
                 <div class="subtitle">Real-time telemetry from Star Citizen</div>
             </div>
-            <div style="font-family: monospace; color: var(--accent);">V.2.0.0</div>
+            <div style="font-family: monospace; color: var(--accent);">V.2.2.0</div>
         </div>
         <div class="feed-container" id="event-feed">
             <div class="feed-item">
@@ -628,7 +628,7 @@
             </div>
 
             <div class="section-title">Custom Command</div>
-            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 5px;">
                 <select class="target-select" id="cmd-target" style="min-width: 120px;">
                     <option value="ALL">🌐 All Teams</option>
                     <option value="ALPHA">🏷️ Alpha</option>
@@ -639,6 +639,11 @@
                 <input class="modern-input" id="cmd-custom-text" placeholder="Type custom order..."
                     style="flex:1; margin:0;">
                 <button class="cyber-btn" onclick="sendCustomCommand()" style="width:auto; margin:0;">Send</button>
+            </div>
+            <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <label style="cursor: pointer; color: var(--text-dim); font-size: 0.8rem;">
+                    <input type="checkbox" id="cmd-broadcast"> Broadcast to Overlay (Whole Screen)
+                </label>
             </div>
 
             <div class="section-title">Command Log</div>
@@ -666,6 +671,9 @@
                     <input type="text" id="config-log-path" class="modern-input" style="margin:0;" readonly
                         placeholder="No file selected">
                     <button class="cyber-btn" style="width: auto; margin:0;" onclick="selectLogFile()">Browse</button>
+                </div>
+                <div style="margin-top: 10px; text-align: right;">
+                    <button class="cyber-btn small" onclick="window.location.reload()">🔄 Reload App</button>
                 </div>
             </div>
 
@@ -923,7 +931,8 @@
             const text = document.getElementById('cmd-custom-text').value.trim();
             if (!text) return;
             const target = document.getElementById('cmd-target').value;
-            const data = { text, target, timestamp: Date.now() };
+            const broadcast = document.getElementById('cmd-broadcast').checked;
+            const data = { text, target, broadcast, timestamp: Date.now() };
             ipcRenderer.send('command:send', data);
             addCommandLog(text, target, 'YOU');
             document.getElementById('cmd-custom-text').value = '';
