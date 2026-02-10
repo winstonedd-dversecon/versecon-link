@@ -722,10 +722,12 @@ class LogWatcher extends EventEmitter {
             matched = true;
         }
 
-        const spawnMatch = line.match(this.patterns.spawn_location);
-        if (spawnMatch && !this.spawnPoint) {
-            this.spawnPoint = spawnMatch[1];
-            this.emit('gamestate', { type: 'SPAWN_POINT', value: spawnMatch[1] });
+        const spawnLocMatch = line.match(this.patterns.spawn_location);
+        if (spawnLocMatch && !this.spawnPoint) {
+            let val = spawnLocMatch[1];
+            val = applyValueMap('spawn_point', val);
+            this.spawnPoint = val;
+            this.emit('gamestate', { type: 'SPAWN_POINT', value: val });
             matched = true;
         }
 
