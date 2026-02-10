@@ -478,6 +478,23 @@ ipcMain.handle('settings:save-ship-map', async (event, map) => {
     return true;
 });
 
+ipcMain.handle('app:select-ship-image', async () => {
+    const { filePaths } = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+    });
+    return filePaths[0];
+});
+
+ipcMain.handle('settings:get-custom-patterns', async () => config.customPatterns);
+
+ipcMain.handle('settings:save-custom-patterns', async (event, patterns) => {
+    config.customPatterns = patterns;
+    saveConfig();
+    LogWatcher.setCustomPatterns(patterns);
+    return true;
+});
+
 // ═══════════════════════════════════════════════════════
 // APP LIFECYCLE
 // ═══════════════════════════════════════════════════════
@@ -501,6 +518,7 @@ if (!gotTheLock) {
     app.whenReady().then(() => {
         loadConfig(); // Load saved config
         LogWatcher.setShipMap(config.shipMap); // Apply saved map
+        LogWatcher.setCustomPatterns(config.customPatterns); // Apply custom patterns
         createWindows();
         createTray();
         LogWatcher.start();

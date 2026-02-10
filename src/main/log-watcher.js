@@ -376,6 +376,30 @@ class LogWatcher extends EventEmitter {
         this.shipMap = map || {};
     }
 
+    // v2.2 - Set custom log patterns (manual entry)
+    setCustomPatterns(patterns) {
+        this.customPatterns = patterns || [];
+        this.compiledCustomPatterns = this.customPatterns.map(p => {
+            try {
+                // p.regex is string, e.g. "Time: (\\d+)"
+                // Convert to RegExp, stripping surrounding slashes if present
+                let regexBody = p.regex;
+                let flags = '';
+
+                if (regexBody.startsWith('/') && regexBody.lastIndexOf('/') > 0) {
+                    const lastSlash = regexBody.lastIndexOf('/');
+                    flags = regexBody.substring(lastSlash + 1);
+                    regexBody = regexBody.substring(1, lastSlash);
+                }
+
+                return { ...p, compiled: new RegExp(regexBody, flags) };
+            } catch (e) {
+                console.error('[LogWatcher] Invalid custom regex:', p.regex, e);
+                return null;
+            }
+        }).filter(Boolean);
+    }
+
     processLine(line, initialRead = false) {
         if (!line || !line.trim()) return false;
         let matched = false;
@@ -721,12 +745,52 @@ class LogWatcher extends EventEmitter {
             }
         }
 
-        // === UNKNOWN LINE CAPTURE ===
-        if (!matched && this.captureUnknowns && !initialRead) {
-            this.captureUnknownLine(line);
+        // v2.2 - Check Custom Patterns (Manual Config)
+        if (this.compiledCustomPatterns && this.compiledCustomPatterns.length > 0) {
+            for (const p of this.compiledCustomPatterns) {
+                const match = line.match(p.compiled);
+                if (match) {
+                    // Extract value if capture group exists, else use full match
+                    const val = match[1] || match[0];
+                    this.emit('gamestate', {
+                        type: 'CUSTOM',
+                        level: p.level || 'INFO',
+                        message: p.message || 'Custom Alert',
+                        value: val
+                    });
+                    this.emit('custom-match', { patternId: p.id, match: val });
+                    matched = true;
+                    // Don't return, allow other processors? Or return?
+                    // Let's allow others, but mark matched so we don't treat as unknown.
+                }
+            }
         }
 
-        return matched;
+        if (matched) return true;
+
+        // === UNKNOWN DISCOVERY ===
+        if (!this.captureUnknowns) return false;
+
+        // Clean up the line for grouping
+        let cleaned = line
+            .replace(/<[^>]+>/g, '') // Remove XML tags
+            .replace(/^<\d{4}-\d{2}-\d{2}T[\d:.]+Z>\s*/, '') // Strip timestamp prefix
+            .replace(/^\[(Notice|Error|Trace|Warning|Info)\]\s*/, '') // Strip severity prefix
+            .trim();
+
+        // Skip noise
+        for (const noise of this.noisePatterns) {
+            if (noise.test(cleaned)) return false;
+        }
+
+        // Skip very short lines
+        if (cleaned.length < 15) return false;
+
+        // If it's an initial read, don't capture unknowns
+        if (initialRead) return false;
+
+        this.captureUnknownLine(cleaned);
+        return false; // Unknown lines don't count as "matched" for the main loop
     }
 
     // Improved unknown line grouping — shows actual log content
