@@ -87,11 +87,16 @@ function createWindows() {
         alwaysOnTop: true,
         resizable: false,
         skipTaskbar: true,
+        focusable: true, // Needs focus for buttons, but we'll manage z-order
+        type: 'toolbar', // Helps on Linux/Windows
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
         }
     });
+
+    overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+    overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
     overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay.html'));
 
