@@ -761,6 +761,27 @@
 
 
 
+            <!-- Built-in Pattern Manager (v2.2) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Built-in Pattern Manager</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
+                    Modify or disable system log patterns. <b>⚠️ Expert Use Only</b> - Breaking these may stop game
+                    state
+                    updates.
+                </div>
+                <div id="builtin-pattern-list"
+                    style="margin-bottom: 10px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                    <div style="padding: 10px; text-align: center; color: #555;">Loading patterns...</div>
+                </div>
+                <div style="text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button class="cyber-btn danger" style="width: auto;" onclick="resetPatternOverrides()">Reset
+                        All</button>
+                    <button class="cyber-btn" style="width: auto;" onclick="savePatternOverrides()">Save
+                        Overrides</button>
+                </div>
+            </div>
+
             <!-- Manual Log Patterns (v2.2) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -1435,6 +1456,116 @@
         document.getElementById('cmd-custom-text').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendCustomCommand();
         });
+
+        // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
+        let defaultPatterns = {};
+        let patternOverrides = {};
+
+        async function loadBuiltinPatterns() {
+            try {
+                defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
+                patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
+                renderBuiltinPatterns();
+            } catch (e) {
+                console.error('Failed to load patterns:', e);
+            }
+        }
+
+        function renderBuiltinPatterns() {
+            const list = document.getElementById('builtin-pattern-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            const keys = Object.keys(defaultPatterns).sort();
+
+            keys.forEach(key => {
+                const config = patternOverrides[key] || {};
+                const isOverridden = config.regex && config.regex !== defaultPatterns[key];
+                const isDisabled = config.disabled;
+                const currentValue = config.regex || defaultPatterns[key];
+
+                const div = document.createElement('div');
+                div.style.cssText = 'padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 5px;';
+
+                const header = document.createElement('div');
+                header.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+
+                const label = document.createElement('label');
+                label.style.cssText = 'font-family: monospace; color: var(--accent); font-size: 0.8rem; display: flex; align-items: center; gap: 5px; cursor: pointer;';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = !isDisabled;
+                checkbox.onchange = (e) => togglePattern(key, e.target.checked);
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(key));
+
+                const status = document.createElement('span');
+                status.style.fontSize = '0.7rem';
+                if (isDisabled) {
+                    status.textContent = 'DISABLED';
+                    status.style.color = '#ff4444';
+                } else if (isOverridden) {
+                    status.textContent = 'MODIFIED';
+                    status.style.color = 'var(--accent)';
+                } else {
+                    status.textContent = 'DEFAULT';
+                    status.style.color = '#666';
+                }
+
+                header.appendChild(label);
+                header.appendChild(status);
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'modern-input';
+                input.style.cssText = 'font-family: monospace; font-size: 0.75rem; margin: 0; width: 100%; color: ' + (isOverridden ? 'var(--text)' : '#888');
+                input.value = currentValue;
+                input.onchange = (e) => updatePatternRegex(key, e.target.value);
+                if (isDisabled) {
+                    input.disabled = true;
+                    input.style.opacity = '0.5';
+                }
+
+                div.appendChild(header);
+                div.appendChild(input);
+                list.appendChild(div);
+            });
+        }
+
+        function togglePattern(key, enabled) {
+            if (!patternOverrides[key]) patternOverrides[key] = {};
+            patternOverrides[key].disabled = !enabled;
+            renderBuiltinPatterns();
+        }
+
+        function updatePatternRegex(key, regex) {
+            if (!patternOverrides[key]) patternOverrides[key] = {};
+            patternOverrides[key].regex = regex;
+            renderBuiltinPatterns();
+        }
+
+        async function savePatternOverrides() {
+            await ipcRenderer.invoke('settings:save-pattern-overrides', patternOverrides);
+            const btn = document.activeElement;
+            if (btn && btn.tagName === 'BUTTON') {
+                const originalText = btn.innerText;
+                btn.innerText = 'Saved!';
+                setTimeout(() => btn.innerText = originalText, 2000);
+            }
+        }
+
+        async function resetPatternOverrides() {
+            if (confirm('Reset all built-in patterns to default?')) {
+                patternOverrides = {};
+                await ipcRenderer.invoke('settings:save-pattern-overrides', patternOverrides);
+                renderBuiltinPatterns();
+            }
+        }
+
+        // Init
+        loadBuiltinPatterns();
     </script>
 </body>
 

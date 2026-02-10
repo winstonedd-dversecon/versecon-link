@@ -499,6 +499,24 @@ ipcMain.handle('app:select-ship-image', async () => {
 
 ipcMain.handle('settings:get-custom-patterns', async () => config.customPatterns);
 
+ipcMain.handle('settings:get-default-patterns', async () => {
+    // Return regexes as strings for UI
+    const defaults = {};
+    for (const [key, regex] of Object.entries(LogWatcher.DEFAULT_PATTERNS)) {
+        defaults[key] = regex.source;
+    }
+    return defaults;
+});
+
+ipcMain.handle('settings:get-pattern-overrides', async () => config.patternOverrides || {});
+
+ipcMain.handle('settings:save-pattern-overrides', async (event, overrides) => {
+    config.patternOverrides = overrides;
+    saveConfig();
+    LogWatcher.setPatternOverrides(overrides);
+    return true;
+});
+
 ipcMain.handle('settings:save-custom-patterns', async (event, patterns) => {
     config.customPatterns = patterns;
     saveConfig();
@@ -533,6 +551,25 @@ if (!gotTheLock) {
         createWindows();
         createTray();
         LogWatcher.start();
+
+        // v2.2 - "Zero-Touch" Local Auth Check
+        try {
+            const tokenPath = path.join(app.getPath('home'), '.versecon-token');
+            if (fs.existsSync(tokenPath)) {
+                const token = fs.readFileSync(tokenPath, 'utf8').trim();
+                if (token) {
+                    console.log('[Main] Found local token file, auto-authenticating...');
+                    // Slight delay to ensure window is ready
+                    setTimeout(() => {
+                        if (dashboardWindow) dashboardWindow.webContents.send('auth:success', token);
+                        APIClient.token = token;
+                        APIClient.connectSocket(token);
+                    }, 2000);
+                }
+            }
+        } catch (e) {
+            console.error('[Main] Local token check failed:', e);
+        }
     });
 
     app.on('open-url', (event, url) => {
