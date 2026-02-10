@@ -14,6 +14,9 @@ let dndMode = false;
 let config = { shipMap: {}, customPatterns: [] };
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 
+// Helper to access static patterns from instance
+const DEFAULT_PATTERNS = LogWatcher.constructor.DEFAULT_PATTERNS;
+
 // ═══════════════════════════════════════════════════════
 // CONFIG HELPERS
 // ═══════════════════════════════════════════════════════
@@ -120,6 +123,8 @@ function createWindows() {
 
     alertWindow.loadFile(path.join(__dirname, '../renderer/alert.html'));
     alertWindow.setIgnoreMouseEvents(true);
+    alertWindow.setAlwaysOnTop(true, 'screen-saver'); // Fix: Ensure it shows over game
+    alertWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     alertWindow.hide(); // Hidden by default, shown on alerts
 }
 
@@ -499,7 +504,7 @@ ipcMain.handle('settings:get-custom-patterns', async () => config.customPatterns
 ipcMain.handle('settings:get-default-patterns', async () => {
     // Return regexes as strings for UI
     const defaults = {};
-    for (const [key, regex] of Object.entries(LogWatcher.DEFAULT_PATTERNS)) {
+    for (const [key, regex] of Object.entries(DEFAULT_PATTERNS)) {
         defaults[key] = regex.source;
     }
     return defaults;
