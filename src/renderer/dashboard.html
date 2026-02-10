@@ -721,22 +721,49 @@
                 </div>
             </div>
 
-            <!-- Ship Image -->
+            <!-- Ship Image Manager (v2.2) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
-                <div class="section-title" style="margin-top: 0;">Ship Image (Overlay)</div>
-                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Set a custom ship image to display on
-                    the overlay when you board a ship.</div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="ship-image-path" class="modern-input" style="margin:0; flex:1;" readonly
-                        placeholder="No image selected">
-                    <button class="cyber-btn" style="width:auto; margin:0;" onclick="selectShipImage()">Browse</button>
-                    <button class="cyber-btn small danger" onclick="clearShipImage()">Clear</button>
+                <div class="section-title" style="margin-top: 0;">Ship Image Manager</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
+                    Map ship names found in logs (e.g., "Clipper") to specific images.
+                    <br>Partial matches work (e.g., "Clipper" matches "DRAK_Clipper").
                 </div>
-                <div id="ship-preview" style="margin-top: 8px; display:none;">
-                    <img id="ship-preview-img"
-                        style="max-width: 200px; max-height: 80px; border-radius: 6px; border: 1px solid var(--border);"
-                        alt="Ship preview">
+
+                <div id="ship-map-list"
+                    style="margin-bottom: 10px; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                    <!-- Items: <div class="map-item">[Name] [Path] [X]</div> -->
+                    <div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No mappings set.
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="new-ship-name" class="modern-input" placeholder="Ship Name (e.g. Clipper)"
+                        style="margin:0; flex:1;">
+                    <button class="cyber-btn" style="width: auto; margin:0;" onclick="selectNewShipImage()">Select
+                        Image</button>
+                    <button class="cyber-btn" style="width: auto; margin:0;" onclick="addShipMapping()">Add
+                        Mapping</button>
+                </div>
+                <input type="hidden" id="new-ship-image-path">
+                <div id="new-ship-preview-label"
+                    style="font-size: 0.75rem; color: var(--accent); margin-top: 5px; display: none;">Selected: <span
+                        id="new-ship-filename"></span></div>
+            </div>
+
+            <!-- Manual Log Patterns (v2.2) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Manual Log Patterns</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Add custom Regex patterns to detect
+                    events.
+                </div>
+
+                <!-- Placeholder for future implementation (UI only for now as requested) -->
+                <div
+                    style="padding: 10px; background: rgba(255, 165, 0, 0.1); border: 1px dashed var(--accent); border-radius: 4px; color: var(--accent); font-size: 0.8rem; text-align: center;">
+                    Manual pattern entry coming in next update. <br>
+                    (Backend support ready)
                 </div>
             </div>
 
@@ -837,7 +864,8 @@
         // ═══ AUTH ═══
         function openLogin() {
             console.log('[Dashboard] openLogin clicked!');
-            ipcRenderer.invoke('app:open-external', 'https://versecon.space/api/auth/discord/login').then(() => {
+            // v2.2 - Use custom protocol redirect
+            ipcRenderer.invoke('app:open-external', 'https://versecon.space/api/auth/discord/login?redirect=versecon-link://auth').then(() => {
                 addDashItem('🔑', 'Opening browser... Please login.');
             }).catch(err => {
                 addDashItem('❌', 'Failed to open browser: ' + err.message);
@@ -902,6 +930,74 @@
             `;
             log.prepend(item);
         }
+
+        // ═══ SHIP IMAGE MANAGER (v2.2) ═══
+        let shipMap = {};
+
+        function loadShipMap() {
+            ipcRenderer.invoke('settings:get-ship-map').then(map => {
+                shipMap = map || {};
+                renderShipMapList();
+            });
+        }
+
+        function renderShipMapList() {
+            const list = document.getElementById('ship-map-list');
+            if (Object.keys(shipMap).length === 0) {
+                list.innerHTML = '<div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No mappings set.</div>';
+                return;
+            }
+            list.innerHTML = Object.entries(shipMap).map(([name, path]) => `
+                <div class="map-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="flex: 1;">
+                        <span style="color: var(--accent); font-weight: bold;">${name}</span>
+                        <div style="font-size: 0.7rem; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">${path}</div>
+                    </div>
+                    <button class="cyber-btn small danger" onclick="removeShipMapping('${name}')" style="margin:0; padding: 2px 8px;">×</button>
+                </div>
+            `).join('');
+        }
+
+        function selectNewShipImage() {
+            ipcRenderer.invoke('app:select-ship-image').then(path => {
+                if (path) {
+                    document.getElementById('new-ship-image-path').value = path;
+                    document.getElementById('new-ship-filename').textContent = path.split(/[\\\\/]/).pop();
+                    document.getElementById('new-ship-preview-label').style.display = 'block';
+                }
+            });
+        }
+
+        function addShipMapping() {
+            const name = document.getElementById('new-ship-name').value.trim();
+            const path = document.getElementById('new-ship-image-path').value;
+
+            if (!name) return alert('Please enter a ship name.');
+            if (!path) return alert('Please select an image.');
+
+            shipMap[name] = path;
+            saveShipMap();
+
+            // Clear inputs
+            document.getElementById('new-ship-name').value = '';
+            document.getElementById('new-ship-image-path').value = '';
+            document.getElementById('new-ship-preview-label').style.display = 'none';
+            renderShipMapList();
+        }
+
+        function removeShipMapping(name) {
+            delete shipMap[name];
+            saveShipMap();
+            renderShipMapList();
+        }
+
+        function saveShipMap() {
+            ipcRenderer.invoke('settings:save-ship-map', shipMap);
+        }
+
+        // Initialize (called after ipcRenderer ready? No, call directly here, assuming early enough)
+        loadShipMap();
+
 
         // ═══ UNKNOWN LOG DISCOVERY (Fixed: event delegation, full sample display) ═══
         // Store groups data for event delegation

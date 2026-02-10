@@ -24,6 +24,9 @@ class LogWatcher extends EventEmitter {
         this.unknownIgnored = new Set(); // user-ignored patterns
         this.captureUnknowns = true;
 
+        // v2.2 - Ship Image Mapping
+        this.shipMap = {}; // { "Clipper": "/path/to/image.png" }
+
         // Alert cooldowns: { alertType: { cooldownMs, lastFired } }
         this.alertCooldowns = {};
 
@@ -181,6 +184,14 @@ class LogWatcher extends EventEmitter {
 
             // === ENTITLEMENTS ===
             entitlement_count: /Started processing (\d+) entitlements/,
+            // v2.2 Patterns
+            mission_objective: /^New Objective: (.*?) \[\d+\]/,
+            contract_available: /^Contract Available: (.*?) \[\d+\]/,
+            location_planet: /planet cells:.*?name: (OOC_.*)/,
+            hangar_request: /local equip request/,
+            mission_marker: /Creating objective marker:.*?missionId/,
+            ship_exit_confirm: /You have left the channel/,
+            hazard_fire: /Fire Area .* received a snapshot/,
         };
     }
 
@@ -360,6 +371,11 @@ class LogWatcher extends EventEmitter {
         return false;
     }
 
+    // v2.2 - Set ship image mapping
+    setShipMap(map) {
+        this.shipMap = map || {};
+    }
+
     processLine(line, initialRead = false) {
         if (!line || !line.trim()) return false;
         let matched = false;
@@ -520,7 +536,19 @@ class LogWatcher extends EventEmitter {
         if (shipStarmapMatch) {
             const shipName = shipStarmapMatch[1].trim();
             this.currentShip = shipName;
-            this.emit('gamestate', { type: 'SHIP_ENTER', value: shipName });
+
+            // v2.2 - Dynamic Ship Image
+            const payload = { type: 'SHIP_ENTER', value: shipName };
+            // Check exact match or partial match
+            if (this.shipMap[shipName]) {
+                payload.image = this.shipMap[shipName];
+            } else {
+                // Try fuzzy match (e.g. log says "DRAK_Clipper" but map has "Clipper")
+                const key = Object.keys(this.shipMap).find(k => shipName.includes(k));
+                if (key) payload.image = this.shipMap[key];
+            }
+
+            this.emit('gamestate', payload);
             matched = true;
         }
 
@@ -611,6 +639,63 @@ class LogWatcher extends EventEmitter {
         // === PARTY INVITES ===
         if (this.patterns.party_invite.test(line)) {
             this.emit('gamestate', { type: 'PARTY_INVITE', value: 'pending' });
+            matched = true;
+        }
+
+        // v2.2 - Mission Objective
+        const missionObjMatch = line.match(this.patterns.mission_objective);
+        if (missionObjMatch) {
+            this.emit('gamestate', { type: 'MISSION_OBJECTIVE', value: missionObjMatch[1].trim() });
+            matched = true;
+        }
+
+        // v2.2 - Contract Available
+        const contractMatch = line.match(this.patterns.contract_available);
+        if (contractMatch) {
+            this.emit('gamestate', { type: 'CONTRACT_AVAILABLE', value: contractMatch[1].trim() });
+            matched = true;
+        }
+
+        // v2.2 - Location (Planet/Moon detail)
+        const planetMatch = line.match(this.patterns.location_planet);
+        if (planetMatch) {
+            // OOC_Stanton_1b_Aberdeen -> Aberdeen
+            let loc = planetMatch[1].replace(/^OOC_/, '').replace(/Stanton_\d+[a-z]?_/, '');
+            this.emit('gamestate', { type: 'LOCATION_PLANET', value: loc });
+            // Also emit generic location to update main HUD
+            this.emit('gamestate', { type: 'LOCATION', value: loc });
+            matched = true;
+        }
+
+        // v2.2 - Hangar Request
+        if (this.patterns.hangar_request.test(line)) {
+            this.emit('gamestate', { type: 'HANGAR_REQUEST', value: 'Landing Services' });
+            matched = true;
+        }
+
+        // v2.2 - Mission Marker
+        if (this.patterns.mission_marker.test(line)) {
+            this.emit('gamestate', { type: 'MISSION_MARKER', value: 'New Waypoint' });
+            matched = true;
+        }
+
+        // v2.2 - Ship Exit Confirmation
+        if (this.patterns.ship_exit_confirm.test(line)) {
+            if (this.currentShip) {
+                this.emit('gamestate', { type: 'SHIP_EXIT', value: this.currentShip });
+                this.currentShip = null;
+            } else {
+                this.emit('gamestate', { type: 'SHIP_EXIT', value: 'Unknown Ship' });
+            }
+            matched = true;
+        }
+
+        // v2.2 - Fire Hazard
+        if (this.patterns.hazard_fire.test(line)) {
+            if (!this.shouldSuppressAlert('fire')) {
+                this.emit('gamestate', { type: 'HAZARD_FIRE', value: 'Critical Fire' });
+                this.setAlertCooldown('fire', 10000); // 10s cooldown
+            }
             matched = true;
         }
 

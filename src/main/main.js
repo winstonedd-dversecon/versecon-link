@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, screen, dialog, Tray, Menu, nativeImage, Notification } = require('electron');
 const path = require('path');
+const fs = require('fs'); // Added for config persistence
 const LogWatcher = require('./log-watcher');
 const APIClient = require('./api-client');
 
@@ -9,6 +10,36 @@ let alertWindow;
 let tray = null;
 let isQuitting = false;
 let dndMode = false;
+
+let config = { shipMap: {}, customPatterns: [] };
+const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
+
+// ═══════════════════════════════════════════════════════
+// CONFIG HELPERS
+// ═══════════════════════════════════════════════════════
+
+function loadConfig() {
+    try {
+        if (fs.existsSync(CONFIG_PATH)) {
+            const data = fs.readFileSync(CONFIG_PATH, 'utf-8');
+            config = JSON.parse(data);
+            if (!config.shipMap) config.shipMap = {};
+            if (!config.customPatterns) config.customPatterns = [];
+            console.log('[Main] Config loaded:', config);
+        }
+    } catch (e) {
+        console.error('[Main] Failed to load config:', e);
+    }
+}
+
+function saveConfig() {
+    try {
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        console.log('[Main] Config saved');
+    } catch (e) {
+        console.error('[Main] Failed to save config:', e);
+    }
+}
 
 // ═══════════════════════════════════════════════════════
 // WINDOW CREATION
@@ -433,6 +464,21 @@ APIClient.on('job', (data) => {
 });
 
 // ═══════════════════════════════════════════════════════
+// IPC HANDLERS - CONFIG
+// ═══════════════════════════════════════════════════════
+
+ipcMain.handle('settings:get-ship-map', async () => {
+    return config.shipMap;
+});
+
+ipcMain.handle('settings:save-ship-map', async (event, map) => {
+    config.shipMap = map;
+    saveConfig();
+    LogWatcher.setShipMap(map);
+    return true;
+});
+
+// ═══════════════════════════════════════════════════════
 // APP LIFECYCLE
 // ═══════════════════════════════════════════════════════
 
@@ -453,6 +499,8 @@ if (!gotTheLock) {
     });
 
     app.whenReady().then(() => {
+        loadConfig(); // Load saved config
+        LogWatcher.setShipMap(config.shipMap); // Apply saved map
         createWindows();
         createTray();
         LogWatcher.start();
