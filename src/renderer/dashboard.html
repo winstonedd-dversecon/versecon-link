@@ -1527,9 +1527,24 @@
                         onchange="updatePatternMessage('${key}', this.value)"
                         ${isDisabled ? 'disabled' : ''}
                         placeholder="[Default Alert Text] - Type to override message...">
+                    
+                    <div style="margin-top:5px; font-size: 0.7rem; color: #666;">
+                        <span style="color: var(--accent);">Value Mapper:</span> Define replacements (e.g. "Stanton/Crusader/Orison=Home Base"). Separate multiple with |
+                    </div>
+                    <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
+                        value="${escapeHtml(override.valueMap || '')}"
+                        onchange="updatePatternValueMap('${key}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}
+                        placeholder="RawValue=FriendlyName | RawValue2=FriendlyName2">
                 </div>
             `;
             }).join('');
+        }
+
+        function updatePatternValueMap(key, value) {
+            if (!patternOverrides[key]) patternOverrides[key] = {};
+            patternOverrides[key].valueMap = value;
+            savePatternOverrides();
         }
 
         function togglePattern(key, enabled) {

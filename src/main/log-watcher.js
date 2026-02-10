@@ -456,6 +456,22 @@ class LogWatcher extends EventEmitter {
             return null;
         }
 
+        // Helper: Apply Value Mapping (e.g. "Stanton/Crusader/Orison" -> "Home Base")
+        const applyValueMap = (key, rawValue) => {
+            if (!this.patternOverrides[key] || !this.patternOverrides[key].valueMap) return rawValue;
+
+            // Parse map: "Old=New|Old2=New2"
+            const mapStr = this.patternOverrides[key].valueMap;
+            const pairs = mapStr.split('|');
+            for (const pair of pairs) {
+                const [target, replacement] = pair.split('=').map(s => s.trim());
+                if (target && replacement && rawValue.includes(target)) {
+                    return replacement;
+                }
+            }
+            return rawValue;
+        }
+
         // === PLAYER IDENTITY (only emit once during initial read) ===
         const legacyLogin = line.match(this.patterns.legacy_login);
         if (legacyLogin) {
@@ -482,6 +498,27 @@ class LogWatcher extends EventEmitter {
         if (envMatch) {
             this.currentServer = envMatch[1];
             this.emit('gamestate', { type: 'SERVER_ENV', value: envMatch[1] });
+            return true;
+        }
+
+        // === LOCATION ===
+        const locationMatch = line.match(this.patterns.location);
+        if (locationMatch) {
+            let val = locationMatch[1];
+
+            // v2.2 - Apply Value Map Override
+            val = applyValueMap('location', val);
+
+            this.emit('gamestate', { type: 'LOCATION', value: val });
+            return true;
+        }
+
+        // === SPAWN POINT ===
+        const spawnMatch = line.match(this.patterns.spawn_point);
+        if (spawnMatch) {
+            let val = spawnMatch[1];
+            val = applyValueMap('spawn_point', val);
+            this.emit('gamestate', { type: 'SPAWN_POINT', value: val });
             return true;
         }
 

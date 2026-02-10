@@ -529,7 +529,7 @@ ipcMain.handle('settings:get-custom-patterns', async () => config.customPatterns
 ipcMain.handle('settings:get-default-patterns', async () => {
     // Return regexes as strings for UI
     const defaults = {};
-    for (const [key, regex] of Object.entries(DEFAULT_PATTERNS)) {
+    for (const [key, regex] of Object.entries(LogWatcher.DEFAULT_PATTERNS)) {
         defaults[key] = regex.source;
     }
     return defaults;

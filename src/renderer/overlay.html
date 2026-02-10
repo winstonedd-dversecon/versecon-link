@@ -641,6 +641,15 @@
             }
         });
 
+        // v2.2 - Toast Notifications (Bypassing Feed)
+        ipcRenderer.on('vcon:notification', (e, data) => {
+            // data = { title, message, type: 'info|success|warning|error' }
+            const iconMap = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
+            const icon = iconMap[data.type] || '🔔';
+            addFeedEntry(icon, `<span class="feed-highlight">${data.title}</span> — ${data.message}`);
+            playSound('notification');
+        });
+
         // v2.2 - CRITICAL FIX: Listed for Broadcasted Commands via Alert Trigger
         ipcRenderer.on('alert:trigger', (e, data) => {
             if (data.type === 'COMMAND') {
