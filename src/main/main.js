@@ -494,14 +494,6 @@ ipcMain.handle('settings:save-ship-map', async (event, map) => {
     return true;
 });
 
-ipcMain.handle('app:select-ship-image', async () => {
-    const { filePaths } = await dialog.showOpenDialog({
-        properties: ['openFile'],
-        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
-    });
-    return filePaths[0];
-});
-
 ipcMain.handle('settings:get-custom-patterns', async () => config.customPatterns);
 
 ipcMain.handle('settings:get-default-patterns', async () => {
