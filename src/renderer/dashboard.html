@@ -550,6 +550,24 @@
             </div>
         </div>
 
+        <!-- MISSION TRACKER (New) -->
+        <div class="status-box" id="mission-status-box"
+            style="display:none; margin-bottom: 10px; border-color: var(--accent);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                <div style="font-size:0.7rem; color:var(--accent); font-weight:700; letter-spacing:1px">ACTIVE CONTRACT
+                </div>
+                <div
+                    style="font-size:0.6rem; background:rgba(255,165,0,0.2); color:orange; padding:1px 4px; border-radius:2px">
+                    IN PROGRESS</div>
+            </div>
+            <div id="mission-title"
+                style="font-weight:600; color:white; margin-bottom:8px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                -</div>
+
+            <div style="font-size:0.65rem; color: #666; text-transform:uppercase; letter-spacing:0.5px">Objective</div>
+            <div id="mission-objective" style="font-size:0.75rem; color:#ddd; line-height:1.2;">-</div>
+        </div>
+
         <div class="status-box">
             <div class="status-row">
                 <div class="status-label"><span class="dot off" id="status-log-dot"></span> Game Log</div>
@@ -1086,6 +1104,21 @@
             document.getElementById('new-ship-name').value = name;
         };
 
+        // Mission Renaming
+        window.renameCurrentMission = async () => {
+            if (!window.currentMissionId) {
+                // If no ID, try to rename current 'active' if main.js logic allows, or alert
+                alert('No active Mission ID tracked. Accept a contract first.');
+                return;
+            }
+            const currentName = document.getElementById('mission-title').innerText;
+            const newName = await window.vcModal.prompt('Rename Mission', `Enter name for ID ${window.currentMissionId}:`, currentName);
+
+            if (newName && newName !== currentName) {
+                ipcRenderer.send('mission:rename', { id: window.currentMissionId, name: newName });
+            }
+        };
+
         // Initialize (called after ipcRenderer ready? No, call directly here, assuming early enough)
         loadShipMap();
 
@@ -1172,8 +1205,11 @@
         let unknownGroupsData = [];
 
         function escapeHtml(str) {
+            if (typeof str !== 'string') return String(str || '');
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
+
+        // ... existing codes ...
 
         function renderUnknowns(groups) {
             unknownGroupsData = groups;
@@ -1303,6 +1339,7 @@
                     if (data.value === 'armistice_enter') { addDashItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span>'); }
                     else if (data.value === 'armistice_leave') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
                     else if (data.value === 'monitored_enter') { addDashItem('📡', 'Entered <span class="feed-highlight">Monitored Space</span>'); }
+                    else if (data.value === 'monitored_leave') { addDashItem('📡', '<span class="feed-highlight" style="color:#ff4444">LEFT MONITORED SPACE</span> — Comms Down'); playSound('alert_zone'); }
                     break;
                 case 'STATUS':
                     if (data.value === 'suffocating') { addDashItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span>'); playSound('alert_status'); }
@@ -1337,6 +1374,7 @@
                 // ═══ NEW: Ship Events ═══
                 case 'SHIP_ENTER':
                     addDashItem('🚀', `Boarded: <span class="feed-highlight" style="color:#00c8ff">${data.value}</span>`);
+                    document.getElementById('last-ship-debug').textContent = data.value; // Update Settings UI
                     playSound('notification');
                     break;
                 case 'SHIP_EXIT':
@@ -1389,6 +1427,31 @@
                 case 'SPAWN_POINT':
                     addDashItem('📍', `Spawn: <span class="feed-highlight">${data.value}</span>`);
                     break;
+
+                // MISSION TRACKING
+                case 'MISSION_CURRENT':
+                    document.getElementById('mission-status-box').style.display = 'block';
+                    document.getElementById('mission-title').innerText = data.value;
+                    document.getElementById('mission-title').title = data.value; // Tooltip for overflow
+                    addDashItem('📜', `Mission Accepted: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'MISSION_OBJECTIVE':
+                    document.getElementById('mission-status-box').style.display = 'block';
+                    document.getElementById('mission-objective').innerText = data.value;
+                    addDashItem('🎯', `Objective: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'MISSION_CLEARED':
+                    document.getElementById('mission-title').innerText = 'Completed / Ended';
+                    document.getElementById('mission-objective').innerText = '-';
+                    setTimeout(() => {
+                        // Only hide if it hasn't been updated again
+                        if (document.getElementById('mission-title').innerText.includes('Completed')) {
+                            document.getElementById('mission-status-box').style.display = 'none';
+                        }
+                    }, 10000); // Keep result visible for 10s
+                    addDashItem('✅', 'Mission Ended');
+                    break;
+
                 // ═══ NEW: Party ═══
                 case 'PARTY_INVITE':
                     addDashItem('📩', '<span class="feed-highlight" style="color:#ffa500">Party invite pending</span>');

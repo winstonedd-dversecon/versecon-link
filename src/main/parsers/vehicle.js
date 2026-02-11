@@ -43,6 +43,35 @@ class VehicleParser extends BaseParser {
             }
         }
 
+        // 1b. Alternative Entry: "You have joined channel 'Ship Name : Callsign'"
+        // Notification "You have joined channel 'Aegis Eclipse : TypicallyBrit_ish'"
+        const channelMatch = line.match(/Notification "You have joined channel '([^']+)'"/i);
+        if (channelMatch) {
+            let rawName = channelMatch[1];
+            // Split by colon to get ship name (e.g. "Aegis Eclipse : typicallybrit_ish" -> "Aegis Eclipse")
+            if (rawName.includes(':')) {
+                rawName = rawName.split(':')[0].trim();
+            }
+
+            const cleanedName = this.getCleanShipName(rawName);
+
+            // Only update if it's new (prevent spam if channel re-joins)
+            if (this.currentShip !== cleanedName) {
+                this.currentShip = cleanedName;
+                const payload = { type: 'SHIP_ENTER', value: cleanedName };
+                // Attempt to resolve image mapping
+                if (this.shipMap[cleanedName]) payload.image = this.shipMap[cleanedName];
+                else {
+                    // Try partial match for mapping keys
+                    const key = Object.keys(this.shipMap).find(k => k.includes(cleanedName) || cleanedName.includes(k));
+                    if (key) payload.image = this.shipMap[key];
+                }
+
+                this.emit('gamestate', payload);
+                handled = true;
+            }
+        }
+
         // 2. Fallback Exit (Generic)
         if (!handled && this.patterns.ship_exit_confirm.test(line) && this.currentShip) {
             this.emit('gamestate', { type: 'SHIP_EXIT', value: this.currentShip });

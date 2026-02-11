@@ -67,6 +67,11 @@ function createWindows() {
     dashboardWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
         LogWatcher.emitUnknowns();
+        // Restore persistent spawn point if not yet in cache
+        if (config.spawnPoint && !LogWatcher.cachedState.spawn) {
+            LogWatcher.cachedState.spawn = config.spawnPoint;
+            dashboardWindow.webContents.send('log:update', { type: 'SPAWN_POINT', value: config.spawnPoint });
+        }
     });
 
     // Close-to-tray behavior
@@ -453,10 +458,14 @@ LogWatcher.on('gamestate', (data) => {
     }
     if (data.type === 'SPAWN_SET') {
         showTrayNotification('📍 Spawn Point Set', data.value || 'New spawn location');
+        // Persist spawn point
+        config.spawnPoint = data.value;
+        saveConfig();
+        // Also update cached state in LogWatcher just in case
+        LogWatcher.cachedState.spawn = data.value;
     }
-    // v2.2 - Custom Alerts (User Defined)
+    // Custom Alerts (User Defined)
     if (data.type === 'CUSTOM') {
-        // Show Tray Notification for all custom matches
         showTrayNotification(data.message || 'Custom Alert', data.value);
 
         // Trigger Global Overlay Alert for WARNING/CRITICAL levels
@@ -471,6 +480,50 @@ LogWatcher.on('gamestate', (data) => {
                 });
             }
         }
+    }
+
+    // Mission Persistence
+    if (data.type === 'MISSION_ACCEPTED') {
+        // Init map if valid
+        if (!config.missionMap) config.missionMap = {};
+
+        // Store ID -> Title mapping
+        if (data.id) {
+            config.missionMap[data.id] = data.value;
+        }
+
+        config.currentMission = data.value;
+        config.currentObjective = 'Started'; // Reset objective
+        saveConfig();
+        if (dashboardWindow) dashboardWindow.webContents.send('log:update', { type: 'MISSION_CURRENT', value: data.value });
+    }
+
+    // Handle switching tracked mission (via Marker ID)
+    if (data.type === 'MISSION_CHANGED') {
+        config.currentMission = data.value;
+        saveConfig();
+        if (dashboardWindow) dashboardWindow.webContents.send('log:update', { type: 'MISSION_CURRENT', value: data.value });
+    }
+
+    if (data.type === 'MISSION_OBJECTIVE') {
+        config.currentObjective = data.value;
+        saveConfig();
+        if (dashboardWindow) dashboardWindow.webContents.send('log:update', { type: 'MISSION_OBJECTIVE', value: data.value });
+    }
+    if (data.type === 'MISSION_STATUS' && (data.value === 'completed' || data.value === 'failed')) {
+        if (data.id && config.missionMap) {
+            delete config.missionMap[data.id];
+        }
+
+        // Only clear current mission if it matches the one completed (or if we don't have IDs to check)
+        // If we don't have ID, assume it's current.
+        let isCurrent = true;
+        // Logic: if we have ID, check if it maps to current title? Hard to say without more state.
+        // Simplest: Just clear current.
+        config.currentMission = null;
+        config.currentObjective = null;
+        saveConfig();
+        if (dashboardWindow) dashboardWindow.webContents.send('log:update', { type: 'MISSION_CLEARED' });
     }
 });
 

@@ -165,20 +165,41 @@ class LogWatcher extends EventEmitter {
     }
 
     start(customPath = null) {
-        if (this.isWatching) return;
-
-        this.filePath = customPath || this.findLogFile();
-        if (!this.filePath) {
-            this.emit('error', 'Game.log not found. Please locate it manually via Configuration tab.');
+        if (this.isWatching) {
+            console.log(`[LogWatcher] Already watching: ${this.filePath}`);
             return;
         }
 
-        console.log(`[LogWatcher] Starting on: ${this.filePath}`);
+        this.filePath = customPath || this.findLogFile();
+
+        if (!this.filePath) {
+            console.error('[LogWatcher] No Game.log found.');
+            this.emit('error', 'Game.log not found. Please locate it manually via Settings.');
+            this.emit('status', { connected: false });
+            return;
+        }
+
+        // Validate file existence and permissions
+        try {
+            fs.accessSync(this.filePath, fs.constants.R_OK);
+        } catch (e) {
+            console.error(`[LogWatcher] Permission denied or file missing: ${this.filePath}`, e);
+            this.emit('error', `Cannot read Log: ${e.message}`);
+            this.emit('status', { connected: false });
+            return;
+        }
+
+        console.log(`[LogWatcher] Starting watch on: ${this.filePath}`);
         this.emit('status', { connected: true, path: this.filePath });
 
-        // Initial Scan
-        const lines = this.readLastLines(this.filePath, 5000);
-        lines.forEach(line => this.processLine(line, true));
+        // Initial Scan (Safe Read)
+        try {
+            const lines = this.readLastLines(this.filePath, 5000);
+            console.log(`[LogWatcher] Initial scan read ${lines.length} lines.`);
+            lines.forEach(line => this.processLine(line, true));
+        } catch (e) {
+            console.error('[LogWatcher] Initial scan failed:', e);
+        }
 
         // Watch for updates
         try {

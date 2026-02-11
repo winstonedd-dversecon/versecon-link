@@ -61,24 +61,51 @@ class NavigationParser extends BaseParser {
 
     cleanLocationHint(rawPath) {
         if (!rawPath) return '';
+        let lower = rawPath.toLowerCase();
 
-        // Known mappings
+        // Specific Mapping overrides
         const map = {
             'area18': 'Area 18', 'lorville': 'Lorville', 'new_babbage': 'New Babbage',
             'orison': 'Orison', 'seraphim_station': 'Seraphim Station',
             'port_tressler': 'Port Tressler', 'everus_harbor': 'Everus Harbor',
             'baijini_point': 'Baijini Point', 'astroarmada': 'Astro Armada',
-            'dumper': 'Dumpers Depot', 'casaba': 'Casaba Outlet'
+            'dumper': 'Dumpers Depot', 'casaba': 'Casaba Outlet',
+            'galleria': 'Galleria', 'admin_office': 'Admin Office',
+            'centermass': 'Center Mass', 'platinumbay': 'Platinum Bay',
+            'hospital': 'Hospital', 'spaceport': 'Spaceport'
         };
-        if (map[rawPath.toLowerCase()]) return map[rawPath.toLowerCase()];
+        if (map[lower]) return map[lower];
+
+        // Hangar Cleanup (e.g., lorville_hangar_lrgtop -> Lorville)
+        if (lower.includes('hangar')) {
+            let name = lower.replace(/_/g, ' ');
+            // Remove size descriptors and specific hangar types to just get the location
+            name = name.replace(/\blrgtop\b/i, '')
+                .replace(/\bsmltop\b/i, '')
+                .replace(/\bmedtop\b/i, '')
+                .replace(/\blext\b/i, '')
+                .replace(/\bxg\b/i, '')
+                .replace(/\baeroview\b/i, '')
+                .replace(/\bselfland\b/i, '')
+                .replace(/\bindustrial\b/i, '')
+                .replace(/\bvfg\b/i, '')
+                .replace(/\brevelyork\b/i, '')
+                .replace(/\bhangar\b/i, '')
+                .replace(/\b\d+\b/g, '') // Remove numbers (e.g. 001)
+                .replace(/[()]/g, '') // Remove parentheses
+                .replace(/\s+/g, ' ') // Clean double spaces
+                .trim();
+
+            // Capitalize
+            return name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
 
         // Generic cleaning
         let name = rawPath.replace(/_/g, ' ');
-        name = name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
-        // Remove trash
+        // Remove trailing RS info
         name = name.replace(/ RS[A-Z0-9-]+$/i, '').replace(/^rs /i, '');
-        return name.trim();
+        // Capitalize words
+        return name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }
 }
 
