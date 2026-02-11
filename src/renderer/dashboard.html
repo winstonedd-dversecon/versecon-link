@@ -1741,7 +1741,7 @@
 
                 function renderCustomLocationList() {
                     const list = document.getElementById('custom-loc-list');
-                    if (!list) return; // Guard for missing HTML element?
+                    if (!list) return;
 
                     if (Object.keys(customLocations).length === 0) {
                         list.innerHTML = '<div style="font-style:italic; color:#555; text-align:center; padding:10px;">No custom locations saved.</div>';
@@ -1757,6 +1757,67 @@
                             <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:10px;">×</button>
                         </div>
                     `).join('');
+                }
+
+                // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
+                let defaultPatterns = {};
+                let patternOverrides = {};
+
+                async function loadBuiltinPatterns() {
+                    try {
+                        defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
+                        patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
+                        renderBuiltinPatterns();
+                    } catch (e) {
+                        console.error('Failed to load patterns:', e);
+                    }
+                }
+
+                function renderBuiltinPatterns() {
+                    const list = document.getElementById('builtin-pattern-list');
+                    if (!list) return;
+                    list.innerHTML = '';
+
+                    const keys = Object.keys(defaultPatterns).sort();
+
+                    keys.forEach(key => {
+                        const config = patternOverrides[key] || {};
+                        const isDisabled = config.disabled;
+                        const currentRegex = config.regex || defaultPatterns[key];
+                        const defaultRegex = defaultPatterns[key];
+                        const customMsg = config.message || '';
+
+                        const item = document.createElement('div');
+                        item.className = 'map-item';
+                        item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
+                        item.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
+                                <label style="font-size: 0.8rem; cursor: pointer;">
+                                    <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
+                                </label>
+                            </div>
+                            <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Trigger Regex:</div>
+                            <div style="font-family:monospace; font-size:0.7rem; color:#666; margin-bottom:2px;">Default: ${escapeHtml(defaultRegex.toString())}</div>
+                            <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 8px; color: #aaffaa;"
+                                value="${escapeHtml(currentRegex.toString())}" 
+                                onchange="updatePatternRegex('${key}', this.value)"
+                                ${isDisabled ? 'disabled' : ''}
+                                placeholder="Regex Pattern">
+                            <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Alert Message (Override):</div>
+                            <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
+                                value="${escapeHtml(customMsg)}"
+                                onchange="updatePatternMessage('${key}', this.value)"
+                                ${isDisabled ? 'disabled' : ''}
+                                placeholder="Leave empty to use system default...">
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+
+                function renderBuiltinList() {
+                    // Backwards compatibility for older calls
+                    renderBuiltinPatterns();
                 }
 
                 function updatePatternValueMap(key, value) {
