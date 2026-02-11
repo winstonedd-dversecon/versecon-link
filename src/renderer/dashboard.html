@@ -510,19 +510,6 @@
             display: flex;
         }
     </style>
-    <script>
-        // Raw log stream
-        ipcRenderer.on('log:raw', (e, line) => {
-            const rawFeed = document.getElementById('raw-log-list');
-            if (rawFeed) {
-                const div = document.createElement('div');
-                div.className = 'log-line';
-                div.textContent = line;
-                rawFeed.prepend(div);
-                if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
-            }
-        });
-    </script>
 </head>
 
 <body>
@@ -1636,6 +1623,19 @@
                 renderBuiltinPatterns();
             }
         }
+
+        // Raw log stream
+        ipcRenderer.on('log:raw', (e, line) => {
+            const rawFeed = document.getElementById('raw-log-list');
+            if (rawFeed) {
+                const div = document.createElement('div');
+                div.className = 'log-line';
+                div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.02); padding: 2px 0; white-space: pre-wrap; word-break: break-all;';
+                div.textContent = line;
+                rawFeed.prepend(div);
+                if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
+            }
+        });
 
         // Init
         loadBuiltinPatterns();

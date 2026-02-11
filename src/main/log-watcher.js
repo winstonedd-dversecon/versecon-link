@@ -93,9 +93,9 @@ class LogWatcher extends EventEmitter {
     static DEFAULT_PATTERNS = {
         // === Star Citizen 4.0+ Patterns ===
         // Connection & Identity
-        geid: /geid\s+(\d+)/,
-        player_name: /name\s+(.+?)\s+-\s+/,
-        legacy_login: /Legacy login response.*Handle\[(\w+)\]/,
+        geid: /geid\s+(\d+)/i,
+        player_name: /name\s+([A-Za-z0-9_]+)/i,
+        legacy_login: /Legacy login response.*Handle\[([^\]]+)\]/i,
 
         // Server & Environment
         server_env: /\[Trace\] Environment:\s+(\w+)/,
@@ -430,6 +430,10 @@ class LogWatcher extends EventEmitter {
         // Skip noise
         if (this.noisePatterns.some(p => p.test(line))) return false;
 
+        // v2.2 - Emit EVERY line for the Live Log Stream (Main -> Dashboard)
+        // This MUST happen before any 'matched' returns
+        this.emit('raw-line', line);
+
         let matched = false;
 
         // 1. Connection & Identity
@@ -621,9 +625,6 @@ class LogWatcher extends EventEmitter {
         }
 
         if (matched) return true;
-
-        // Default: just emit raw for debug
-        this.emit('raw-line', line);
 
         // === UNKNOWN DISCOVERY ===
         if (!this.captureUnknowns) return false;
