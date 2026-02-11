@@ -519,9 +519,23 @@ LogWatcher.on('gamestate', (data) => {
     // Game join/leave
     if (data.type === 'GAME_JOIN') {
         showTrayNotification('🎮 Game Joined', 'Connected to server');
-    } else if (data.type === 'GAME_LEAVE') {
-        showTrayNotification('🎮 Game Left', 'Disconnected from server');
+    } else if (data.type === 'GAME_LEAVE' || data.type === 'GAME_RESTART') {
+        const msg = data.type === 'GAME_LEAVE' ? 'Disconnected from server' : 'Game Client Restarted';
+        showTrayNotification('🎮 Game Status', msg);
+
+        // ═══ MISSION CLEANUP ═══
+        // Clear active missions on game exit/restart as they are session-based
+        if (config.activeMissions && Object.keys(config.activeMissions).length > 0) {
+            console.log('[Main] Clearing active missions on game exit.');
+            config.activeMissions = {};
+            config.currentMission = null;
+            config.currentObjective = null;
+            saveConfig();
+            broadcast('mission:list', []);
+        }
     }
+
+    // Medical
 
     // Medical
     if (data.type === 'MEDICAL_BED') {

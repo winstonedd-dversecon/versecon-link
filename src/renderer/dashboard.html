@@ -1664,22 +1664,25 @@
                 item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
                 item.innerHTML = `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="color: var(--accent); font-weight: bold;">${key}</span>
+                        <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
                         <label style="font-size: 0.8rem; cursor: pointer;">
                             <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
                         </label>
                     </div>
-                    <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 5px;"
+                    
+                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Trigger Regex:</div>
+                    <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 8px; color: #aaffaa;"
                         value="${escapeHtml(currentValue)}"
                         onchange="updatePatternRegex('${key}', this.value)"
                         ${isDisabled ? 'disabled' : ''}
                         placeholder="Regex Pattern">
                     
+                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Alert Message (Optional Override):</div>
                     <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
                         value="${escapeHtml(customMsg)}"
                         onchange="updatePatternMessage('${key}', this.value)"
                         ${isDisabled ? 'disabled' : ''}
-                        placeholder="[Default Alert Text] - Type to override message...">
+                        placeholder="Default system alert used if empty...">
                 `;
                 list.appendChild(item);
             });
@@ -1778,8 +1781,37 @@
             if (rawFeed) {
                 const div = document.createElement('div');
                 div.className = 'log-line';
-                div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.02); padding: 2px 0; white-space: pre-wrap; word-break: break-all;';
+                div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.02); padding: 2px 0; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s;';
+                div.title = 'Click to copy & use in Custom Locations';
                 div.textContent = line;
+
+                div.onclick = () => {
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(line);
+
+                    // Flash effect
+                    div.style.background = 'rgba(255,165,0,0.2)';
+                    setTimeout(() => div.style.background = 'transparent', 200);
+
+                    // Auto-fill Custom Location Input if relevant
+                    const locInput = document.getElementById('new-loc-key');
+                    if (locInput) {
+                        // Try to extract RoomName or Location first
+                        let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
+                        if (match) {
+                            locInput.value = match[1];
+                            document.getElementById('new-loc-val').focus();
+                            alert('Code copied to Custom Location input: ' + match[1]);
+                        } else {
+                            // Just copy whole line? Or maybe user wants to copy-paste manually.
+                            // Let's copy whole line to input if empty?
+                            if (!locInput.value) locInput.value = line;
+                            // Notification
+                            addDashItem('📋', 'Log line copied to clipboard');
+                        }
+                    }
+                };
+
                 rawFeed.prepend(div);
                 if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
             }
