@@ -510,6 +510,19 @@
             display: flex;
         }
     </style>
+    <script>
+        // Raw log stream
+        ipcRenderer.on('log:raw', (e, line) => {
+            const rawFeed = document.getElementById('raw-log-list');
+            if (rawFeed) {
+                const div = document.createElement('div');
+                div.className = 'log-line';
+                div.textContent = line;
+                rawFeed.prepend(div);
+                if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
+            }
+        });
+    </script>
 </head>
 
 <body>
@@ -576,6 +589,20 @@
                 <span class="feed-time">SYSTEM</span>
                 <span class="feed-icon">✔️</span>
                 <span class="feed-text">System initialized. Waiting for Game.log stream...</span>
+            </div>
+        </div>
+
+        <!-- ═══ NEW: LIVE RAW LOG FEED ═══ -->
+        <div
+            style="margin-top: 20px; flex: 1; display: flex; flex-direction: column; overflow: hidden; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="font-size: 0.9rem; color: #555; text-transform: uppercase; letter-spacing: 2px;">Live Log
+                    Stream</h3>
+                <span style="font-size: 0.7rem; color: #444;">Showing last 100 lines</span>
+            </div>
+            <div id="raw-log-list"
+                style="flex: 1; overflow-y: auto; font-family: monospace; font-size: 0.75rem; color: #555; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                <div style="color: #333; font-style: italic;">No log lines received yet...</div>
             </div>
         </div>
     </div>

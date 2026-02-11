@@ -145,6 +145,11 @@ class LogWatcher extends EventEmitter {
         item_placement: /<\[ActorState\] Place>/,
         equip_item: /<EquipItem>/,
         docking_platform: /<CSCLoadingPlatformManager>/,
+
+        // Hazards & Misc
+        hazard_fire: /Fire detected/i,
+        location_obj: /objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//,
+        ship_exit_confirm: /<Vehicle Control Flow>.*releasing/i
     };
 
     findLogFile() {
@@ -709,9 +714,9 @@ class LogWatcher extends EventEmitter {
             });
         }
 
-        // Emit periodically (every 50 new unknowns)
+        // Emit periodically (every 10 new unknowns)
         const total = Array.from(this.unknownGroups.values()).reduce((s, g) => s + g.count, 0);
-        if (total % 50 === 0) {
+        if (total % 10 === 0) {
             this.emitUnknowns();
         }
     }

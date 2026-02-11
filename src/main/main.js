@@ -64,6 +64,11 @@ function createWindows() {
 
     dashboardWindow.loadFile(path.join(__dirname, '../renderer/dashboard.html'));
 
+    dashboardWindow.webContents.on('did-finish-load', () => {
+        LogWatcher.emitCurrentState();
+        LogWatcher.emitUnknowns();
+    });
+
     // Close-to-tray behavior
     dashboardWindow.on('close', (e) => {
         if (!isQuitting) {
@@ -102,6 +107,10 @@ function createWindows() {
     overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
     overlayWindow.loadFile(path.join(__dirname, '../renderer/overlay.html'));
+
+    overlayWindow.webContents.on('did-finish-load', () => {
+        LogWatcher.emitCurrentState();
+    });
 
     // 3. Alert Window (Full-screen transparent for HUD warnings)
     alertWindow = new BrowserWindow({
@@ -383,23 +392,18 @@ LogWatcher.on('gamestate', (data) => {
     broadcast('log:update', data);
 
     // Critical alerts → show alert window + tray notification
-    if (data.type === 'STATUS') {
+    if (data.type === 'STATUS' || data.type === 'ZONE' || data.type === 'HAZARD_FIRE') {
         if (alertWindow && !alertWindow.isDestroyed()) {
             alertWindow.show();
             alertWindow.webContents.send('alert:trigger', data);
         }
-        if (data.value === 'death') {
-            showTrayNotification('☠️ DEATH DETECTED', 'Your character has died.');
-        } else if (data.value === 'suffocating') {
-            showTrayNotification('🌡️ SUFFOCATING', 'Check your helmet seal!');
-        }
-    }
 
-    // Zone changes
-    if (data.type === 'ZONE' && data.value === 'armistice_leave') {
-        if (alertWindow && !alertWindow.isDestroyed()) {
-            alertWindow.show();
-            alertWindow.webContents.send('alert:trigger', { type: 'ZONE', value: 'armistice_leave' });
+        if (data.type === 'STATUS') {
+            if (data.value === 'death') {
+                showTrayNotification('☠️ DEATH DETECTED', 'Your character has died.');
+            } else if (data.value === 'suffocating') {
+                showTrayNotification('🌡️ SUFFOCATING', 'Check your helmet seal!');
+            }
         }
     }
 
