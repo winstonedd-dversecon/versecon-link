@@ -17,6 +17,7 @@
   "dependencies": {
     "axios": "^1.6.5",
     "chokidar": "^3.5.3",
+    "electron-updater": "^6.1.7",
     "obs-websocket-js": "^5.0.5",
     "socket.io-client": "^4.7.4",
     "tail": "^2.2.6"
@@ -24,6 +25,11 @@
   "build": {
     "appId": "com.versecon.link",
     "productName": "VerseCon Link",
+    "publish": {
+      "provider": "github",
+      "owner": "winstonedd-dversecon",
+      "repo": ".gemini"
+    },
     "win": {
       "target": "nsis"
     },

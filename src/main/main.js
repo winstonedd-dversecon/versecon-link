@@ -1,15 +1,24 @@
 const { app, BrowserWindow, ipcMain, screen, dialog, Tray, Menu, nativeImage, Notification } = require('electron');
 const path = require('path');
-const fs = require('fs'); // Added for config persistence
+const fs = require('fs');
 const LogWatcher = require('./log-watcher');
 const APIClient = require('./api-client');
+const UpdateManager = require('./update-manager'); // Phase 6
+const TelemetryEngine = require('./telemetry/telemetry-engine'); // Phase 6 Telemetry
 
 let dashboardWindow;
 let overlayWindow;
 let alertWindow;
 let tray = null;
+let parkingUpdateManager = null;
+let telemetryEngine = null; // Telemetry Instance
 let isQuitting = false;
 let dndMode = false;
+
+// ═══ FEATURE FLAGS ═══
+const IS_ADMIN = process.env.VCON_ROLE === 'admin' || process.env.VCON_DEV === 'true';
+console.log('[Main] Role:', IS_ADMIN ? 'ADMIN/DEV' : 'USER');
+
 
 let config = { shipMap: {}, customPatterns: [] };
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
@@ -72,13 +81,44 @@ function createWindows() {
             LogWatcher.cachedState.spawn = config.spawnPoint;
             dashboardWindow.webContents.send('log:update', { type: 'SPAWN_POINT', value: config.spawnPoint });
         }
-    });
 
-    // Close-to-tray behavior
-    dashboardWindow.on('close', (e) => {
-        if (!isQuitting) {
-            e.preventDefault();
-            dashboardWindow.hide();
+        // Initialize Auto-Updater (Phase 6)
+        if (!parkingUpdateManager) {
+            parkingUpdateManager = new UpdateManager(dashboardWindow);
+            parkingUpdateManager.mainWindow = dashboardWindow; // Ensure ref updates if window recreated
+            // Check for updates after short delay
+            setTimeout(() => {
+                if (!process.env.VCON_DEV) ipcMain.emit('update:check');
+            }, 5000);
+        }
+
+
+        // Initialize Telemetry Engine (Phase 6)
+        if (!telemetryEngine) {
+            telemetryEngine = new TelemetryEngine(config.logPath || null);
+
+            // Wire Telemetry Events to API and Dashboard
+            telemetryEngine.on('telemetry', (event) => {
+                console.log('[Main] Telemetry Event:', event.type);
+                broadcast('telemetry:event', event);
+                // TODO: Send to APIClient once method exists
+                // APIClient.sendTelemetry(event); 
+            });
+
+            // Legacy Compatibility: Feed raw lines to LogWatcher
+            telemetryEngine.on('raw', (line) => {
+                // Determine if we should treat as initial read or live
+                // TelemetryEngine handles this internally usually, but here we just pass line
+                // LogWatcher.processLine(line) expects live lines usually
+                LogWatcher.processLine(line, false);
+            });
+
+            // Start if path exists
+            if (config.logPath) {
+                console.log('[Main] Starting Telemetry Engine on:', config.logPath);
+                telemetryEngine.setLogPath(config.logPath);
+                // telemetryEngine.start(); // Helper config setter starts it
+            }
         }
     });
 
@@ -275,10 +315,26 @@ ipcMain.handle('app:select-log', async () => {
 
     if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0];
-        LogWatcher.setPath(selectedPath);
+
+        // Update Config
+        config.logPath = selectedPath;
+        saveConfig();
+
+        // Update Telemetry Engine
+        if (telemetryEngine) {
+            telemetryEngine.setLogPath(selectedPath);
+        } else {
+            // Fallback to legacy if engine failed init
+            LogWatcher.setPath(selectedPath); // Legacy
+        }
+
         return selectedPath;
     }
     return null;
+});
+
+ipcMain.handle('app:get-role', async () => {
+    return { isAdmin: IS_ADMIN, isDev: !!process.env.VCON_DEV };
 });
 
 ipcMain.handle('app:open-external', async (event, url) => {
