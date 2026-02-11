@@ -735,6 +735,15 @@
                         oninput="updateCooldown('suffocating', this.value)">
                     <span class="cooldown-val" id="cd-suffocating-val">5s</span>
                 </div>
+                <div class="row">
+                    <div id="detected-ship-label"
+                        style="display:none; margin-bottom: 10px; padding: 8px; background: rgba(0,255,100,0.1); border: 1px solid var(--accent); border-radius: 4px; color: #ccc;">
+                    </div>
+                    <div class="col-s-6">
+                        <label>Ship Name (from logs)</label>
+                        <input type="text" id="new-ship-name" placeholder="e.g. Cutter">
+                    </div>
+                </div>
                 <div class="cooldown-row">
                     <label>Depressurizing</label>
                     <input type="range" id="cd-depressurizing" min="0" max="30" value="5"
@@ -1060,6 +1069,22 @@
         function saveShipMap() {
             ipcRenderer.invoke('settings:save-ship-map', shipMap);
         }
+
+        // ═══ DETECTED SHIP HELPER ═══
+        let lastDetectedShip = null;
+        ipcRenderer.on('settings:last-ship', (e, shipName) => {
+            if (!shipName) return;
+            lastDetectedShip = shipName;
+            const label = document.getElementById('detected-ship-label');
+            if (label) {
+                label.innerHTML = `Detected: <strong style="color:var(--accent)">${shipName}</strong> <a href="#" onclick="useDetectedShip('${shipName}')" style="font-size:0.8em; margin-left:10px">[USE THIS]</a>`;
+                label.style.display = 'block';
+            }
+        });
+
+        window.useDetectedShip = (name) => {
+            document.getElementById('new-ship-name').value = name;
+        };
 
         // Initialize (called after ipcRenderer ready? No, call directly here, assuming early enough)
         loadShipMap();

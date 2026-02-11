@@ -8,7 +8,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap');
 
         :root {
-            --bg-glass: rgba(11, 12, 16, 0.6);
+            --bg-glass: rgba(11, 12, 16, 0.85);
             --accent: #ffa500;
             --cyan: #00c8ff;
             --text-main: #e0e0e0;
@@ -16,6 +16,7 @@
             --success: #00ff88;
             --danger: #ff4444;
             --purple: #a855f7;
+            --hud-border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -28,235 +29,210 @@
             background: transparent;
             font-family: 'Rajdhani', sans-serif;
             color: var(--text-main);
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            grid-template-rows: auto 1fr;
+            pointer-events: none;
+            /* Let clicks pass through empty space */
         }
 
-        /* ═══ DRAG HANDLE ═══ */
+        /* ═══ INTERACTIVE ELEMENTS ═══ */
+        .interactive {
+            pointer-events: auto;
+        }
+
+        /* ═══ TOP CENTER HUD (Dynamic Island / Flight Deck) ═══ */
+        .hud-top-center {
+            grid-column: 2;
+            grid-row: 1;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 600px;
+        }
+
+        /* Drag Handle incorporated into design */
         .drag-handle {
-            background: linear-gradient(90deg, rgba(255, 165, 0, 0.3), transparent);
-            border: 1px solid rgba(255, 165, 0, 0.2);
-            border-radius: 4px 4px 0 0;
-            padding: 4px 10px;
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, transparent, rgba(255, 165, 0, 0.2), transparent);
             cursor: grab;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            margin-bottom: 4px;
-            user-select: none;
+            margin-bottom: 2px;
             -webkit-app-region: no-drag;
+            /* We handle drag manually if needed, or rely on this element */
         }
 
         .drag-handle:active {
             cursor: grabbing;
         }
 
-        .drag-handle .grip {
-            font-size: 0.5rem;
-            letter-spacing: 2px;
-            color: var(--accent);
-            opacity: 0.6;
+        .drag-handle-bar {
+            width: 100px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+            opacity: 0.5;
         }
 
-        .drag-handle .label {
-            font-size: 0.55rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-dim);
-        }
-
-        .drag-handle .lock-btn {
-            background: none;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-dim);
-            font-size: 0.6rem;
-            padding: 1px 6px;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-
-        .drag-handle .lock-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .drag-handle .lock-btn.locked {
-            color: var(--danger);
-            border-color: var(--danger);
-        }
-
-        /* ═══ HUD MODULES ═══ */
-        .hud-module {
+        /* Flight Deck Container */
+        .flight-deck {
             background: var(--bg-glass);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-left: 3px solid var(--accent);
-            padding: 10px 14px;
-            margin-bottom: 6px;
-            transform: skewX(-2deg);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-            transition: all 0.3s ease;
+            border: var(--hud-border);
+            border-top: 2px solid var(--accent);
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            /* Sci-fi shape */
+            clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+            padding-bottom: 12px;
         }
 
-        .hud-label {
+        /* Data Columns */
+        .fd-col {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            padding: 0 15px;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .fd-col:last-child {
+            border-right: none;
+        }
+
+        .fd-label {
             font-size: 0.6rem;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             color: var(--text-dim);
-            margin-bottom: 3px;
         }
 
-        .hud-value {
-            font-size: 1.05rem;
+        .fd-value {
+            font-size: 1.1rem;
             font-weight: 700;
-            color: white;
+            color: #fff;
+            white-space: nowrap;
         }
 
-        /* Module accent colors */
-        .hud-module.ship {
-            border-left-color: var(--cyan);
+        .fd-value.large {
+            font-size: 1.3rem;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.4);
         }
 
-        .hud-module.party {
-            border-left-color: var(--success);
+        .fd-value.cyan {
+            color: var(--cyan);
         }
 
-        .hud-module.cmd {
-            border-left-color: var(--danger);
-        }
-
-        .hud-module.spawn {
-            border-left-color: var(--purple);
-        }
-
-        .hud-module.server {
-            border-left-color: #888;
-        }
-
-        /* Ship image */
-        .ship-image {
-            width: 100%;
-            max-height: 80px;
-            object-fit: contain;
-            border-radius: 4px;
-            margin-top: 5px;
-            opacity: 0.85;
-        }
-
-        /* ═══ STATUS DOTS ═══ */
-        .status-row {
+        /* Status Indicators (Mini) */
+        .status-cluster {
             display: flex;
-            gap: 8px;
-            padding: 4px 10px;
-            margin-bottom: 6px;
+            gap: 6px;
+            margin-top: 4px;
+            justify-content: center;
         }
 
-        .status-dot {
+        .s-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #ff4444;
-            display: inline-block;
-            margin-right: 4px;
-            vertical-align: middle;
+            background: #333;
+            transition: all 0.3s;
         }
 
-        .status-dot.online {
+        .s-dot.on {
             background: var(--success);
-            box-shadow: 0 0 6px var(--success);
+            box-shadow: 0 0 5px var(--success);
         }
 
-        .status-label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
+        .s-dot.warn {
+            background: var(--accent);
+        }
+
+        .s-dot.err {
+            background: var(--danger);
+            box-shadow: 0 0 5px var(--danger);
+        }
+
+        /* ═══ RIGHT PANEL (Lists) ═══ */
+        .hud-right-panel {
+            position: absolute;
+            right: 20px;
+            top: 300px;
+            /* Below Mission Objective space */
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel-module {
+            background: linear-gradient(90deg, transparent, rgba(11, 12, 16, 0.9));
+            border-right: 2px solid var(--text-dim);
+            padding: 10px;
+            text-align: right;
+            transition: all 0.3s;
+        }
+
+        .panel-module.active {
+            border-right-color: var(--accent);
+        }
+
+        .panel-header {
+            font-size: 0.7rem;
             text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 5px;
             letter-spacing: 1px;
         }
 
-        /* ═══ COMMAND DISPLAY ═══ */
-        .active-command {
-            background: rgba(255, 68, 68, 0.15);
-            border: 1px solid rgba(255, 68, 68, 0.4);
-            border-left: 3px solid var(--danger);
-            padding: 10px;
-            margin-bottom: 6px;
-            animation: cmdPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes cmdPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 5px rgba(255, 68, 68, 0.2);
-            }
-
-            50% {
-                box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
-            }
-        }
-
-        .cmd-text {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--danger);
-            text-transform: uppercase;
-        }
-
-        .cmd-from {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-        }
-
-        .ack-btn {
-            background: rgba(255, 68, 68, 0.2);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-            padding: 4px 12px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            margin-top: 5px;
-            font-family: inherit;
-        }
-
-        .ack-btn:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        /* ═══ PARTY MEMBERS ═══ */
-        .party-list {
+        /* Party List */
+        .party-item {
+            font-size: 0.85rem;
+            margin-bottom: 2px;
             display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .party-member {
-            font-size: 0.75rem;
-            color: var(--text-main);
-            display: flex;
+            justify-content: flex-end;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
-        /* ═══ FEED ENTRIES ═══ */
-        .feed-entry {
-            font-size: 0.65rem;
-            color: var(--text-dim);
-            padding: 2px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        .party-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #555;
         }
 
-        .feed-entry .icon {
-            margin-right: 4px;
+        .party-status.online {
+            background: var(--success);
         }
 
-        /* ═══ ANIMATIONS ═══ */
-        @keyframes slideIn {
+        /* Feed List */
+        .feed-item {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 4px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding-right: 8px;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
             from {
-                transform: translateX(100%);
+                transform: translateX(20px);
                 opacity: 0;
             }
 
@@ -266,11 +242,52 @@
             }
         }
 
-        .slide-in {
-            animation: slideIn 0.3s ease-out;
+        /* ═══ ALERTS (Centered) ═══ */
+        .alert-container {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
         }
 
-        /* Hidden by default */
+        .alert-box {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 15px 40px;
+            text-align: center;
+            clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%, 0% 20%);
+            margin-bottom: 10px;
+            animation: pulseAlert 1s infinite alternate;
+        }
+
+        @keyframes pulseAlert {
+            from {
+                box-shadow: 0 0 10px rgba(255, 68, 68, 0.2);
+            }
+
+            to {
+                box-shadow: 0 0 30px rgba(255, 68, 68, 0.6);
+            }
+        }
+
+        .active-command {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 10px 30px;
+            clip-path: polygon(0 0, 90% 0, 100% 20%, 100% 100%, 10% 100%, 0 80%);
+            text-align: center;
+            margin-bottom: 10px;
+            pointer-events: auto;
+            /* Allow clicking ACK */
+        }
+
         .hidden {
             display: none !important;
         }
@@ -278,71 +295,78 @@
 </head>
 
 <body>
-    <!-- Drag Handle -->
-    <div class="drag-handle" id="dragHandle">
-        <span class="grip">⣿⣿⣿</span>
-        <span class="label">VerseCon HUD</span>
-        <button class="lock-btn" id="lockBtn" title="Lock/Unlock position">🔓</button>
-    </div>
 
-    <!-- Connection Status -->
-    <div class="status-row">
-        <span><span class="status-dot" id="status-log"></span><span class="status-label">Log</span></span>
-        <span><span class="status-dot" id="status-api"></span><span class="status-label">API</span></span>
-        <span><span class="status-dot" id="status-game"></span><span class="status-label">Game</span></span>
-    </div>
+    <!-- ═══ TOP CENTER: FLIGHT DECK ═══ -->
+    <div class="hud-top-center interactive" id="hudContainer">
+        <!-- Drag Handle -->
+        <div class="drag-handle" id="dragHandle">
+            <div class="drag-handle-bar"></div>
+        </div>
 
-    <!-- Server Info -->
-    <div class="hud-module server" id="mod-server">
-        <div class="hud-label">Server</div>
-        <div class="hud-value" id="val-server">—</div>
-    </div>
+        <!-- Main PCB -->
+        <div class="flight-deck">
+            <!-- Location -->
+            <div class="fd-col">
+                <div class="fd-label">Location</div>
+                <div class="fd-value large" id="val-location">Unknown</div>
+            </div>
 
-    <!-- Current Ship -->
-    <div class="hud-module ship" id="mod-ship">
-        <div class="hud-label">Current Ship</div>
-        <div class="hud-value" id="val-ship">On Foot</div>
-        <img class="ship-image hidden" id="ship-img" alt="Ship">
-    </div>
+            <!-- Ship -->
+            <div class="fd-col">
+                <div class="fd-label">Vehicle Control</div>
+                <div class="fd-value cyan" id="val-ship">On Foot</div>
+                <div class="status-cluster">
+                    <div class="s-dot" id="dot-log" title="Game Log"></div>
+                    <div class="s-dot" id="dot-api" title="VerseCon API"></div>
+                    <div class="s-dot" id="dot-game" title="Game Session"></div>
+                </div>
+            </div>
 
-    <!-- Party / Crew -->
-    <div class="hud-module party" id="mod-party">
-        <div class="hud-label">Party <span id="party-count" style="color: var(--success);">(0)</span></div>
-        <div class="party-list" id="party-list">
-            <div style="color: var(--text-dim); font-size: 0.7rem;">Solo</div>
+            <!-- Spawn -->
+            <div class="fd-col">
+                <div class="fd-label">Home</div>
+                <div class="fd-value" id="val-spawn">Unknown</div>
+            </div>
         </div>
     </div>
 
-    <!-- Spawn Point -->
-    <div class="hud-module spawn" id="mod-spawn">
-        <div class="hud-label">Spawn Point</div>
-        <div class="hud-value" id="val-spawn">Unknown</div>
+    <!-- ═══ CENTER: ALERTS ═══ -->
+    <div class="alert-container">
+        <!-- Critical Alert -->
+        <div class="alert-box hidden" id="mod-alert">
+            <h2 id="val-alert-title">WARNING</h2>
+            <div id="val-alert-msg">Description</div>
+        </div>
+
+        <!-- Active Command -->
+        <div class="active-command hidden" id="mod-command">
+            <div style="font-size:0.7rem; opacity:0.7;">INCOMING ORDER</div>
+            <div style="font-size:1.4rem; font-weight:bold; margin: 4px 0;" id="cmd-text">HOLD POSITION</div>
+            <div style="font-size:0.7rem; opacity:0.7;" id="cmd-from">FROM COMMANDER</div>
+            <button id="ack-btn"
+                style="margin-top:8px; background:var(--accent); border:none; color:black; font-weight:bold; padding:4px 12px; cursor:pointer;">ACKNOWLEDGE</button>
+        </div>
     </div>
 
-    <!-- Active Command -->
-    <div class="active-command hidden" id="mod-command">
-        <div class="hud-label">⚡ Active Order</div>
-        <div class="cmd-text" id="cmd-text">—</div>
-        <div class="cmd-from" id="cmd-from"></div>
-        <button class="ack-btn" id="ack-btn">ACK ✓</button>
-    </div>
+    <!-- ═══ RIGHT: LISTS ═══ -->
+    <div class="hud-right-panel interactive">
 
-    <!-- Player Status (Critical) -->
-    <div class="hud-module hidden" id="mod-alert" style="border-left-color: var(--danger);">
-        <div class="hud-label">⚠️ Alert</div>
-        <div class="hud-value" id="val-alert" style="color: var(--danger);">—</div>
-    </div>
+        <!-- Party Module -->
+        <div class="panel-module" id="mod-party">
+            <div class="panel-header">Squadron Link <span id="party-count">(0)</span></div>
+            <div id="party-list">
+                <div class="party-item" style="opacity:0.5;">No Signal</div>
+            </div>
+        </div>
 
-    <!-- Location -->
-    <div class="hud-module">
-        <div class="hud-label">Location</div>
-        <div class="hud-value" id="val-location">—</div>
-    </div>
+        <!-- Event Feed -->
+        <div class="panel-module active" style="margin-top: 20px;">
+            <div class="panel-header">Tactical Feed</div>
+            <div id="feed-list">
+                <!-- Items injected here -->
+            </div>
+        </div>
 
-    <!-- Recent Feed (mini) -->
-    <div class="hud-module" style="padding: 6px 10px;">
-        <div class="hud-label">Event Feed</div>
-        <div id="feed-list" style="max-height: 100px; overflow-y: auto;"></div>
     </div>
 
     <script>
@@ -350,378 +374,149 @@
 
         // State
         let currentShip = null;
-        let shipImagePath = null;
-        let partyMembers = [];
         let activeCommand = null;
         let isDragging = false;
-        let isLocked = false;
         let dragOffset = { x: 0, y: 0 };
+        let windowPos = { x: 0, y: 0 };
 
-        // ═══ SOUND SYSTEM ═══
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type = 'notification') {
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                gain.gain.value = 0.1;
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                const sounds = {
-                    notification: { freq: 880, type: 'sine', dur: 150 },
-                    alert: { freq: 440, type: 'triangle', dur: 400 },
-                    death: { freq: 200, type: 'sawtooth', dur: 800 }
-                };
-
-                const s = sounds[type] || sounds.notification;
-                osc.frequency.value = s.freq;
-                osc.type = s.type;
-
-                osc.start();
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + s.dur / 1000);
-                osc.stop(audioCtx.currentTime + s.dur / 1000);
-            } catch (e) { console.error('Sound error:', e); }
-        }
-
-        // ═══ DRAG FUNCTIONALITY ═══
+        // ═══ DRAG LOGIC ═══
         const dragHandle = document.getElementById('dragHandle');
-        const lockBtn = document.getElementById('lockBtn');
 
         dragHandle.addEventListener('mousedown', (e) => {
-            if (isLocked) return;
             isDragging = true;
             dragOffset.x = e.screenX;
             dragOffset.y = e.screenY;
-
-            // Get current window position
             ipcRenderer.send('overlay:get-position');
         });
 
-        let windowPos = { x: 0, y: 0 };
-        ipcRenderer.on('overlay:position', (e, pos) => {
-            windowPos = pos;
-        });
+        ipcRenderer.on('overlay:position', (e, pos) => { windowPos = pos; });
 
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             const dx = e.screenX - dragOffset.x;
             const dy = e.screenY - dragOffset.y;
-            ipcRenderer.send('overlay:move', {
-                x: windowPos.x + dx,
-                y: windowPos.y + dy
-            });
+            ipcRenderer.send('overlay:move', { x: windowPos.x + dx, y: windowPos.y + dy });
         });
 
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+        document.addEventListener('mouseup', () => { isDragging = false; });
 
-        lockBtn.addEventListener('click', () => {
-            isLocked = !isLocked;
-            lockBtn.textContent = isLocked ? '🔒' : '🔓';
-            lockBtn.classList.toggle('locked', isLocked);
-        });
-
-        // ═══ FEED HELPER ═══
+        // ═══ UI HELPERS ═══
         function addFeedEntry(icon, text) {
             const list = document.getElementById('feed-list');
-            const entry = document.createElement('div');
-            entry.className = 'feed-entry slide-in';
-            entry.innerHTML = `<span class="icon">${icon}</span> ${text}`;
-            list.insertBefore(entry, list.firstChild);
-            // Keep max 15 entries
-            while (list.children.length > 15) {
+            const div = document.createElement('div');
+            div.className = 'feed-item';
+            div.innerHTML = `${text} <span style="opacity:0.7; margin-left:4px;">${icon}</span>`;
+
+            list.insertBefore(div, list.firstChild);
+
+            // Limit to 8 items
+            while (list.children.length > 8) {
                 list.removeChild(list.lastChild);
             }
         }
 
-        // ═══ ACK BUTTON ═══
-        document.getElementById('ack-btn').addEventListener('click', () => {
-            if (activeCommand) {
-                ipcRenderer.send('command:ack', { id: activeCommand.id });
-                document.getElementById('mod-command').classList.add('hidden');
-                activeCommand = null;
-                addFeedEntry('✅', 'Order acknowledged');
-            }
-        });
+        // ═══ DATA HANDLERS ═══
 
-        // ═══ EVENT HANDLERS ═══
-        ipcRenderer.on('log:status', (e, data) => {
-            document.getElementById('status-log').classList.toggle('online', data.connected);
-        });
+        // Connectivity
+        ipcRenderer.on('log:status', (e, d) => document.getElementById('dot-log').classList.toggle('on', d.connected));
+        ipcRenderer.on('api:status', (e, d) => document.getElementById('dot-api').classList.toggle('on', d.connected));
 
-        ipcRenderer.on('api:status', (e, data) => {
-            document.getElementById('status-api').classList.toggle('online', data.connected);
-        });
-
-        // Main game event handler
+        // Game Events
         ipcRenderer.on('log:update', (e, data) => {
             switch (data.type) {
-                // Server
-                case 'SERVER_ENV':
-                    document.getElementById('val-server').textContent = data.value;
-                    document.getElementById('status-game').classList.add('online');
-                    break;
-
-                case 'SESSION_ID':
-                    // Append session to server display
-                    const serverEl = document.getElementById('val-server');
-                    if (serverEl.textContent !== '—') {
-                        serverEl.textContent = serverEl.textContent.split(' ')[0] + ' 🔗';
-                    }
-                    break;
-
-                // Ship
-                case 'SHIP_ENTER':
-                    currentShip = data.value;
-                    document.getElementById('val-ship').textContent = data.value;
-                    const shipImg = document.getElementById('ship-img');
-                    if (data.image) {
-                        shipImg.src = data.image;
-                        shipImg.classList.remove('hidden');
-                    } else if (shipImagePath) {
-                        shipImg.src = shipImagePath;
-                        shipImg.classList.remove('hidden');
-                    }
-                    addFeedEntry('🚀', `Boarded: ${data.value}`);
-                    break;
-
-                case 'SHIP_EXIT':
-                    currentShip = null;
-                    document.getElementById('val-ship').textContent = 'On Foot';
-                    document.getElementById('ship-img').classList.add('hidden');
-                    addFeedEntry('🚶', `Exited: ${data.value}`);
-                    break;
-
-                case 'SHIP_CURRENT':
-                    currentShip = data.value;
-                    document.getElementById('val-ship').textContent = data.value;
-                    break;
-
-                case 'VEHICLE_SPAWN':
-                    addFeedEntry('🚀', `Vehicle spawned: ${data.value}`);
-                    break;
-
-                // Location
                 case 'LOCATION':
                 case 'LOCATION_HINT':
-                case 'LOCATION_PLANET':
                     document.getElementById('val-location').textContent = data.value;
                     break;
 
-                // Spawn
+                case 'SHIP_ENTER':
+                    document.getElementById('val-ship').textContent = data.value;
+                    addFeedEntry('🚀', `Boarded ${data.value}`);
+                    break;
+
+                case 'SHIP_EXIT':
+                    document.getElementById('val-ship').textContent = 'On Foot';
+                    addFeedEntry('🦶', `Exited Vehicle`);
+                    break;
+
                 case 'SPAWN_SET':
-                case 'SPAWN_POINT':
                     document.getElementById('val-spawn').textContent = data.value;
-                    addFeedEntry('📍', `Spawn: ${data.value}`);
-                    break;
-
-                // Status alerts
-                case 'STATUS':
-                    const alertMod = document.getElementById('mod-alert');
-                    const alertVal = document.getElementById('val-alert');
-                    alertMod.classList.remove('hidden');
-
-                    if (data.value === 'death') {
-                        alertVal.textContent = '☠️ DEATH';
-                        alertVal.style.color = '#ff4444';
-                        addFeedEntry('☠️', 'Death detected');
-                    } else if (data.value === 'suffocating') {
-                        alertVal.textContent = '🌡️ SUFFOCATING';
-                        alertVal.style.color = '#00c8ff';
-                        addFeedEntry('🌡️', 'Suffocating!');
-                    } else if (data.value === 'depressurizing') {
-                        alertVal.textContent = '💨 DEPRESSURIZING';
-                        alertVal.style.color = '#ffaa00';
-                        addFeedEntry('💨', 'Depressurizing');
-                    }
-
-                    // Auto-hide after 10s
-                    setTimeout(() => {
-                        alertMod.classList.add('hidden');
-                    }, 10000);
-                    break;
-
-                // Zone
-                case 'ZONE':
-                    if (data.value === 'armistice_enter') {
-                        addFeedEntry('🛡️', 'Entered Safe Zone');
-                    } else if (data.value === 'armistice_leave') {
-                        addFeedEntry('⚠️', 'Leaving Armistice Zone!');
-                    } else if (data.value === 'monitored_enter') {
-                        addFeedEntry('📡', 'Entered Monitored Space');
-                    }
-                    break;
-
-                // Quantum
-                case 'QUANTUM':
-                    addFeedEntry(data.value === 'entered' ? '🌌' : '🛑', `Quantum ${data.value}`);
-                    break;
-
-                // Connection
-                case 'CONNECTION':
-                    document.getElementById('status-game').classList.toggle('online',
-                        data.value === 'CONNECTED' || data.value === 'IN_GAME' || data.value === 'IN_SESSION');
-                    if (data.value === 'IN_GAME') addFeedEntry('🎮', 'Connected to game');
+                    addFeedEntry('🏠', 'Spawn Updated');
                     break;
 
                 case 'GAME_JOIN':
-                    document.getElementById('status-game').classList.add('online');
-                    addFeedEntry('🎮', 'Joined game');
+                    document.getElementById('dot-game').classList.add('on');
+                    addFeedEntry('🎮', 'Connected');
                     break;
 
                 case 'GAME_LEAVE':
-                    document.getElementById('status-game').classList.remove('online');
-                    addFeedEntry('🚪', 'Left game');
+                    document.getElementById('dot-game').classList.remove('on');
+                    addFeedEntry('🔌', 'Disconnected');
                     break;
 
-                case 'GAME_RESTART':
-                    document.getElementById('status-game').classList.remove('online');
-                    addFeedEntry('🔄', 'Game restarting...');
+                // Alerts
+                case 'STATUS':
+                    if (['death', 'suffocating', 'depressurizing'].includes(data.value)) {
+                        showAlert(data.value.toUpperCase(), 'CRITICAL STATUS ALERT');
+                    }
                     break;
 
-                // Login
-                case 'LOGIN':
-                    addFeedEntry('🟢', `Online: ${data.handle || 'Pilot'}`);
+                case 'ZONE':
+                    if (data.value.includes('enter')) addFeedEntry('🛡️', 'Zone Entry');
+                    if (data.value.includes('leave')) addFeedEntry('⚠️', 'Zone Exit');
                     break;
 
-                case 'PLAYER_NAME':
-                    addFeedEntry('👤', `Handle: ${data.value}`);
-                    break;
-
-                // Missions
-                case 'MISSION':
-                    const mIcons = { accepted: '📋', completed: '✅', failed: '❌', shared: '📢', update: '📝' };
-                    addFeedEntry(mIcons[data.value] || '📋', `Mission ${data.value}`);
-                    break;
-
-                case 'MISSION_MARKER':
-                    addFeedEntry('🎯', 'New Mission Waypoint');
-                    break;
-
-                // Custom Alerts
-                case 'CUSTOM':
-                    const cIcons = { INFO: 'ℹ️', WARNING: '⚠️', CRITICAL: '🚨' };
-                    addFeedEntry(cIcons[data.level] || '🔔', data.message);
-                    break;
-
-                // Insurance
-                case 'INSURANCE_CLAIM':
-                    addFeedEntry('🛡️', 'Insurance claim filed');
-                    break;
-
-                // Docking
-                case 'DOCKING':
-                    addFeedEntry('🔗', `Docking ${data.value}`);
-                    break;
-
-                // Inventory
-                case 'INVENTORY':
-                    addFeedEntry(data.value === 'opened' ? '📦' : '📦', `Inventory ${data.value}`);
-                    break;
-
-                // Medical
-                case 'MEDICAL_BED':
-                    addFeedEntry('🏥', 'Medical bed entered');
-                    break;
-
-                // Party
-                case 'PARTY_INVITE':
-                    addFeedEntry('📩', 'Party invite pending');
-                    break;
-
-                // Equipment
-                case 'EQUIPMENT':
-                    addFeedEntry('🎒', `${data.value.item.split('_')[0]} → ${data.value.port}`);
+                case 'QUANTUM':
+                    addFeedEntry('🌌', `Quantum ${data.value}`);
                     break;
             }
         });
 
-        // Command from server or local
-        ipcRenderer.on('command:receive', (e, data) => {
-            activeCommand = data;
-            const cmdMod = document.getElementById('mod-command');
-            cmdMod.classList.remove('hidden');
-            document.getElementById('cmd-text').textContent = data.text || data.preset || 'ORDER';
-            document.getElementById('cmd-from').textContent = data.from ? `from ${data.from}` : '';
-            addFeedEntry('📢', data.text || data.preset);
-        });
-
-        ipcRenderer.on('command:sent', (e, data) => {
-            addFeedEntry('📢', `Sent: ${data.text || data.preset}`);
-        });
-
-        // VerseCon events
-        ipcRenderer.on('vcon:beacon', (e, data) => {
-            addFeedEntry('🆘', data.message || 'Beacon alert');
-        });
-
-        ipcRenderer.on('vcon:job', (e, data) => {
-            addFeedEntry('📜', data.message || 'Contract posted');
-        });
-
-        // Party updates
+        // Party
         ipcRenderer.on('api:party', (e, data) => {
-            if (data.members) {
-                partyMembers = data.members;
-                const list = document.getElementById('party-list');
-                const count = document.getElementById('party-count');
-                count.textContent = `(${partyMembers.length})`;
-
-                if (partyMembers.length === 0) {
-                    list.innerHTML = '<div style="color: var(--text-dim); font-size: 0.7rem;">Solo</div>';
-                } else {
-                    list.innerHTML = partyMembers.map(m => `
-                        <div class="party-member">
-                            <span class="status-dot ${m.online ? 'online' : ''}"></span>
-                            ${m.name || m.handle || 'Unknown'}
-                        </div>
-                    `).join('');
-                }
+            const list = document.getElementById('party-list');
+            document.getElementById('party-count').textContent = `(${data.members.length || 0})`;
+            if (!data.members || data.members.length === 0) {
+                list.innerHTML = '<div class="party-item" style="opacity:0.5;">Solo Operative</div>';
+            } else {
+                list.innerHTML = data.members.map(m => `
+                    <div class="party-item">
+                        <span>${m.name}</span>
+                        <div class="party-status ${m.online ? 'online' : ''}"></div>
+                    </div>
+                `).join('');
             }
         });
 
-        // v2.2 - Toast Notifications (Bypassing Feed)
-        ipcRenderer.on('vcon:notification', (e, data) => {
-            // data = { title, message, type: 'info|success|warning|error' }
-            const iconMap = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
-            const icon = iconMap[data.type] || '🔔';
-            addFeedEntry(icon, `<span class="feed-highlight">${data.title}</span> — ${data.message}`);
-            playSound('notification');
+        // VerseCon Events
+        ipcRenderer.on('vcon:notification', (e, d) => addFeedEntry('📡', d.title));
+        ipcRenderer.on('vcon:job', (e, d) => addFeedEntry('📜', 'Contract Available'));
+        ipcRenderer.on('vcon:beacon', (e, d) => addFeedEntry('🆘', 'Distress Beacon'));
+
+        // Commands
+        ipcRenderer.on('command:receive', (e, d) => {
+            activeCommand = d;
+            const box = document.getElementById('mod-command');
+            box.classList.remove('hidden');
+            document.getElementById('cmd-text').textContent = d.text || d.preset;
+            document.getElementById('cmd-from').textContent = `FROM ${d.from}`.toUpperCase();
         });
 
-        // v2.2 - CRITICAL FIX: Listed for Broadcasted Commands via Alert Trigger
-        ipcRenderer.on('alert:trigger', (e, data) => {
-            if (data.type === 'COMMAND') {
-                const cmdData = data.value;
-                activeCommand = cmdData;
-                const cmdMod = document.getElementById('mod-command');
-                cmdMod.classList.remove('hidden');
-                document.getElementById('cmd-text').textContent = cmdData.text || cmdData.preset || 'ORDER';
-                document.getElementById('cmd-from').textContent = cmdData.from ? `from ${cmdData.from}` : '';
-                addFeedEntry('📢', cmdData.text || cmdData.preset);
-
-                // Auto-hide command after 15s
-                setTimeout(() => {
-                    cmdMod.classList.add('hidden');
-                }, 15000);
-            }
+        document.getElementById('ack-btn').addEventListener('click', () => {
+            document.getElementById('mod-command').classList.add('hidden');
+            ipcRenderer.send('command:ack', { id: activeCommand?.id });
+            addFeedEntry('✅', 'Order Acknowledged');
         });
 
-        // Ship image setting from dashboard
-        ipcRenderer.on('settings:ship-image', (e, path) => {
-            shipImagePath = path;
-            const img = document.getElementById('ship-img');
-            if (currentShip && path) {
-                img.src = path;
-                img.classList.remove('hidden');
-            }
-        });
+        // Helper: Show Alert
+        function showAlert(title, msg) {
+            const el = document.getElementById('mod-alert');
+            document.getElementById('val-alert-title').textContent = title;
+            document.getElementById('val-alert-msg').textContent = msg;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
 
-        // DND mode
-        ipcRenderer.on('app:dnd', (e, data) => {
-            // Could dim the overlay, etc.
-        });
     </script>
 </body>
 
