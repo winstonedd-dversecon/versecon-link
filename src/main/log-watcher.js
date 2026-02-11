@@ -91,113 +91,60 @@ class LogWatcher extends EventEmitter {
     }
 
     static DEFAULT_PATTERNS = {
-        // === LOGIN & IDENTITY ===
-        login_success: /CDisciplineServiceExternal::OnLoginStatusChanged.*LoggedIn/,
-        login_completed: /LoginCompleted.*message/,
-        legacy_login: /Legacy login response.*Handle\[(\w+)\]/,  // RSI Handle
-        player_geid: /playerGEID=(\d+)/,
-        account_id: /accountId[=:](\d+)/,
-        username: /username (\w+) signedIn (\d)/,
-        character_name: /AccountLoginCharacterStatus_Character.*name (\w+)\s*-\s*state STATE_CURRENT/,
-        account_login_success: /\{SET_ACCOUNT_STATE\} state \[kAccountLoginSuccess\]/,
+        // === Star Citizen 4.0+ Patterns ===
+        // Connection & Identity
+        geid: /geid\s+(\d+)/,
+        player_name: /name\s+(.+?)\s+-\s+/,
+        legacy_login: /Legacy login response.*Handle\[(\w+)\]/,
 
-        // === SYSTEM INFO ===
-        gpu_info: /GPU: Vendor = (\w+)/,
-        gpu_detail: /Logging video adapters[\s\S]*?- (\w[\w\s]+?) \(vendor/,
-        gpu_vram: /GPU: DedicatedVidMemMB = (\d+)/,
-        cpu_info: /Host CPU: (.+)/,
-        ram_info: /(\d+)MB physical memory installed/,
-        game_version: /Branch: (.+)/,
-        build_id: /Changelist: (\d+)/,
-        resolution: /Current display mode is (\d+x\d+)/,
-
-        // === SERVER & ENVIRONMENT ===
+        // Server & Environment
         server_env: /\[Trace\] Environment:\s+(\w+)/,
         server_session: /@session:\s+'([^']+)'/,
         server_region: /grpc-client-endpoint-override='https:\/\/(\w+)-/,
 
-        // === CONNECTION & NETWORK ===
-        connection_state: /\{SET_CONNECTION_STATE\} state \[(\w+)\]/,
-        server_connect: /CSessionManager::OnClientConnected/,
-        server_disconnect: /CSessionManager::RequestFrontEnd.*Started/,
-        game_disconnect: /\[disconnectlight\]/,
-        network_hostname: /network hostname: (.+)/,
-        network_ip: /ip:(\d+\.\d+\.\d+\.\d+)/,
-
-        // === LOCATION & NAVIGATION ===
-        location: /Global location: <(.*?)>/,
-        location_obj: /objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//,
-        loading_level: /Loading level (\w+)/,
+        // Location & Inventory
+        location: /Location\[([^\]]+)\]/i,
+        inventory_request: /<RequestLocationInventory>/,
         loading_screen: /CGlobalGameUI::OpenLoadingScreen/,
         loading_game_mode: /Loading GameModeRecord='(\w+)'/,
 
-        // === QUANTUM DRIVE ===
-        quantum_enter: /Quantum Travel: Entering/i,
-        quantum_exit: /Quantum Travel: Exiting/i,
+        // Vehicle Control Flow (Entering/Exiting/Spawn)
+        vehicle_control: /<Vehicle Control Flow>/,
+        vehicle_name: /for\s+'([^']+)'/,
+        vehicle_entity_id: /for\s+'[^']+'\s+\[(\d+)\]/,
+        player_entity_id: /Local client node \[(\d+)\]/,
+        starmap_nav: /([A-Za-z_0-9]+)\[(\d+)\]\|CSCItemNavigation::GetStarmapRouteSegmentData/,
 
-        // === ZONES ===
-        armistice_enter: /SHUDEvent_OnNotification.*Entering Armistice Zone/i,
-        armistice_leave: /SHUDEvent_OnNotification.*Leaving Armistice Zone/i,
-        monitored_enter: /SHUDEvent_OnNotification.*Entered Monitored Space/i,
+        // Quantum Drive
+        quantum_arrival: /<Quantum Drive Arrived/,
+        quantum_request: /<Jump Drive Requesting State Change>/,
+        quantum_zone: /\((?:\w+):\s+([A-Z_0-9]+(?:_\d+)?)\s+in\s+zone\s+([^\)]+)\)/,
 
-        // === PLAYER STATUS ===
+        // Medical & Spawn
+        spawn_flow: /<Spawn Flow>/,
+        spawn_point_reservation: /lost\s+reservation\s+for\s+spawnpoint\s+([^\\s]+)\s+\[(\d+)\]\s+at\s+location\s+(\d+)/,
+        medical_bed_detachment: /<CEntity::OnOwnerRemoved>.*bed/i,
+        medical_bed_any: /medical bed/i,
+
+        // Status & Damage
+        actor_death: /<Actor Death>/,
+        actor_state_dead: /<\[ActorState\] Dead>/,
+        destruction: /Destruction>/,
+        fatal_collision: /<FatalCollision>/,
         suffocating: /Player.*started suffocating/i,
         depressurizing: /Player.*started depressurization/i,
-        die: /Actor Death/i,
 
-        // === SHIPS & VEHICLES ===
-        ship_control_release: /[Rr]eleas(?:ing|ed?) control token.*?(?:for|of)\s+['"]*([^'"<>\n]+)/i,
-        ship_vehicle_spawn: /Vehicle\s+(?:Spawn|Spawned)[:\s]+(.+)/i,
-        ship_starmap_fail: /GetStarMapNodeForEntity.*?'([^']+)'/,
-        ship_enter_vehicle: /VehicleComponent.*?entering.*?(\w+_\w+)/i,
+        // Missions & Objectives
+        mission_shared: /<MissionShared>/,
+        mission_objective: /<ObjectiveUpserted>/,
+        mission_ended: /<MissionEnded>/,
+        mission_end_structured: /<EndMission>/,
+        bounty_marker: /<CLocalMissionPhaseMarker::CreateMarker>/,
 
-        // === INSURANCE ===
-        insurance_claim: /[Ii]nsurance.*?[Cc]laim(?:ed|ing)?.*?([A-Z][a-z]+(?:_\w+)?)?/,
-
-        // === DOCKING ===
-        docking_request: /[Dd]ocking.*[Rr]equest(?:ed)?|[Rr]equest.*[Dd]ocking/,
-        docking_granted: /[Dd]ocking.*[Gg]ranted|[Ll]anding.*[Pp]ad.*[Aa]ssigned/,
-
-        // === INVENTORY ===
-        inventory_open: /[Oo]pening\s+[Ii]nventory|[Ii]nventory.*[Oo]pen(?:ed)?/,
-        inventory_close: /[Rr]elinquish(?:ing|ed)?\s+[Ii]nventory|[Ii]nventory.*[Cc]lose/,
-
-        // === MEDICAL & SPAWN ===
-        medical_bed: /[Mm]edical\s*[Bb]ed|[Mm]edBed|[Rr]egeneration\s*[Pp]od/,
-        imprint_transplant: /[Tt]ransplant.*[Ii]mprint|[Ss]et.*[Ss]pawn(?:ing)?\s*(?:[Pp]oint|[Ll]ocation)?.*?(?:at|to|:)\s*(.+)/i,
-        spawn_location: /[Rr]esolve[Ss]pawn[Ll]ocation.*?(?:zone|location).*?(\w+)/i,
-
-        // === INVENTORY / EQUIPMENT ===
-        attachment: /AttachmentReceived.*Player\[(\w+)\].*Attachment\[([^\]]+)\].*Port\[(\w+)\]/,
-
-        // === VEHICLES & SHIPS ===
-        vehicle_spawn: /Vehicle Spawned: (.*?) - (.*?)/,
-
-        // === HARDWARE ===
-        joystick: /Connected joystick\d+:\s+(.+?)\s*\{/,
-
-        // === MISSIONS / CONTRACTS ===
-        contract_gen: /CContractGenerator.*seed (\d+)/,
-        mission_accepted: /[Mm]ission.*[Aa]ccept|[Cc]ontract.*[Aa]ccept/i,
-        mission_completed: /[Mm]ission.*[Cc]omplet|[Cc]ontract.*[Cc]omplet/i,
-        mission_failed: /[Mm]ission.*[Ff]ail|[Cc]ontract.*[Ff]ail/i,
-
-        // === SOCIAL / PARTY ===
-        group_update: /Update group cache.*(Success|Start)/,
-        social_subscribe: /SubscribeToPlayerSocial.*player (\d+)/,
-        friend_subscribe: /SubscribeToFriendMessages.*player (\d+)/,
-        party_invite: /NotifyPendingInvitations/,
-
-        // === ENTITLEMENTS ===
-        entitlement_count: /Started processing (\d+) entitlements/,
-        // v2.2 Patterns
-        mission_objective: /^New Objective: (.*?) \[\d+\]/,
-        contract_available: /^Contract Available: (.*?) \[\d+\]/,
-        location_planet: /planet cells:.*?name: (OOC_.*)/,
-        hangar_request: /local equip request/,
-        mission_marker: /Creating objective marker:.*?missionId/,
-        ship_exit_confirm: /You have left the channel/,
-        hazard_fire: /Fire Area .* received a snapshot/,
+        // Interaction
+        item_placement: /<\[ActorState\] Place>/,
+        equip_item: /<EquipItem>/,
+        docking_platform: /<CSCLoadingPlatformManager>/,
     };
 
     findLogFile() {
@@ -434,484 +381,258 @@ class LogWatcher extends EventEmitter {
         this.patterns = newPatterns;
     }
 
+    /**
+     * getCleanShipName
+     * Ported logic from Picologs to clean technical ship names
+     */
+    getCleanShipName(rawName) {
+        if (!rawName) return 'Ship';
+        if (rawName === 'unknown') return 'Unknown';
+
+        // 1. Remove company prefixes (AEGS_, ANVL_, etc)
+        let name = rawName.replace(/^[A-Z]{3,4}_/, (match) => {
+            const map = {
+                'AEGS_': 'Aegis ',
+                'ANVL_': 'Anvil ',
+                'DRAK_': 'Drake ',
+                'MISC_': 'MISC ',
+                'RSI_': 'RSI ',
+                'ORIG_': 'Origin ',
+                'CRUS_': 'Crusader ',
+                'ARGO_': 'ARGO ',
+                'CNOU_': 'CO ',
+                'BANU_': 'Banu ',
+                'AOPOA_': 'Aopoa ',
+                'ESPR_': 'Esperia ',
+                'GATM_': 'Gatac ',
+                'MIRA_': 'Mirai ',
+            };
+            return map[match] || match.replace('_', ' ');
+        });
+
+        // 2. Remove technical ID suffixes (_123456789)
+        name = name.replace(/_\d+$/, '');
+
+        // 3. Clean underscores to spaces
+        name = name.replace(/_/g, ' ');
+
+        return name.trim();
+    }
+
     processLine(line, initialRead = false) {
         if (!line || !line.trim()) return false;
+
+        // Skip noise
+        if (this.noisePatterns.some(p => p.test(line))) return false;
+
         let matched = false;
 
-        // Helper to emit gamestate with optional message override
-        const emitWithOverride = (type, value, detail) => {
-            // v2.2 - Message Override Support
-            // Find which key matched... actually standard patterns are hardcoded in the logic below.
-            // We need to look up the key that corresponds to this logic.
-            // Since we are inside specific logic blocks (e.g. legacy_login), we know the key.
-            // But passing the key to this helper is cleaner.
-            // Refactoring to: emitMetric(key, { type, value, detail })
-        };
-
-        // Helper: Check for message override
-        const getOverrideMsg = (key) => {
-            if (this.patternOverrides[key] && this.patternOverrides[key].message) {
-                return this.patternOverrides[key].message;
-            }
-            return null;
+        // 1. Connection & Identity
+        const geidMatch = line.match(this.patterns.geid);
+        const nameMatch = line.match(this.patterns.player_name);
+        if (geidMatch && nameMatch) {
+            const playerName = nameMatch[1];
+            this.emit('gamestate', { type: 'PLAYER_NAME', value: playerName });
+            this.emit('login', { status: 'connected', handle: playerName });
+            matched = true;
         }
 
-        // Helper: Apply Value Mapping (e.g. "Stanton/Crusader/Orison" -> "Home Base")
-        const applyValueMap = (key, rawValue) => {
-            if (!this.patternOverrides[key] || !this.patternOverrides[key].valueMap) return rawValue;
-
-            // Parse map: "Old=New|Old2=New2"
-            const mapStr = this.patternOverrides[key].valueMap;
-            const pairs = mapStr.split('|');
-            for (const pair of pairs) {
-                const [target, replacement] = pair.split('=').map(s => s.trim());
-                if (target && replacement && rawValue.includes(target)) {
-                    return replacement;
-                }
-            }
-            return rawValue;
-        }
-
-        // === PLAYER IDENTITY (only emit once during initial read) ===
         const legacyLogin = line.match(this.patterns.legacy_login);
-        if (legacyLogin) {
+        if (legacyLogin && !matched) {
             this.emit('gamestate', { type: 'PLAYER_NAME', value: legacyLogin[1] });
             this.emit('login', { status: 'connected', handle: legacyLogin[1] });
-            return true;
+            matched = true;
         }
 
-        const usernameMatch = line.match(this.patterns.username);
-        if (usernameMatch) {
-            this.emit('gamestate', { type: 'USERNAME', value: usernameMatch[1] });
-            return true;
-        }
-
-        // Character name from login sequence
-        const charMatch = line.match(this.patterns.character_name);
-        if (charMatch) {
-            this.emit('gamestate', { type: 'CHARACTER_NAME', value: charMatch[1] });
-            return true;
-        }
-
-        // === SERVER / ENVIRONMENT ===
+        // 2. Server & Environment
         const envMatch = line.match(this.patterns.server_env);
         if (envMatch) {
             this.currentServer = envMatch[1];
             this.emit('gamestate', { type: 'SERVER_ENV', value: envMatch[1] });
-            return true;
-        }
-
-        // === LOCATION ===
-        const locationMatch = line.match(this.patterns.location);
-        if (locationMatch) {
-            let val = locationMatch[1];
-
-            // v2.2 - Apply Value Map Override
-            val = applyValueMap('location', val);
-
-            this.emit('gamestate', { type: 'LOCATION', value: val });
-            return true;
-        }
-
-        // === SPAWN POINT ===
-        const spawnMatch = line.match(this.patterns.spawn_point);
-        if (spawnMatch) {
-            let val = spawnMatch[1];
-            val = applyValueMap('spawn_point', val);
-            this.emit('gamestate', { type: 'SPAWN_POINT', value: val });
-            return true;
+            matched = true;
         }
 
         const sessionMatch = line.match(this.patterns.server_session);
         if (sessionMatch) {
             this.emit('gamestate', { type: 'SESSION_ID', value: sessionMatch[1] });
-            return true;
-        }
-
-        const regionMatch = line.match(this.patterns.server_region);
-        if (regionMatch) {
-            this.emit('gamestate', { type: 'SERVER_REGION', value: regionMatch[1] });
-            return true;
-        }
-
-        // === SYSTEM INFO (emit during initial read only) ===
-        if (initialRead) {
-            const gpuMatch = line.match(this.patterns.gpu_info);
-            if (gpuMatch) { this.emit('gamestate', { type: 'SYSTEM_GPU', value: gpuMatch[1] }); return true; }
-
-            const vramMatch = line.match(this.patterns.gpu_vram);
-            if (vramMatch) { this.emit('gamestate', { type: 'SYSTEM_VRAM', value: `${vramMatch[1]}MB` }); return true; }
-
-            const cpuMatch = line.match(this.patterns.cpu_info);
-            if (cpuMatch) { this.emit('gamestate', { type: 'SYSTEM_CPU', value: cpuMatch[1].trim() }); return true; }
-
-            const ramMatch = line.match(this.patterns.ram_info);
-            if (ramMatch) { this.emit('gamestate', { type: 'SYSTEM_RAM', value: `${ramMatch[1]}MB` }); return true; }
-
-            const versionMatch = line.match(this.patterns.game_version);
-            if (versionMatch) { this.emit('gamestate', { type: 'GAME_VERSION', value: versionMatch[1].trim() }); return true; }
-
-            const buildMatch = line.match(this.patterns.build_id);
-            if (buildMatch) { this.emit('gamestate', { type: 'BUILD_ID', value: buildMatch[1] }); return true; }
-
-            const resMatch = line.match(this.patterns.resolution);
-            if (resMatch) { this.emit('gamestate', { type: 'RESOLUTION', value: resMatch[1] }); return true; }
-
-            const joystickMatch = line.match(this.patterns.joystick);
-            if (joystickMatch) { this.emit('gamestate', { type: 'JOYSTICK', value: joystickMatch[1].trim() }); return true; }
-        }
-
-        // === CONNECTION STATE ===
-        const connMatch = line.match(this.patterns.connection_state);
-        if (connMatch) {
-            this.emit('gamestate', { type: 'CONNECTION', value: connMatch[1] });
             matched = true;
         }
 
-        if (this.patterns.server_connect.test(line)) {
-            this.emit('gamestate', { type: 'CONNECTION', value: 'IN_GAME' });
-            this.emit('gamestate', { type: 'GAME_JOIN', value: 'joined' });
+        // 3. Location & Inventory
+        const isInventory = this.patterns.inventory_request.test(line);
+        const locationMatch = line.match(this.patterns.location);
+        if (locationMatch) {
+            let val = locationMatch[1];
+            // v2.2 - Prettify location (e.g. OOC_Stanton_1b_Aberdeen -> Aberdeen)
+            val = val.replace(/^OOC_/, '').replace(/Stanton_\d+[a-z]?_/, '').replace(/_/g, ' ');
+
+            this.emit('gamestate', { type: 'LOCATION', value: val });
+            if (isInventory) this.emit('gamestate', { type: 'INVENTORY', value: 'opened' });
             matched = true;
         }
 
-        // Game disconnect / leave
-        if (this.patterns.server_disconnect.test(line)) {
-            this.emit('gamestate', { type: 'GAME_LEAVE', value: 'disconnected' });
+        // 4. Vehicle Control Flow (Entering/Exiting/Spawn)
+        if (this.patterns.vehicle_control.test(line)) {
+            const vehicleMatch = line.match(this.patterns.vehicle_name);
+            if (vehicleMatch) {
+                const rawName = vehicleMatch[1];
+                const cleanedName = this.getCleanShipName(rawName);
+
+                if (line.includes('granted')) {
+                    this.currentShip = cleanedName;
+                    const payload = { type: 'SHIP_ENTER', value: cleanedName };
+                    if (this.shipMap[cleanedName]) payload.image = this.shipMap[cleanedName];
+                    this.emit('gamestate', payload);
+                } else if (line.includes('releasing')) {
+                    this.currentShip = null;
+                    this.emit('gamestate', { type: 'SHIP_EXIT', value: cleanedName });
+                }
+                matched = true;
+            }
+        }
+
+        // Fallbacks for ship detection
+        if (!matched && this.currentShip === null) {
+            const starmapMatch = line.match(this.patterns.starmap_nav);
+            if (starmapMatch) {
+                const cleanedName = this.getCleanShipName(starmapMatch[1]);
+                this.currentShip = cleanedName;
+                this.emit('gamestate', { type: 'SHIP_ENTER', value: cleanedName });
+                matched = true;
+            }
+        }
+
+        // v2.2 - Ship Exit Confirmation Fallback
+        if (!matched && this.patterns.ship_exit_confirm.test(line)) {
+            if (this.currentShip) {
+                this.emit('gamestate', { type: 'SHIP_EXIT', value: this.currentShip });
+                this.currentShip = null;
+            }
             matched = true;
         }
 
-        // === LOADING ===
-        if (this.patterns.loading_screen.test(line)) {
-            this.emit('gamestate', { type: 'LOADING', value: 'started' });
+        // 5. Medical & Spawn
+        if (this.patterns.spawn_flow.test(line)) {
+            const spawnMatch = line.match(this.patterns.spawn_point_reservation);
+            if (spawnMatch) {
+                const loc = spawnMatch[1].replace(/_/g, ' ');
+                this.spawnPoint = loc;
+                this.emit('gamestate', { type: 'SPAWN_SET', value: loc });
+                matched = true;
+            }
+        }
+
+        if (this.patterns.medical_bed_any.test(line)) {
+            if (line.includes('Entering')) {
+                this.emit('gamestate', { type: 'MEDICAL_BED', value: 'entered' });
+                matched = true;
+            }
+        }
+        if (this.patterns.medical_bed_detachment.test(line)) {
+            this.emit('gamestate', { type: 'MEDICAL_BED', value: 'left' });
             matched = true;
         }
 
-        const gameModeMatch = line.match(this.patterns.loading_game_mode);
-        if (gameModeMatch) {
-            this.emit('gamestate', { type: 'GAME_MODE', value: gameModeMatch[1] });
+        // 6. Quantum
+        if (line.includes('Quantum Drive Arrived')) {
+            this.emit('gamestate', { type: 'QUANTUM', value: 'arrived' });
+            matched = true;
+        }
+        const qRequest = line.match(this.patterns.quantum_request);
+        if (qRequest || line.includes('Jump Drive Requesting State Change')) {
+            if (line.includes('to Traveling')) {
+                this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
+            } else if (line.includes('to Idle')) {
+                this.emit('gamestate', { type: 'QUANTUM', value: 'exited' });
+            }
             matched = true;
         }
 
-        // === LOCATION (Global) ===
-        const locMatch = line.match(this.patterns.location);
-        if (locMatch) {
-            this.emit('gamestate', { type: 'LOCATION', value: locMatch[1].trim() });
-            return true;
-        }
-
-        // === QUANTUM ===
-        if (this.patterns.quantum_enter.test(line)) {
-            this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
-            matched = true;
-        } else if (this.patterns.quantum_exit.test(line)) {
-            this.emit('gamestate', { type: 'QUANTUM', value: 'exited' });
+        // 7. Status & Death / Hazards
+        if (this.patterns.actor_death.test(line) || this.patterns.actor_state_dead.test(line)) {
+            this.emit('gamestate', { type: 'STATUS', value: 'death' });
             matched = true;
         }
-
-        // === ZONE STATE ===
-        if (this.patterns.armistice_enter.test(line)) {
-            this.emit('gamestate', { type: 'ZONE', value: 'armistice_enter' });
-            matched = true;
-        } else if (this.patterns.armistice_leave.test(line)) {
-            this.emit('gamestate', { type: 'ZONE', value: 'armistice_leave' });
-            matched = true;
-        } else if (this.patterns.monitored_enter.test(line)) {
-            this.emit('gamestate', { type: 'ZONE', value: 'monitored_enter' });
-            matched = true;
-        }
-
-        // === PLAYER STATUS ===
         if (this.patterns.suffocating.test(line)) {
             if (!this.shouldSuppressAlert('suffocating')) {
                 this.emit('gamestate', { type: 'STATUS', value: 'suffocating' });
             }
             matched = true;
-        } else if (this.patterns.depressurizing.test(line)) {
+        }
+        if (this.patterns.depressurizing.test(line)) {
             if (!this.shouldSuppressAlert('depressurizing')) {
                 this.emit('gamestate', { type: 'STATUS', value: 'depressurizing' });
             }
             matched = true;
-        } else if (this.patterns.die.test(line)) {
-            this.emit('gamestate', { type: 'STATUS', value: 'death' });
-            matched = true;
         }
-
-        // === SHIPS & VEHICLES ===
-        const shipReleaseMatch = line.match(this.patterns.ship_control_release);
-        if (shipReleaseMatch) {
-            const shipName = shipReleaseMatch[1].trim();
-            this.currentShip = null;
-            this.emit('gamestate', { type: 'SHIP_EXIT', value: shipName });
-            matched = true;
-        }
-
-        const shipStarmapMatch = line.match(this.patterns.ship_starmap_fail);
-        if (shipStarmapMatch) {
-            const shipName = shipStarmapMatch[1].trim();
-            this.currentShip = shipName;
-
-            // v2.2 - Dynamic Ship Image
-            const payload = { type: 'SHIP_ENTER', value: shipName };
-
-            // CHECK OVERRIDE MESSAGE
-            const overrideMsg = getOverrideMsg('ship_starmap_fail'); // Key for this regex
-            if (overrideMsg) {
-                // Emit as CUSTOM to trigger specific alert text
-                this.emit('gamestate', {
-                    type: 'CUSTOM',
-                    level: 'INFO',
-                    message: overrideMsg.replace('$1', shipName),
-                    value: shipName
-                });
-            }
-
-            // Check exact match or partial match
-            if (this.shipMap[shipName]) {
-                payload.image = this.shipMap[shipName];
-            } else {
-                // Try fuzzy match (e.g. log says "DRAK_Clipper" but map has "Clipper")
-                const key = Object.keys(this.shipMap).find(k => shipName.includes(k));
-                if (key) payload.image = this.shipMap[key];
-            }
-
-            this.emit('gamestate', payload);
-            matched = true;
-        }
-
-        const vehicleSpawnMatch = line.match(this.patterns.ship_vehicle_spawn);
-        if (vehicleSpawnMatch && !matched) {
-            this.emit('gamestate', { type: 'VEHICLE_SPAWN', value: vehicleSpawnMatch[1].trim() });
-            matched = true;
-        }
-
-        // === INSURANCE ===
-        if (this.patterns.insurance_claim.test(line)) {
-            this.emit('gamestate', { type: 'INSURANCE_CLAIM', value: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
-            matched = true;
-        }
-
-        // === DOCKING ===
-        if (this.patterns.docking_request.test(line)) {
-            this.emit('gamestate', { type: 'DOCKING', value: 'requested' });
-            matched = true;
-        } else if (this.patterns.docking_granted.test(line)) {
-            this.emit('gamestate', { type: 'DOCKING', value: 'granted' });
-            matched = true;
-        }
-
-        // === INVENTORY ===
-        if (this.patterns.inventory_open.test(line)) {
-            this.emit('gamestate', { type: 'INVENTORY', value: 'opened' });
-            matched = true;
-        } else if (this.patterns.inventory_close.test(line)) {
-            this.emit('gamestate', { type: 'INVENTORY', value: 'closed' });
-            matched = true;
-        }
-
-        // === MEDICAL & SPAWN ===
-        if (this.patterns.medical_bed.test(line)) {
-            this.emit('gamestate', { type: 'MEDICAL_BED', value: 'entered' });
-            matched = true;
-        }
-
-        const imprintMatch = line.match(this.patterns.imprint_transplant);
-        if (imprintMatch) {
-            const loc = imprintMatch[1] ? imprintMatch[1].trim() : 'Unknown';
-            this.spawnPoint = loc;
-            this.emit('gamestate', { type: 'SPAWN_SET', value: loc });
-            matched = true;
-        }
-
-        // Emit raw line for debug UI
-        this.emit('raw-line', line);
-
-        const spawnLocMatch = line.match(this.patterns.spawn_location);
-        if (spawnLocMatch && !this.spawnPoint) {
-            let val = spawnLocMatch[1];
-            if (val) {
-                val = applyValueMap('spawn_point', val);
-                // Ensure val is not "undefined" string or empty
-                if (val && val !== 'undefined') {
-                    this.spawnPoint = val;
-                    this.emit('gamestate', { type: 'SPAWN_POINT', value: val });
-                    matched = true;
-                }
-            }
-        }
-
-        // === INVENTORY / EQUIPMENT ===
-        const attachMatch = line.match(this.patterns.attachment);
-        if (attachMatch) {
-            this.emit('gamestate', {
-                type: 'EQUIPMENT',
-                value: { player: attachMatch[1], item: attachMatch[2], port: attachMatch[3] }
-            });
-            matched = true;
-        }
-
-        // === SHIP ENTER (Fallback/Legacy Pattern) ===
-        // vehicle_driver_enter: Vehicle [Name] channel
-        const legacyShipEnter = line.match(/vehicle_driver_enter: Vehicle (.*?) channel/);
-        if (legacyShipEnter) {
-            const shipName = legacyShipEnter[1];
-            this.emit('gamestate', { type: 'SHIP_ENTER', value: shipName });
-            matched = true;
-        }
-
-        // === LOGIN SUCCESS ===
-        if (this.patterns.login_success.test(line)) {
-            this.emit('login', { status: 'connected' });
-            matched = true;
-        }
-
-        if (this.patterns.account_login_success.test(line)) {
-            this.emit('gamestate', { type: 'ACCOUNT_LOGIN', value: 'success' });
-            matched = true;
-        }
-
-        // === MISSIONS ===
-        if (this.patterns.mission_accepted.test(line)) {
-            this.emit('gamestate', { type: 'MISSION', value: 'accepted', detail: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
-            matched = true;
-        } else if (this.patterns.mission_completed.test(line)) {
-            this.emit('gamestate', { type: 'MISSION', value: 'completed', detail: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
-            matched = true;
-        } else if (this.patterns.mission_failed.test(line)) {
-            this.emit('gamestate', { type: 'MISSION', value: 'failed', detail: line.replace(/<[^>]+>\s*/, '').trim().substring(0, 120) });
-            matched = true;
-        }
-
-        // === PARTY INVITES ===
-        if (this.patterns.party_invite.test(line)) {
-            this.emit('gamestate', { type: 'PARTY_INVITE', value: 'pending' });
-            matched = true;
-        }
-
-        // v2.2 - Mission Objective
-        const missionObjMatch = line.match(this.patterns.mission_objective);
-        if (missionObjMatch) {
-            this.emit('gamestate', { type: 'MISSION_OBJECTIVE', value: missionObjMatch[1].trim() });
-            matched = true;
-        }
-
-        // v2.2 - Contract Available
-        const contractMatch = line.match(this.patterns.contract_available);
-        if (contractMatch) {
-            this.emit('gamestate', { type: 'CONTRACT_AVAILABLE', value: contractMatch[1].trim() });
-            matched = true;
-        }
-
-        // v2.2 - Location (Planet/Moon detail)
-        const planetMatch = line.match(this.patterns.location_planet);
-        if (planetMatch) {
-            // OOC_Stanton_1b_Aberdeen -> Aberdeen
-            let loc = planetMatch[1].replace(/^OOC_/, '').replace(/Stanton_\d+[a-z]?_/, '');
-            this.emit('gamestate', { type: 'LOCATION_PLANET', value: loc });
-            // Also emit generic location to update main HUD
-            this.emit('gamestate', { type: 'LOCATION', value: loc });
-            matched = true;
-        }
-
-        // v2.2 - Hangar Request
-        if (this.patterns.hangar_request.test(line)) {
-            this.emit('gamestate', { type: 'HANGAR_REQUEST', value: 'Landing Services' });
-            matched = true;
-        }
-
-        // v2.2 - Mission Marker
-        if (this.patterns.mission_marker.test(line)) {
-            this.emit('gamestate', { type: 'MISSION_MARKER', value: 'New Waypoint' });
-            matched = true;
-        }
-
-        // v2.2 - Ship Exit Confirmation
-        if (this.patterns.ship_exit_confirm.test(line)) {
-            if (this.currentShip) {
-                this.emit('gamestate', { type: 'SHIP_EXIT', value: this.currentShip });
-                this.currentShip = null;
-            } else {
-                this.emit('gamestate', { type: 'SHIP_EXIT', value: 'Unknown Ship' });
-            }
-            matched = true;
-        }
-
-        // v2.2 - Fire Hazard
         if (this.patterns.hazard_fire.test(line)) {
             if (!this.shouldSuppressAlert('fire')) {
-                this.emit('gamestate', { type: 'HAZARD_FIRE', value: 'Critical Fire' });
-                this.setAlertCooldown('fire', 10000); // 10s cooldown
+                this.emit('gamestate', { type: 'HAZARD_FIRE', value: 'Fire Detected' });
             }
             matched = true;
         }
 
-        // === LOCATION HINT (Object Containers) - deduplicated ===
-        const objMatch = line.match(this.patterns.location_obj);
+        // 8. Missions
+        if (this.patterns.mission_shared.test(line)) {
+            this.emit('gamestate', { type: 'MISSION', value: 'shared' });
+            matched = true;
+        }
+        if (this.patterns.mission_objective.test(line)) {
+            this.emit('gamestate', { type: 'MISSION', value: 'update' });
+            matched = true;
+        }
+        if (this.patterns.mission_ended.test(line) || this.patterns.mission_end_structured.test(line)) {
+            this.emit('gamestate', { type: 'MISSION', value: 'ended' });
+            matched = true;
+        }
+
+        // 9. Location Hints (Object Containers)
+        const objMatch = line.match(this.patterns.location_obj) || line.match(/objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//);
         if (objMatch) {
             const system = objMatch[1];
             const location = objMatch[2];
             const key = `${system}/${location}`;
-
-            if (initialRead) {
-                if (!this.seenLocations.has(key)) {
-                    this.seenLocations.add(key);
-                    this.emit('gamestate', { type: 'LOCATION_HINT', value: key });
-                    matched = true;
-                }
-            } else {
-                if (key !== this.lastLocationHint) {
-                    this.lastLocationHint = key;
-                    this.emit('gamestate', { type: 'LOCATION_HINT', value: key });
-                    matched = true;
-                }
+            if (key !== this.lastLocationHint) {
+                this.lastLocationHint = key;
+                this.emit('gamestate', { type: 'LOCATION_HINT', value: key });
+                matched = true;
             }
         }
 
-        // v2.2 - Check Custom Patterns (Manual Config)
-        if (this.compiledCustomPatterns && this.compiledCustomPatterns.length > 0) {
+        // v2.2 - User-defined Custom Patterns
+        if (this.compiledCustomPatterns) {
             for (const p of this.compiledCustomPatterns) {
-                const match = line.match(p.compiled);
-                if (match) {
-                    // Extract value if capture group exists, else use full match
-                    const val = match[1] || match[0];
+                const customMatch = line.match(p.compiled);
+                if (customMatch) {
                     this.emit('gamestate', {
                         type: 'CUSTOM',
                         level: p.level || 'INFO',
-                        message: p.message || 'Custom Alert',
-                        value: val
+                        message: p.message ? p.message.replace('$1', customMatch[1] || '').replace('$2', customMatch[2] || '') : 'Custom Match',
+                        value: customMatch[1] || line
                     });
-                    this.emit('custom-match', { patternId: p.id, match: val });
                     matched = true;
-                    // Don't return, allow other processors? Or return?
-                    // Let's allow others, but mark matched so we don't treat as unknown.
                 }
             }
         }
 
         if (matched) return true;
 
+        // Default: just emit raw for debug
+        this.emit('raw-line', line);
+
         // === UNKNOWN DISCOVERY ===
         if (!this.captureUnknowns) return false;
-
-        // Clean up the line for grouping
-        let cleaned = line
-            .replace(/<[^>]+>/g, '') // Remove XML tags
-            .replace(/^<\d{4}-\d{2}-\d{2}T[\d:.]+Z>\s*/, '') // Strip timestamp prefix
-            .replace(/^\[(Notice|Error|Trace|Warning|Info)\]\s*/, '') // Strip severity prefix
-            .trim();
-
-        // Skip noise
-        for (const noise of this.noisePatterns) {
-            if (noise.test(cleaned)) return false;
-        }
-
-        // Skip very short lines
-        if (cleaned.length < 15) return false;
-
-        // If it's an initial read, don't capture unknowns
         if (initialRead) return false;
 
+        let cleaned = line
+            .replace(/<[^>]+>/g, '')
+            .replace(/^<\d{4}-\d{2}-\d{2}T[\d:.]+Z>\s*/, '')
+            .replace(/^\[(Notice|Error|Trace|Warning|Info)\]\s*/, '')
+            .trim();
+
+        if (cleaned.length < 15) return false;
         this.captureUnknownLine(cleaned);
-        return false; // Unknown lines don't count as "matched" for the main loop
+        return false;
     }
 
     // Improved unknown line grouping — shows actual log content

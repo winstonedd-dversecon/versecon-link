@@ -357,6 +357,32 @@
         let isLocked = false;
         let dragOffset = { x: 0, y: 0 };
 
+        // ═══ SOUND SYSTEM ═══
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type = 'notification') {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                gain.gain.value = 0.1;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const sounds = {
+                    notification: { freq: 880, type: 'sine', dur: 150 },
+                    alert: { freq: 440, type: 'triangle', dur: 400 },
+                    death: { freq: 200, type: 'sawtooth', dur: 800 }
+                };
+
+                const s = sounds[type] || sounds.notification;
+                osc.frequency.value = s.freq;
+                osc.type = s.type;
+
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + s.dur / 1000);
+                osc.stop(audioCtx.currentTime + s.dur / 1000);
+            } catch (e) { console.error('Sound error:', e); }
+        }
+
         // ═══ DRAG FUNCTIONALITY ═══
         const dragHandle = document.getElementById('dragHandle');
         const lockBtn = document.getElementById('lockBtn');
@@ -450,7 +476,10 @@
                     currentShip = data.value;
                     document.getElementById('val-ship').textContent = data.value;
                     const shipImg = document.getElementById('ship-img');
-                    if (shipImagePath) {
+                    if (data.image) {
+                        shipImg.src = data.image;
+                        shipImg.classList.remove('hidden');
+                    } else if (shipImagePath) {
                         shipImg.src = shipImagePath;
                         shipImg.classList.remove('hidden');
                     }
@@ -476,6 +505,7 @@
                 // Location
                 case 'LOCATION':
                 case 'LOCATION_HINT':
+                case 'LOCATION_PLANET':
                     document.getElementById('val-location').textContent = data.value;
                     break;
 
@@ -531,7 +561,7 @@
                 // Connection
                 case 'CONNECTION':
                     document.getElementById('status-game').classList.toggle('online',
-                        data.value === 'CONNECTED' || data.value === 'IN_GAME');
+                        data.value === 'CONNECTED' || data.value === 'IN_GAME' || data.value === 'IN_SESSION');
                     if (data.value === 'IN_GAME') addFeedEntry('🎮', 'Connected to game');
                     break;
 
@@ -561,8 +591,18 @@
 
                 // Missions
                 case 'MISSION':
-                    const mIcons = { accepted: '📋', completed: '✅', failed: '❌' };
+                    const mIcons = { accepted: '📋', completed: '✅', failed: '❌', shared: '📢', update: '📝' };
                     addFeedEntry(mIcons[data.value] || '📋', `Mission ${data.value}`);
+                    break;
+
+                case 'MISSION_MARKER':
+                    addFeedEntry('🎯', 'New Mission Waypoint');
+                    break;
+
+                // Custom Alerts
+                case 'CUSTOM':
+                    const cIcons = { INFO: 'ℹ️', WARNING: '⚠️', CRITICAL: '🚨' };
+                    addFeedEntry(cIcons[data.level] || '🔔', data.message);
                     break;
 
                 // Insurance
