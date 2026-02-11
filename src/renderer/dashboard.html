@@ -1729,101 +1729,34 @@
                     document.getElementById('last-ship-debug').textContent = shipName || 'None';
                     document.getElementById('last-ship-debug').style.color = '#fff';
                 });
-                // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
-                let defaultPatterns = {};
-                let patternOverrides = {};
+                // ═══ CUSTOM LOCATIONS (Fixed) ═══
+                let customLocations = {};
 
-                async function loadBuiltinPatterns() {
-                    try {
-                        defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
-                        patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
-                        renderBuiltinPatterns();
-                    } catch (e) {
-                        console.error('Failed to load patterns:', e);
-                    }
-                }
-
-                function renderBuiltinPatterns() {
-                    const list = document.getElementById('builtin-pattern-list');
-                    if (!list) return;
-                    list.innerHTML = '';
-
-                    const keys = Object.keys(defaultPatterns).sort();
-
-                    keys.forEach(key => {
-                        const config = patternOverrides[key] || {};
-                        const isDisabled = config.disabled;
-                        const currentValue = config.regex || defaultPatterns[key];
-                        const customMsg = config.message || '';
-
-                        const item = document.createElement('div');
-                        item.className = 'map-item';
-                        item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
-                        item.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
-                        <label style="font-size: 0.8rem; cursor: pointer;">
-                            <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
-                        </label>
-                    </div>
-                    
-                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Trigger Regex:</div>
-                    <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 8px; color: #aaffaa;"
-                        value="${escapeHtml(currentValue)}"
-                        onchange="updatePatternRegex('${key}', this.value)"
-                        ${isDisabled ? 'disabled' : ''}
-                        placeholder="Regex Pattern">
-                    
-                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Alert Message (Optional Override):</div>
-                    <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
-                        value="${escapeHtml(customMsg)}"
-                        onchange="updatePatternMessage('${key}', this.value)"
-                        ${isDisabled ? 'disabled' : ''}
-                        placeholder="Default system alert used if empty...">
-                `;
-                        list.appendChild(item);
+                function loadCustomLocationList() {
+                    ipcRenderer.invoke('settings:get-custom-locations').then(locs => {
+                        customLocations = locs || {};
+                        renderCustomLocationList();
                     });
                 }
 
-                function renderBuiltinList() {
-                    if (!builtinList) return;
-                    builtinList.innerHTML = Object.entries(builtinPatterns).map(([key, regexSource]) => {
-                        const override = patternOverrides[key] || {};
-                        const isDisabled = override.disabled;
-                        const customRegex = override.regex || regexSource;
-                        const customMsg = override.message || ''; // New: Message Override
+                function renderCustomLocationList() {
+                    const list = document.getElementById('custom-loc-list');
+                    if (!list) return; // Guard for missing HTML element?
 
-                        return `
-                <div class="map-item" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="color: var(--accent); font-weight: bold;">${key}</span>
-                        <label style="font-size: 0.8rem; cursor: pointer;">
-                            <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
-                        </label>
-                    </div>
-                    <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 5px;"
-                        value="${escapeHtml(customRegex)}"
-                        onchange="updatePatternRegex('${key}', this.value)"
-                        ${isDisabled ? 'disabled' : ''}
-                        placeholder="Regex Pattern">
-                    
-                    <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
-                        value="${escapeHtml(customMsg)}"
-                        onchange="updatePatternMessage('${key}', this.value)"
-                        ${isDisabled ? 'disabled' : ''}
-                        placeholder="[Default Alert Text] - Type to override message...">
-                    
-                    <div style="margin-top:5px; font-size: 0.7rem; color: #666;">
-                        <span style="color: var(--accent);">Value Mapper:</span> Define replacements (e.g. "Stanton/Crusader/Orison=Home Base"). Separate multiple with |
-                    </div>
-                    <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
-                        value="${escapeHtml(override.valueMap || '')}"
-                        onchange="updatePatternValueMap('${key}', this.value)"
-                        ${isDisabled ? 'disabled' : ''}
-                        placeholder="RawValue=FriendlyName | RawValue2=FriendlyName2">
-                </div>
-            `;
-                    }).join('');
+                    if (Object.keys(customLocations).length === 0) {
+                        list.innerHTML = '<div style="font-style:italic; color:#555; text-align:center; padding:10px;">No custom locations saved.</div>';
+                        return;
+                    }
+
+                    list.innerHTML = Object.entries(customLocations).map(([key, val]) => `
+                        <div class="map-item" style="padding:4px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
+                            <div style="overflow:hidden;">
+                                <div style="font-family:monospace; color:var(--accent); font-size:0.8rem;">${escapeHtml(key)}</div>
+                                <div style="color:#888; font-size:0.75rem;">➔ ${escapeHtml(val)}</div>
+                            </div>
+                            <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:10px;">×</button>
+                        </div>
+                    `).join('');
                 }
 
                 function updatePatternValueMap(key, value) {

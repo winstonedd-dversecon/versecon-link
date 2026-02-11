@@ -93,23 +93,19 @@ function createWindows() {
         }
 
 
-        // Initialize Telemetry Engine (Phase 6)
+        // Initialize Telemetry Engine (Phase 6) - DISABLED FOR DEBUGGING
+        /*
         if (!telemetryEngine) {
             telemetryEngine = new TelemetryEngine(config.logPath || null);
 
             // Wire Telemetry Events to API and Dashboard
             telemetryEngine.on('telemetry', (event) => {
                 console.log('[Main] Telemetry Event:', event.type);
-                broadcast('telemetry:event', event);
-                // TODO: Send to APIClient once method exists
-                // APIClient.sendTelemetry(event); 
+                broadcast('telemetry:event', event); 
             });
 
             // Legacy Compatibility: Feed raw lines to LogWatcher
             telemetryEngine.on('raw', (line) => {
-                // Determine if we should treat as initial read or live
-                // TelemetryEngine handles this internally usually, but here we just pass line
-                // LogWatcher.processLine(line) expects live lines usually
                 LogWatcher.processLine(line, false);
             });
 
@@ -117,9 +113,9 @@ function createWindows() {
             if (config.logPath) {
                 console.log('[Main] Starting Telemetry Engine on:', config.logPath);
                 telemetryEngine.setLogPath(config.logPath);
-                // telemetryEngine.start(); // Helper config setter starts it
             }
         }
+        */
     });
 
     // 2. Overlay Window (Transparent HUD)
