@@ -15,7 +15,7 @@ let config = { shipMap: {}, customPatterns: [] };
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 
 // Helper to access static patterns from instance
-const DEFAULT_PATTERNS = LogWatcher.constructor.DEFAULT_PATTERNS;
+const DEFAULT_PATTERNS = LogWatcher.constructor.DEFAULT_PATTERNS; // Ensure this is not empty
 
 // ═══════════════════════════════════════════════════════
 // CONFIG HELPERS

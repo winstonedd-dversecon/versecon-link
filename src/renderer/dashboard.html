@@ -1428,8 +1428,12 @@
             playSound('notification');
         });
 
-        ipcRenderer.on('vcon:trade', (e, data) => {
-            addVconItem('💰', `<span class="feed-highlight" style="color:#22C55E">TRADE MATCH</span> — ${data.message || 'Price alert'}`);
+        // v2.2 - Platform Notifications (Toasts & Feed)
+        ipcRenderer.on('vcon:notification', (e, data) => {
+            // data = { title, message, type: 'info|success|warning|error' }
+            const iconMap = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
+            const icon = iconMap[data.type] || '🔔';
+            addVconItem(icon, `<span class="feed-highlight">${data.title}</span> — ${data.message}`);
             playSound('notification');
         });
 
@@ -1489,22 +1493,33 @@
 
             keys.forEach(key => {
                 const config = patternOverrides[key] || {};
-                const isOverridden = config.regex && config.regex !== defaultPatterns[key];
                 const isDisabled = config.disabled;
                 const currentValue = config.regex || defaultPatterns[key];
+                const customMsg = config.message || '';
 
-                const div = document.createElement('div');
-                div.style.cssText = 'padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 5px;';
-
-                const header = document.createElement('div');
-                header.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
-
-                const label = document.createElement('label');
-                label.style.cssText = 'font-family: monospace; color: var(--accent); font-size: 0.8rem; display: flex; align-items: center; gap: 5px; cursor: pointer;';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = !isDisabled;
+                const item = document.createElement('div');
+                item.className = 'map-item';
+                item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
+                item.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="color: var(--accent); font-weight: bold;">${key}</span>
+                        <label style="font-size: 0.8rem; cursor: pointer;">
+                            <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
+                        </label>
+                    </div>
+                    <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 5px;"
+                        value="${escapeHtml(currentValue)}"
+                        onchange="updatePatternRegex('${key}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}
+                        placeholder="Regex Pattern">
+                    
+                    <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
+                        value="${escapeHtml(customMsg)}"
+                        onchange="updatePatternMessage('${key}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}
+                        placeholder="[Default Alert Text] - Type to override message...">
+                `;
+                list.appendChild(item);
             });
         }
 
