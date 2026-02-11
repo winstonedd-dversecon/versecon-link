@@ -88,6 +88,11 @@ class LogWatcher extends EventEmitter {
 
     // --- Configuration Methods (called by main.js) ---
 
+    setPath(customPath) {
+        if (this.isWatching) this.stop();
+        this.start(customPath);
+    }
+
     setShipMap(map) {
         vehicleParser.setShipMap(map);
     }
