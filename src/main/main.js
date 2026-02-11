@@ -673,16 +673,33 @@ ipcMain.handle('settings:save-ship-map', async (event, map) => {
 
 ipcMain.handle('settings:get-custom-patterns', async () => config.customPatterns);
 
-ipcMain.handle('settings:get-default-patterns', async () => {
-    // Return regexes as strings for UI
-    const defaults = {};
-    // LogWatcher is an instance, so accessing static property requires constructor
-    // Or we could export the class separately, but this is quicker given the structure.
-    const patterns = LogWatcher.constructor.DEFAULT_PATTERNS || {};
+// Log Persistence & Pattern Export
+const LogEngine = require('./parsers');
 
-    for (const [key, regex] of Object.entries(patterns)) {
+ipcMain.handle('settings:get-default-patterns', async () => {
+    // 1. Get Legacy Patterns
+    const defaults = {};
+    const legacyPatterns = LogWatcher.constructor.DEFAULT_PATTERNS || {};
+    for (const [key, regex] of Object.entries(legacyPatterns)) {
         defaults[key] = regex.source;
     }
+
+    // 2. Get Modular Parser Patterns
+    // LogEngine exposes .parsers array (which contains registered instances)
+    if (LogEngine.parsers) {
+        for (const parser of LogEngine.parsers) {
+            if (parser.patterns) {
+                for (const [key, regex] of Object.entries(parser.patterns)) {
+                    // Avoid overwriting if key conflict (or maybe prefix?)
+                    // Let's assume unique keys for now, or last-one-wins (which is fine, modular is newer).
+                    if (regex instanceof RegExp) {
+                        defaults[key] = regex.source;
+                    }
+                }
+            }
+        }
+    }
+
     return defaults;
 });
 
@@ -729,7 +746,10 @@ if (!gotTheLock) {
         LogWatcher.setCustomPatterns(config.customPatterns); // Apply custom patterns
         createWindows();
         createTray();
-        LogWatcher.start();
+
+        // Fix: Auto-load saved log path if available
+        LogWatcher.start(config.logPath);
+
 
         // v2.2 - "Zero-Touch" Local Auth Check
         try {
