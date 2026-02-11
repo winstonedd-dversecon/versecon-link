@@ -4,7 +4,20 @@ const { EventEmitter } = require('events');
 const LogEngine = require('./parsers');
 
 class LogWatcher extends EventEmitter {
+    static DEFAULT_PATTERNS = {
+        geid: /geid\s+(\d+)/i,
+        player_name: /name\s+([A-Za-z0-9_]+)/i,
+        location: /Location\[([^\]]+)\]/i,
+        server_env: /\[Trace\] Environment:\s+(\w+)/,
+        quantum_entered: /<Jump Drive Requesting State Change>.*to Traveling/,
+        quantum_exited: /<Jump Drive Requesting State Change>.*to Idle/,
+        quantum_arrived: /<Quantum Drive Arrived/,
+        actor_death: /<Actor Death>/,
+        vehicle_control: /<Vehicle Control Flow>/,
+    };
+
     constructor() {
+
         super();
         this.watcher = null;
         this.filePath = null;
