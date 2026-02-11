@@ -81,25 +81,31 @@ function createWindows() {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
-    // Load saved overlay position or use default
-    const savedX = parseInt(process.env.OVERLAY_X) || (width - 340);
-    const savedY = parseInt(process.env.OVERLAY_Y) || 50;
-
     overlayWindow = new BrowserWindow({
-        width: 320,
-        height: 700,
-        x: savedX,
-        y: savedY,
+        width: width,
+        height: height,
+        x: 0,
+        y: 0,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
         resizable: false,
         skipTaskbar: true,
-        focusable: true, // Needs focus for buttons, but we'll manage z-order
-        type: 'toolbar', // Helps on Linux/Windows
+        focusable: false, // Don't steal focus from game
+        type: 'toolbar_menu', // Better for overlays
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
+        }
+    });
+
+    // Pass through clicks to game, but allow interaction with UI
+    overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+
+    // IPC to toggle mouse events when hovering UI
+    ipcMain.on('overlay:details-interaction', (event, { active }) => {
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.setIgnoreMouseEvents(!active, { forward: true });
         }
     });
 
