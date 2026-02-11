@@ -291,6 +291,24 @@
         .hidden {
             display: none !important;
         }
+
+        /* ═══ RESPONSIVE SCALING ═══ */
+        /* Base is 1080p. Scale up for QHD and 4K */
+        @media screen and (min-width: 2560px) {
+            body {
+                zoom: 1.33;
+            }
+
+            /* 1440p */
+        }
+
+        @media screen and (min-width: 3840px) {
+            body {
+                zoom: 2.0;
+            }
+
+            /* 4K */
+        }
     </style>
 </head>
 
@@ -375,30 +393,60 @@
         // State
         let currentShip = null;
         let activeCommand = null;
-        let isDragging = false;
-        let dragOffset = { x: 0, y: 0 };
-        let windowPos = { x: 0, y: 0 };
 
-        // ═══ DRAG LOGIC ═══
+        // ═══ LOCAL DRAG LOGIC ═══
+        // Move the HUD element itself, not the window
+        const hudContainer = document.getElementById('hudContainer');
         const dragHandle = document.getElementById('dragHandle');
+
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        // Store current translations
+        let transX = 0;
+        let transY = 0;
 
         dragHandle.addEventListener('mousedown', (e) => {
             isDragging = true;
-            dragOffset.x = e.screenX;
-            dragOffset.y = e.screenY;
-            ipcRenderer.send('overlay:get-position');
+            startX = e.clientX;
+            startY = e.clientY;
+            // Tell main process we are interacting (block clicks)
+            ipcRenderer.send('overlay:details-interaction', { active: true });
         });
-
-        ipcRenderer.on('overlay:position', (e, pos) => { windowPos = pos; });
 
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            const dx = e.screenX - dragOffset.x;
-            const dy = e.screenY - dragOffset.y;
-            ipcRenderer.send('overlay:move', { x: windowPos.x + dx, y: windowPos.y + dy });
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            // Calculate new position
+            const newX = transX + dx;
+            const newY = transY + dy;
+
+            hudContainer.style.transform = `translate(${newX}px, ${newY}px)`;
         });
 
-        document.addEventListener('mouseup', () => { isDragging = false; });
+        document.addEventListener('mouseup', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                transX += dx;
+                transY += dy;
+                isDragging = false;
+                ipcRenderer.send('overlay:details-interaction', { active: false });
+            }
+        });
+
+        // ═══ MOUSE INTERACTION PASS-THROUGH ═══
+        const interactiveEls = document.querySelectorAll('.interactive');
+        interactiveEls.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                ipcRenderer.send('overlay:details-interaction', { active: true });
+            });
+            el.addEventListener('mouseleave', () => {
+                ipcRenderer.send('overlay:details-interaction', { active: false });
+            });
+        });
 
         // ═══ UI HELPERS ═══
         function addFeedEntry(icon, text) {
