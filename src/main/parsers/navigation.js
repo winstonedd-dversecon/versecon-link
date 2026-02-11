@@ -6,6 +6,7 @@ class NavigationParser extends BaseParser {
         this.patterns = {
             location: /Location\[([^\]]+)\]/i,
             location_obj: /<StatObjLoad\s+0x[0-9A-Fa-f]+\s+Format>\s+'[^']*?objectcontainers\/pu\/loc\/(?:flagship|mod)\/(?:stanton\/)?(?:station\/ser\/)?(?:[^\/]+\/)*([^\/]{5,})\//i,
+            room_name: /RoomName:\s*([^\s]+)/i,
             quantum_entered: /<Jump Drive Requesting State Change>.*to Traveling/,
             quantum_exited: /<Jump Drive Requesting State Change>.*to Idle/,
             quantum_arrived: /<Quantum Drive Arrived/,
@@ -14,22 +15,45 @@ class NavigationParser extends BaseParser {
             interdiction: /Interdiction/i,
         };
         this.lastLocationHint = null;
+        this.customLocations = {};
+    }
+
+    setCustomLocations(map) {
+        this.customLocations = map || {};
     }
 
     parse(line) {
         let handled = false;
 
+        // 0. Custom Location Map (RoomName)
+        const roomMatch = line.match(this.patterns.room_name);
+        if (roomMatch) {
+            const rawRoom = roomMatch[1];
+            if (this.customLocations && this.customLocations[rawRoom]) {
+                const customName = this.customLocations[rawRoom];
+                this.emit('gamestate', { type: 'LOCATION', value: customName });
+                return true; // Priority
+            }
+        }
+
         // 1. Precise Location
         const locMatch = line.match(this.patterns.location);
         if (locMatch) {
             let val = locMatch[1];
-            // Cleaning logic: OOC_Stanton_1b_Aberdeen -> Aberdeen
-            val = val.replace(/^OOC_/, '')
-                .replace(/Stanton_\d+[a-z]?_/, '')
-                .replace(/_/g, ' ');
 
-            this.emit('gamestate', { type: 'LOCATION', value: val });
-            handled = true;
+            // Check override for this raw location string too
+            if (this.customLocations && this.customLocations[val]) {
+                this.emit('gamestate', { type: 'LOCATION', value: this.customLocations[val] });
+                handled = true;
+            } else {
+                // Cleaning logic: OOC_Stanton_1b_Aberdeen -> Aberdeen
+                val = val.replace(/^OOC_/, '')
+                    .replace(/Stanton_\d+[a-z]?_/, '')
+                    .replace(/_/g, ' ');
+
+                this.emit('gamestate', { type: 'LOCATION', value: val });
+                handled = true;
+            }
         }
 
         // 2. Quantum State
@@ -83,6 +107,7 @@ class NavigationParser extends BaseParser {
             name = name.replace(/\blrgtop\b/i, '')
                 .replace(/\bsmltop\b/i, '')
                 .replace(/\bmedtop\b/i, '')
+                .replace(/\bxltop\b/i, '')
                 .replace(/\blext\b/i, '')
                 .replace(/\bxg\b/i, '')
                 .replace(/\baeroview\b/i, '')

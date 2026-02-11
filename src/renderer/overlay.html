@@ -510,8 +510,10 @@
                     break;
 
                 case 'ZONE':
-                    if (data.value.includes('enter')) addFeedEntry('🛡️', 'Zone Entry');
-                    if (data.value.includes('leave')) addFeedEntry('⚠️', 'Zone Exit');
+                    if (data.value === 'armistice_enter') addFeedEntry('🛡️', 'Entered Armistice');
+                    else if (data.value === 'armistice_leave') addFeedEntry('⚠️', 'Left Armistice');
+                    else if (data.value === 'monitored_enter') addFeedEntry('📡', 'Monitored Space');
+                    else if (data.value === 'monitored_leave') addFeedEntry('🚫', 'Comms Offline');
                     break;
 
                 case 'QUANTUM':

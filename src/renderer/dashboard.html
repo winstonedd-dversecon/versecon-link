@@ -509,6 +509,23 @@
         .view.active {
             display: flex;
         }
+
+        /* Mission List Styles */
+        .mission-entry {
+            /* No border for single items, but nice spacing */
+        }
+
+        .mission-entry:not(:last-child) {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+
+        .mission-entry.tracked {
+            border-left: 2px solid var(--accent);
+            padding-left: 8px;
+            background: linear-gradient(90deg, rgba(255, 165, 0, 0.05), transparent);
+        }
     </style>
 </head>
 
@@ -825,6 +842,43 @@
                     <button class="cyber-btn" style="width: auto;" onclick="loadBuiltinPatterns()">Reload</button>
                     <button class="cyber-btn" style="width: auto;" onclick="savePatternOverrides()">Save
                         Overrides</button>
+                </div>
+            </div>
+
+            <!-- Custom Location Manager -->
+            <div class="config-section" style="margin-top: 20px;">
+                <div class="section-title">
+                    <span>📍 Custom Locations</span>
+                    <button class="cyber-btn small" onclick="addCustomLocationPrompt()" style="font-size: 0.7rem;">+ Add
+                        New</button>
+                    <!-- Help tooltip -->
+                    <span style="font-size:0.7rem; color:#666; margin-left:10px; cursor:help;"
+                        onclick="alert('Map raw log values (e.g. OOC_Stanton_1b_Aberdeen) to friendly names (e.g. Vivere PAF-1).\nWorks with Location[...] and RoomName: logs.')">ℹ️
+                        Help</span>
+                </div>
+                <div class="config-desc">
+                    Map raw log codes to friendly location names.
+                </div>
+
+                <div
+                    style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 10px; margin-top: 10px;">
+                    <!-- Add New Inline Form -->
+                    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+                        <input type="text" id="new-loc-key" placeholder="Raw Code (e.g. OOC_Stanton_...)"
+                            class="modern-input" style="flex:1;">
+                        <span style="color:#666;">➔</span>
+                        <input type="text" id="new-loc-val" placeholder="Friendly Name" class="modern-input"
+                            style="flex:1;">
+                        <button class="cyber-btn small" onclick="saveNewCustomLocation()"
+                            style="margin:0;">Save</button>
+                    </div>
+
+                    <!-- List -->
+                    <div id="custom-location-list"
+                        style="max-height: 200px; overflow-y: auto; display:flex; flex-direction:column; gap:5px;">
+                        <div style="color:#666; font-style:italic; padding:10px; text-align:center;">No custom locations
+                            set.</div>
+                    </div>
                 </div>
             </div>
 
@@ -1398,13 +1452,15 @@
                 case 'GAME_RESTART':
                     addDashItem('🔄', '<span class="feed-highlight">Game restarting...</span>');
                     break;
-                // ═══ NEW: Missions ═══
-                case 'MISSION':
-                    const mIcons = { accepted: '📋', completed: '✅', failed: '❌' };
-                    const mColors = { accepted: '#00c8ff', completed: '#00ff88', failed: '#ff4444' };
-                    addDashItem(mIcons[data.value] || '📋', `Mission <span class="feed-highlight" style="color:${mColors[data.value] || '#ffa500'}">${data.value.toUpperCase()}</span>`);
-                    playSound('notification');
+                // ═══ NEW: Multi-Mission List ═══
+                case 'MISSION_ACCEPTED':
+                case 'MISSION_OBJECTIVE':
+                case 'MISSION_STATUS':
+                case 'MISSION_CHANGED':
+                    // These are handled via 'mission:list' broadcast usually, but if we get individual events we can ignore or log.
+                    // Main.js sends 'mission:list' after these.
                     break;
+
                 // ═══ NEW: Insurance ═══
                 case 'INSURANCE_CLAIM':
                     addDashItem('🛡️', `<span class="feed-highlight" style="color:#a855f7">INSURANCE CLAIM</span>`);
@@ -1729,8 +1785,108 @@
             }
         });
 
+        // ═══ NEW: Mission List Renderer ═══
+        ipcRenderer.on('mission:list', (e, missions) => {
+            renderMissionList(missions);
+        });
+
+        function renderMissionList(missions) {
+            const container = document.getElementById('mission-status-box');
+            if (!missions || missions.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+
+            // Sort: Tracked first, then new
+            missions.sort((a, b) => (b.tracked ? 1 : 0) - (a.tracked ? 1 : 0) || b.timestamp - a.timestamp);
+
+            container.innerHTML = missions.map(m => `
+                <div class="mission-entry ${m.tracked ? 'tracked' : ''}" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                        <div style="font-size:0.7rem; color:${m.tracked ? 'var(--accent)' : '#888'}; font-weight:700; letter-spacing:1px">
+                            ${m.tracked ? 'ACTIVE CONTRACT' : 'CONTRACT'}
+                             <!-- ID for renaming context -->
+                             ${m.tracked ? `<span onclick="window.currentMissionId='${m.id}'; renameCurrentMission()" style="cursor:pointer; margin-left:5px; opacity:0.7;" title="Rename Mission">✏️</span>` : ''}
+                        </div>
+                        <div style="font-size:0.6rem; background:${m.tracked ? 'rgba(255,165,0,0.2)' : 'rgba(255,255,255,0.05)'}; 
+                                    color:${m.tracked ? 'orange' : '#aaa'}; padding:1px 4px; border-radius:2px">
+                            ${m.status === 'active' ? 'IN PROGRESS' : m.status.toUpperCase()}
+                        </div>
+                    </div>
+                    <div style="font-weight:600; color:${m.tracked ? 'white' : '#ccc'}; margin-bottom:4px; font-size: 0.85rem; line-height:1.2;">
+                        ${escapeHtml(m.title)}
+                    </div>
+                    ${m.tracked ? `
+                    <div style="font-size:0.65rem; color: #666; text-transform:uppercase; letter-spacing:0.5px">Objective</div>
+                    <div style="font-size:0.75rem; color:#ddd; line-height:1.2;">${escapeHtml(m.objective)}</div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            // Allow renaming logic to work
+            const tracked = missions.find(m => m.tracked);
+            if (tracked) window.currentMissionId = tracked.id;
+        }
+
+        // ═══ CUSTOM LOCATIONS ═══
+        let customLocations = {};
+
+        async function loadCustomLocationList() {
+            customLocations = await ipcRenderer.invoke('settings:get-custom-locations') || {};
+            renderCustomLocationList();
+        }
+
+        function renderCustomLocationList() {
+            const list = document.getElementById('custom-location-list');
+            if (Object.keys(customLocations).length === 0) {
+                list.innerHTML = '<div style="color:#666; font-style:italic; padding:10px; text-align:center;">No custom locations set.</div>';
+                return;
+            }
+            // Sort by key length descending
+            const keys = Object.keys(customLocations).sort((a, b) => b.length - a.length);
+
+            list.innerHTML = keys.map(key => `
+                <div class="map-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="flex: 1; overflow:hidden;">
+                        <div style="color: #aaa; font-family:monospace; font-size:0.75rem;">${escapeHtml(key)}</div>
+                        <div style="color: var(--accent); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">➔ ${escapeHtml(customLocations[key])}</div>
+                    </div>
+                    <button class="cyber-btn small danger" onclick="deleteCustomLocation('${escapeHtml(key)}')" style="margin:0; padding: 2px 8px;">×</button>
+                </div>
+            `).join('');
+        }
+
+        function saveNewCustomLocation() {
+            const key = document.getElementById('new-loc-key').value.trim();
+            const val = document.getElementById('new-loc-val').value.trim();
+            if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
+
+            customLocations[key] = val;
+            ipcRenderer.send('settings:save-custom-locations', customLocations);
+
+            // Clear inputs
+            document.getElementById('new-loc-key').value = '';
+            document.getElementById('new-loc-val').value = '';
+            renderCustomLocationList();
+        }
+
+        function addCustomLocationPrompt() {
+            document.getElementById('new-loc-key').focus();
+        }
+
+        window.deleteCustomLocation = function (key) {
+            if (confirm(`Remove location mapping for "${key}"?`)) {
+                delete customLocations[key];
+                ipcRenderer.send('settings:save-custom-locations', customLocations);
+                renderCustomLocationList();
+            }
+        };
+
         // Init
         loadBuiltinPatterns();
+        loadCustomLocationList();
     </script>
 </body>
 

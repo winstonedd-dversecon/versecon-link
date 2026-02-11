@@ -373,6 +373,20 @@ ipcMain.on('log:request-unknowns', () => {
     LogWatcher.emitUnknowns();
 });
 
+// Custom Locations
+const NavigationParser = require('./parsers/navigation');
+// Initialize with config
+if (config.customLocations) {
+    NavigationParser.setCustomLocations(config.customLocations);
+}
+
+ipcMain.on('settings:save-custom-locations', (event, locations) => {
+    config.customLocations = locations;
+    saveConfig();
+    NavigationParser.setCustomLocations(locations);
+    broadcast('settings:custom-locations-updated', locations);
+});
+
 // ═══════════════════════════════════════════════════════
 // BROADCAST (ALL WINDOWS)
 // ═══════════════════════════════════════════════════════
@@ -429,10 +443,67 @@ LogWatcher.on('gamestate', (data) => {
         showTrayNotification('🚀 Ship Exited', `Left: ${data.value}`);
     }
 
-    // Mission events
+    // Mission events (Legacy single event)
     if (data.type === 'MISSION') {
         const icons = { accepted: '📋', completed: '✅', failed: '❌' };
         showTrayNotification(`${icons[data.value] || '📋'} Mission ${data.value}`, data.detail || 'Mission update');
+    }
+
+    // ════════ NEW: Multi-Mission Tracking ════════
+    if (['MISSION_ACCEPTED', 'MISSION_OBJECTIVE', 'MISSION_STATUS', 'MISSION_CHANGED'].includes(data.type)) {
+        if (!config.activeMissions) config.activeMissions = {}; // ID -> { title, objective, status, tracked, timestamp }
+
+        const id = data.id || 'unknown_' + Date.now();
+        const now = Date.now();
+
+        if (data.type === 'MISSION_ACCEPTED') {
+            config.activeMissions[id] = {
+                id: id,
+                title: data.value,
+                objective: 'Pending objective...',
+                status: 'active',
+                tracked: true, // Auto-track new ones
+                timestamp: now
+            };
+            // Untrack others? Maybe user wants to track the new one.
+            Object.values(config.activeMissions).forEach(m => { if (m.id !== id) m.tracked = false; });
+            showTrayNotification('📋 Contract Accepted', data.value);
+        }
+        else if (data.type === 'MISSION_OBJECTIVE') {
+            if (config.activeMissions[id]) {
+                config.activeMissions[id].objective = data.value;
+                config.activeMissions[id].timestamp = now;
+            }
+        }
+        else if (data.type === 'MISSION_CHANGED') { // Tracking update
+            if (config.activeMissions[id]) {
+                Object.values(config.activeMissions).forEach(m => m.tracked = false);
+                config.activeMissions[id].tracked = true;
+                config.activeMissions[id].timestamp = now;
+            }
+        }
+        else if (data.type === 'MISSION_STATUS') { // Completed/Failed
+            if (config.activeMissions[id]) {
+                config.activeMissions[id].status = data.value; // 'completed', 'failed'
+                // Remove from active list after short delay? 
+                // User wants to see history?
+                // For now, keep it in list but mark status, maybe renderer filters it or shows it dimmed.
+                // Or just delete it if success?
+                // Let's keep it for history until cleared.
+                // Actually, let's delete if 'completed' to prevent clutter?
+                // User said "currect contracts in a neat way". Completed are not current.
+                if (data.value === 'completed' || data.value === 'ended') {
+                    delete config.activeMissions[id];
+                    showTrayNotification('✅ Contract Complete', config.activeMissions[id]?.title || 'Mission');
+                } else if (data.value === 'failed') {
+                    config.activeMissions[id].status = 'failed';
+                    showTrayNotification('❌ Contract Failed', config.activeMissions[id]?.title || 'Mission');
+                }
+            }
+        }
+
+        saveConfig();
+        broadcast('mission:list', Object.values(config.activeMissions));
     }
 
     // Insurance
