@@ -722,13 +722,21 @@ class LogWatcher extends EventEmitter {
             matched = true;
         }
 
+        // Emit raw line for debug UI
+        this.emit('raw-line', line);
+
         const spawnLocMatch = line.match(this.patterns.spawn_location);
         if (spawnLocMatch && !this.spawnPoint) {
             let val = spawnLocMatch[1];
-            val = applyValueMap('spawn_point', val);
-            this.spawnPoint = val;
-            this.emit('gamestate', { type: 'SPAWN_POINT', value: val });
-            matched = true;
+            if (val) {
+                val = applyValueMap('spawn_point', val);
+                // Ensure val is not "undefined" string or empty
+                if (val && val !== 'undefined') {
+                    this.spawnPoint = val;
+                    this.emit('gamestate', { type: 'SPAWN_POINT', value: val });
+                    matched = true;
+                }
+            }
         }
 
         // === INVENTORY / EQUIPMENT ===
@@ -738,6 +746,15 @@ class LogWatcher extends EventEmitter {
                 type: 'EQUIPMENT',
                 value: { player: attachMatch[1], item: attachMatch[2], port: attachMatch[3] }
             });
+            matched = true;
+        }
+
+        // === SHIP ENTER (Fallback/Legacy Pattern) ===
+        // vehicle_driver_enter: Vehicle [Name] channel
+        const legacyShipEnter = line.match(/vehicle_driver_enter: Vehicle (.*?) channel/);
+        if (legacyShipEnter) {
+            const shipName = legacyShipEnter[1];
+            this.emit('gamestate', { type: 'SHIP_ENTER', value: shipName });
             matched = true;
         }
 

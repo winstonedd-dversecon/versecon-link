@@ -371,6 +371,14 @@ let logConnected = false;
 let apiConnected = false;
 
 // Log Watcher Events
+LogWatcher.on('raw-line', (line) => {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+        // Send every line? this might be heavy. 
+        // Let's send it and rely on renderer to cap the list size.
+        dashboardWindow.webContents.send('log:raw', line);
+    }
+});
+
 LogWatcher.on('gamestate', (data) => {
     broadcast('log:update', data);
 
