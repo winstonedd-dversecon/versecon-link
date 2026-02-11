@@ -371,9 +371,10 @@
 
         <!-- Party Module -->
         <div class="panel-module" id="mod-party">
-            <div class="panel-header">Squadron Link <span id="party-count">(0)</span></div>
+            <div class="panel-header">SQUADRON <span id="party-count"
+                    style="color:var(--accent); margin-left:4px;">[0/4]</span></div>
             <div id="party-list">
-                <div class="party-item" style="opacity:0.5;">No Signal</div>
+                <div class="party-item" style="opacity:0.5; font-style:italic;">No Signal</div>
             </div>
         </div>
 
@@ -525,16 +526,31 @@
         // Party
         ipcRenderer.on('api:party', (e, data) => {
             const list = document.getElementById('party-list');
-            document.getElementById('party-count').textContent = `(${data.members.length || 0})`;
+            const count = data.members ? data.members.length : 0;
+            document.getElementById('party-count').textContent = `[${count}/4]`;
+
             if (!data.members || data.members.length === 0) {
-                list.innerHTML = '<div class="party-item" style="opacity:0.5;">Solo Operative</div>';
+                list.innerHTML = '<div class="party-item" style="opacity:0.5; font-style:italic;">No Signal</div>';
             } else {
-                list.innerHTML = data.members.map(m => `
+                list.innerHTML = data.members.map(m => {
+                    let statusClass = 'online';
+                    let statusColor = 'var(--success)';
+
+                    if (m.status === 'combat') statusColor = 'var(--danger)';
+                    if (m.status === 'quantum') statusColor = 'var(--cyan)';
+                    if (m.status === 'offline') { statusClass = ''; statusColor = '#555'; }
+
+                    const locationText = m.location ? `<div style="font-size:0.6rem; color:#888; margin-top:-2px;">${m.location}</div>` : '';
+
+                    return `
                     <div class="party-item">
-                        <span>${m.name}</span>
-                        <div class="party-status ${m.online ? 'online' : ''}"></div>
+                        <div style="text-align:right;">
+                            <span style="display:block; color:${m.online ? '#fff' : '#777'}; line-height:1.1;">${m.name}</span>
+                            ${locationText}
+                        </div>
+                        <div class="party-status" style="background:${statusColor}; box-shadow: 0 0 5px ${statusColor};"></div>
                     </div>
-                `).join('');
+                `}).join('');
             }
         });
 

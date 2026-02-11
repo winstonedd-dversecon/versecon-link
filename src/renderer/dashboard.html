@@ -568,7 +568,7 @@
         </div>
 
         <!-- MISSION TRACKER (New) -->
-        <div class="status-box" id="mission-status-box"
+        <div class="status-box no-drag" id="mission-status-box"
             style="display:none; margin-bottom: 10px; border-color: var(--accent); max-height: 300px; overflow-y: auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
                 <div style="font-size:0.7rem; color:var(--accent); font-weight:700; letter-spacing:1px">ACTIVE CONTRACT
@@ -832,6 +832,25 @@
                     state
                     updates.
                 </div>
+                <div class="section-title" style="margin-top: 20px;">Pattern Generator (Beta)</div>
+                <div
+                    style="background: rgba(0,0,0,0.3); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:5px;">Paste a raw log line below to
+                        generate a regex:</div>
+                    <input type="text" id="pattern-gen-input" class="modern-input"
+                        style="width:100%; font-family:monospace; font-size:0.75rem; margin-bottom:8px;"
+                        placeholder="<2026...> Event::Type - Value...">
+
+                    <div style="display:flex; gap:10px;">
+                        <button class="cyber-btn small" onclick="generatePattern()">✨ Generate Regex</button>
+                        <input type="text" id="pattern-gen-output" class="modern-input"
+                            style="flex:1; font-family:monospace; color:var(--accent);" placeholder="Regex output..."
+                            readonly>
+                        <button class="cyber-btn small icon" onclick="copyGeneratedPattern()"
+                            title="Copy to Clipboard">📋</button>
+                    </div>
+                </div>
+
                 <div id="builtin-pattern-list"
                     style="margin-bottom: 10px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 4px;">
                     <div style="padding: 10px; text-align: center; color: #555;">Loading patterns...</div>
@@ -879,6 +898,22 @@
                         <div style="color:#666; font-style:italic; padding:10px; text-align:center;">No custom locations
                             set.</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Location Sharing (Phase 5) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div>
+                        <div style="font-weight:bold; color:#fff;">Wait for Signal</div>
+                        <div style="font-size:0.8rem; color:#888;">Broadcast location to friends via VerseCon Relay
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="config-share-location" onchange="saveConfig()">
+                        <span class="slider round"></span>
+                    </label>
                 </div>
             </div>
 
@@ -935,6 +970,9 @@
         </div>
     </div>
 
+    <!-- Audio Synthesizer -->
+    <script src="audio-synth.js"></script>
+
     <script>
         const { ipcRenderer } = require('electron');
 
@@ -958,143 +996,169 @@
             if (!soundEnabled) return;
             try {
                 const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                gain.gain.value = soundVolume * 0.3;
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                // ═══ AUDIO SYSTEM (v3 Synthesizer) ═══
+                // Requires audio-synth.js loaded in HTML
+                function playSound(type) {
+                    // Check config volume
+                    const volElem = document.getElementById('sound-volume'); // Found ID in line 1009
+                    const vol = (volElem ? volElem.value : 50) / 100;
 
-                const sounds = {
-                    notification: { freq: 880, type: 'sine', dur: 150 },
-                    alert_death: { freq: 200, type: 'sawtooth', dur: 800 },
-                    alert_status: { freq: 440, type: 'triangle', dur: 400 },
-                    alert_zone: { freq: 660, type: 'sine', dur: 250 },
-                    command: { freq: 1000, type: 'square', dur: 100 },
-                    beacon: { freq: 500, type: 'sine', dur: 300 },
-                    contract: { freq: 700, type: 'sine', dur: 200 },
-                    sos: { freq: 300, type: 'sawtooth', dur: 600 },
-                };
+                    if (window.audioSynth) {
+                        window.audioSynth.setVolume(vol);
+                        window.audioSynth.play(type);
+                    }
+                }
 
-                const s = sounds[type] || sounds.notification;
-                osc.frequency.value = s.freq;
-                osc.type = s.type;
+                function toggleSounds() {
+                    soundEnabled = document.getElementById('sound-enabled').checked;
+                    saveConfig();
+                }
+                function updateVolume() {
+                    soundVolume = document.getElementById('sound-volume').value / 100;
+                    saveConfig();
+                }
 
-                osc.start();
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + s.dur / 1000);
-                osc.stop(audioCtx.currentTime + s.dur / 1000);
-            } catch (e) {
-                console.error('Sound error:', e);
-            }
-        }
+                // ═══ CONFIG MANAGEMENT ═══
+                function saveConfig() {
+                    const config = {
+                        logPath: document.getElementById('config-log-path').value,
+                        volume: document.getElementById('sound-volume').value,
+                        soundEnabled: document.getElementById('sound-enabled').checked,
+                        // overlayEnabled if exists
+                        shareLocation: document.getElementById('config-share-location').checked
+                    };
+                    // Handle optional elements
+                    const overlayEl = document.getElementById('config-overlay-enabled');
+                    if (overlayEl) config.overlayEnabled = overlayEl.checked;
 
-        function toggleSounds() { soundEnabled = document.getElementById('sound-enabled').checked; }
-        function updateVolume() { soundVolume = document.getElementById('sound-volume').value / 100; }
+                    const autoCleanEl = document.getElementById('config-auto-clean');
+                    if (autoCleanEl) config.autoCleanMissions = autoCleanEl.checked;
 
-        // ═══ FEED HELPERS ═══
-        function addFeedItem(feedId, icon, text) {
-            const feed = document.getElementById(feedId);
-            const time = new Date().toLocaleTimeString([], { hour12: false });
-            const item = document.createElement('div');
-            item.className = 'feed-item';
-            item.innerHTML = `
+                    ipcRenderer.send('settings:save', config);
+                }
+
+                ipcRenderer.on('settings:updated', (e, config) => {
+                    // Update UI from config
+                    if (config.volume) document.getElementById('sound-volume').value = config.volume;
+                    if (config.soundEnabled !== undefined) document.getElementById('sound-enabled').checked = config.soundEnabled;
+                    if (config.shareLocation !== undefined) document.getElementById('config-share-location').checked = config.shareLocation;
+
+                    // Update local state
+                    soundVolume = (config.volume || 70) / 100;
+                    soundEnabled = config.soundEnabled !== false;
+                });
+
+                // Request initial config?
+                // dashboardWindow.webContents.send('settings:load', config) call in main.js creation would be better.
+                // For now, we rely on local state or defaults.
+
+
+                // ═══ FEED HELPERS ═══
+                function addFeedItem(feedId, icon, text) {
+                    const feed = document.getElementById(feedId);
+                    const time = new Date().toLocaleTimeString([], { hour12: false });
+                    const item = document.createElement('div');
+                    item.className = 'feed-item';
+                    item.innerHTML = `
                 <span class="feed-time">${time}</span>
                 <span class="feed-icon">${icon}</span>
                 <span class="feed-text">${text}</span>
             `;
-            feed.prepend(item);
-            if (feed.children.length > 150) feed.lastElementChild.remove();
-        }
-
-        function addDashItem(icon, text) { addFeedItem('event-feed', icon, text); }
-        function addVconItem(icon, text) { addFeedItem('vcon-feed', icon, text); }
-
-        // ═══ AUTH ═══
-        function openLogin() {
-            console.log('[Dashboard] openLogin clicked!');
-            // v2.2 - Use custom protocol redirect
-            ipcRenderer.invoke('app:open-external', 'https://versecon.space/api/auth/discord/login?redirect=versecon-link://auth').then(() => {
-                addDashItem('🔑', 'Opening browser... Please login.');
-            }).catch(err => {
-                addDashItem('❌', 'Failed to open browser: ' + err.message);
-            });
-        }
-
-        function loginManual() {
-            const token = document.getElementById('api-token-manual').value;
-            if (token) {
-                ipcRenderer.send('app:login', token);
-                document.getElementById('auth-ui-guest').style.display = 'none';
-                document.getElementById('auth-ui-user').style.display = 'block';
-                addDashItem('🔒', 'Manual token set.');
-            }
-        }
-
-        function toggleOverlay() { ipcRenderer.send('app:toggle-overlay'); }
-
-        function selectLogFile() {
-            ipcRenderer.invoke('app:select-log').then(path => {
-                if (path) {
-                    document.getElementById('config-log-path').value = path;
-                    addDashItem('⚙️', `Log path set: ${path}`);
+                    feed.prepend(item);
+                    if (feed.children.length > 150) feed.lastElementChild.remove();
                 }
-            });
-        }
 
-        // ═══ COMMAND MODULE ═══
-        function sendPresetCommand(preset) {
-            const target = document.getElementById('cmd-target').value;
-            const data = { preset, target, timestamp: Date.now() };
-            ipcRenderer.send('command:send', data);
-            addCommandLog(preset, target, 'YOU');
-            playSound(preset === 'EMERGENCY' ? 'sos' : 'command');
-        }
+                function addDashItem(icon, text) { addFeedItem('event-feed', icon, text); }
+                function addVconItem(icon, text) { addFeedItem('vcon-feed', icon, text); }
 
-        function sendCustomCommand() {
-            const text = document.getElementById('cmd-custom-text').value.trim();
-            if (!text) return;
-            const target = document.getElementById('cmd-target').value;
-            const broadcast = document.getElementById('cmd-broadcast').checked;
-            const data = { text, target, broadcast, timestamp: Date.now() };
-            ipcRenderer.send('command:send', data);
-            addCommandLog(text, target, 'YOU');
-            document.getElementById('cmd-custom-text').value = '';
-            playSound('command');
-        }
+                // ═══ AUTH ═══
+                function openLogin() {
+                    console.log('[Dashboard] openLogin clicked!');
+                    // v2.2 - Use custom protocol redirect
+                    ipcRenderer.invoke('app:open-external', 'https://versecon.space/api/auth/discord/login?redirect=versecon-link://auth').then(() => {
+                        addDashItem('🔑', 'Opening browser... Please login.');
+                    }).catch(err => {
+                        addDashItem('❌', 'Failed to open browser: ' + err.message);
+                    });
+                }
 
-        function addCommandLog(text, target, from) {
-            const log = document.getElementById('command-log');
-            // Remove placeholder
-            const placeholder = log.querySelector('div[style]');
-            if (placeholder && placeholder.textContent.includes('No commands')) placeholder.remove();
+                function loginManual() {
+                    const token = document.getElementById('api-token-manual').value;
+                    if (token) {
+                        ipcRenderer.send('app:login', token);
+                        document.getElementById('auth-ui-guest').style.display = 'none';
+                        document.getElementById('auth-ui-user').style.display = 'block';
+                        addDashItem('🔒', 'Manual token set.');
+                    }
+                }
 
-            const time = new Date().toLocaleTimeString([], { hour12: false });
-            const item = document.createElement('div');
-            item.className = 'cmd-log-item';
-            item.innerHTML = `
+                function toggleOverlay() { ipcRenderer.send('app:toggle-overlay'); }
+
+                function selectLogFile() {
+                    ipcRenderer.invoke('app:select-log').then(path => {
+                        if (path) {
+                            document.getElementById('config-log-path').value = path;
+                            addDashItem('⚙️', `Log path set: ${path}`);
+                        }
+                    });
+                }
+
+                // ═══ COMMAND MODULE ═══
+                function sendPresetCommand(preset) {
+                    const target = document.getElementById('cmd-target').value;
+                    const data = { preset, target, timestamp: Date.now() };
+                    ipcRenderer.send('command:send', data);
+                    addCommandLog(preset, target, 'YOU');
+                    playSound(preset === 'EMERGENCY' ? 'sos' : 'command');
+                }
+
+                function sendCustomCommand() {
+                    const text = document.getElementById('cmd-custom-text').value.trim();
+                    if (!text) return;
+                    const target = document.getElementById('cmd-target').value;
+                    const broadcast = document.getElementById('cmd-broadcast').checked;
+                    const data = { text, target, broadcast, timestamp: Date.now() };
+                    ipcRenderer.send('command:send', data);
+                    addCommandLog(text, target, 'YOU');
+                    document.getElementById('cmd-custom-text').value = '';
+                    playSound('command');
+                }
+
+                function addCommandLog(text, target, from) {
+                    const log = document.getElementById('command-log');
+                    // Remove placeholder
+                    const placeholder = log.querySelector('div[style]');
+                    if (placeholder && placeholder.textContent.includes('No commands')) placeholder.remove();
+
+                    const time = new Date().toLocaleTimeString([], { hour12: false });
+                    const item = document.createElement('div');
+                    item.className = 'cmd-log-item';
+                    item.innerHTML = `
                 <div class="cmd-log-from">${time} — FROM: ${from}</div>
                 <div class="cmd-log-text">${text}</div>
                 <div class="cmd-log-target">→ ${target}</div>
                 <div class="cmd-log-ack" id="ack-${Date.now()}">⏳ Awaiting ACK...</div>
             `;
-            log.prepend(item);
-        }
+                    log.prepend(item);
+                }
 
-        // ═══ SHIP IMAGE MANAGER (v2.2) ═══
-        let shipMap = {};
+                // ═══ SHIP IMAGE MANAGER (v2.2) ═══
+                let shipMap = {};
 
-        function loadShipMap() {
-            ipcRenderer.invoke('settings:get-ship-map').then(map => {
-                shipMap = map || {};
-                renderShipMapList();
-            });
-        }
+                function loadShipMap() {
+                    ipcRenderer.invoke('settings:get-ship-map').then(map => {
+                        shipMap = map || {};
+                        renderShipMapList();
+                    });
+                }
 
-        function renderShipMapList() {
-            const list = document.getElementById('ship-map-list');
-            if (Object.keys(shipMap).length === 0) {
-                list.innerHTML = '<div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No mappings set.</div>';
-                return;
-            }
-            list.innerHTML = Object.entries(shipMap).map(([name, path]) => `
+                function renderShipMapList() {
+                    const list = document.getElementById('ship-map-list');
+                    if (Object.keys(shipMap).length === 0) {
+                        list.innerHTML = '<div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No mappings set.</div>';
+                        return;
+                    }
+                    list.innerHTML = Object.entries(shipMap).map(([name, path]) => `
                 <div class="map-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <div style="flex: 1;">
                         <span style="color: var(--accent); font-weight: bold;">${name}</span>
@@ -1103,97 +1167,97 @@
                     <button class="cyber-btn small danger" onclick="removeShipMapping('${name}')" style="margin:0; padding: 2px 8px;">×</button>
                 </div>
             `).join('');
-        }
-
-        function selectNewShipImage() {
-            ipcRenderer.invoke('app:select-ship-image').then(path => {
-                if (path) {
-                    document.getElementById('new-ship-image-path').value = path;
-                    document.getElementById('new-ship-filename').textContent = path.split(/[\\\\/]/).pop();
-                    document.getElementById('new-ship-preview-label').style.display = 'block';
                 }
-            });
-        }
 
-        function addShipMapping() {
-            const name = document.getElementById('new-ship-name').value.trim();
-            const path = document.getElementById('new-ship-image-path').value;
+                function selectNewShipImage() {
+                    ipcRenderer.invoke('app:select-ship-image').then(path => {
+                        if (path) {
+                            document.getElementById('new-ship-image-path').value = path;
+                            document.getElementById('new-ship-filename').textContent = path.split(/[\\\\/]/).pop();
+                            document.getElementById('new-ship-preview-label').style.display = 'block';
+                        }
+                    });
+                }
 
-            if (!name) return alert('Please enter a ship name.');
-            if (!path) return alert('Please select an image.');
+                function addShipMapping() {
+                    const name = document.getElementById('new-ship-name').value.trim();
+                    const path = document.getElementById('new-ship-image-path').value;
 
-            shipMap[name] = path;
-            saveShipMap();
+                    if (!name) return alert('Please enter a ship name.');
+                    if (!path) return alert('Please select an image.');
 
-            // Clear inputs
-            document.getElementById('new-ship-name').value = '';
-            document.getElementById('new-ship-image-path').value = '';
-            document.getElementById('new-ship-preview-label').style.display = 'none';
-            renderShipMapList();
-        }
+                    shipMap[name] = path;
+                    saveShipMap();
 
-        function removeShipMapping(name) {
-            delete shipMap[name];
-            saveShipMap();
-            renderShipMapList();
-        }
+                    // Clear inputs
+                    document.getElementById('new-ship-name').value = '';
+                    document.getElementById('new-ship-image-path').value = '';
+                    document.getElementById('new-ship-preview-label').style.display = 'none';
+                    renderShipMapList();
+                }
 
-        function saveShipMap() {
-            ipcRenderer.invoke('settings:save-ship-map', shipMap);
-        }
+                function removeShipMapping(name) {
+                    delete shipMap[name];
+                    saveShipMap();
+                    renderShipMapList();
+                }
 
-        // ═══ DETECTED SHIP HELPER ═══
-        let lastDetectedShip = null;
-        ipcRenderer.on('settings:last-ship', (e, shipName) => {
-            if (!shipName) return;
-            lastDetectedShip = shipName;
-            const label = document.getElementById('detected-ship-label');
-            if (label) {
-                label.innerHTML = `Detected: <strong style="color:var(--accent)">${shipName}</strong> <a href="#" onclick="useDetectedShip('${shipName}')" style="font-size:0.8em; margin-left:10px">[USE THIS]</a>`;
-                label.style.display = 'block';
-            }
-        });
+                function saveShipMap() {
+                    ipcRenderer.invoke('settings:save-ship-map', shipMap);
+                }
 
-        window.useDetectedShip = (name) => {
-            document.getElementById('new-ship-name').value = name;
-        };
+                // ═══ DETECTED SHIP HELPER ═══
+                let lastDetectedShip = null;
+                ipcRenderer.on('settings:last-ship', (e, shipName) => {
+                    if (!shipName) return;
+                    lastDetectedShip = shipName;
+                    const label = document.getElementById('detected-ship-label');
+                    if (label) {
+                        label.innerHTML = `Detected: <strong style="color:var(--accent)">${shipName}</strong> <a href="#" onclick="useDetectedShip('${shipName}')" style="font-size:0.8em; margin-left:10px">[USE THIS]</a>`;
+                        label.style.display = 'block';
+                    }
+                });
 
-        // Mission Renaming
-        window.renameCurrentMission = async () => {
-            if (!window.currentMissionId) {
-                // If no ID, try to rename current 'active' if main.js logic allows, or alert
-                alert('No active Mission ID tracked. Accept a contract first.');
-                return;
-            }
-            const currentName = document.getElementById('mission-title').innerText;
-            const newName = await window.vcModal.prompt('Rename Mission', `Enter name for ID ${window.currentMissionId}:`, currentName);
+                window.useDetectedShip = (name) => {
+                    document.getElementById('new-ship-name').value = name;
+                };
 
-            if (newName && newName !== currentName) {
-                ipcRenderer.send('mission:rename', { id: window.currentMissionId, name: newName });
-            }
-        };
+                // Mission Renaming
+                window.renameCurrentMission = async () => {
+                    if (!window.currentMissionId) {
+                        // If no ID, try to rename current 'active' if main.js logic allows, or alert
+                        alert('No active Mission ID tracked. Accept a contract first.');
+                        return;
+                    }
+                    const currentName = document.getElementById('mission-title').innerText;
+                    const newName = await window.vcModal.prompt('Rename Mission', `Enter name for ID ${window.currentMissionId}:`, currentName);
 
-        // Initialize (called after ipcRenderer ready? No, call directly here, assuming early enough)
-        loadShipMap();
+                    if (newName && newName !== currentName) {
+                        ipcRenderer.send('mission:rename', { id: window.currentMissionId, name: newName });
+                    }
+                };
+
+                // Initialize (called after ipcRenderer ready? No, call directly here, assuming early enough)
+                loadShipMap();
 
 
-        // ═══ MANUAL PATTERNS (v2.2) ═══
-        let customPatterns = [];
+                // ═══ MANUAL PATTERNS (v2.2) ═══
+                let customPatterns = [];
 
-        function loadCustomPatterns() {
-            ipcRenderer.invoke('settings:get-custom-patterns').then(patterns => {
-                customPatterns = patterns || [];
-                renderPatternList();
-            });
-        }
+                function loadCustomPatterns() {
+                    ipcRenderer.invoke('settings:get-custom-patterns').then(patterns => {
+                        customPatterns = patterns || [];
+                        renderPatternList();
+                    });
+                }
 
-        function renderPatternList() {
-            const list = document.getElementById('pattern-list');
-            if (customPatterns.length === 0) {
-                list.innerHTML = '<div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No custom patterns defined.</div>';
-                return;
-            }
-            list.innerHTML = customPatterns.map((p, i) => `
+                function renderPatternList() {
+                    const list = document.getElementById('pattern-list');
+                    if (customPatterns.length === 0) {
+                        list.innerHTML = '<div style="padding: 10px; font-style: italic; color: #555; text-align: center;">No custom patterns defined.</div>';
+                        return;
+                    }
+                    list.innerHTML = customPatterns.map((p, i) => `
                 <div class="map-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <div style="flex: 1; overflow: hidden;">
                         <div style="font-family: monospace; color: var(--accent); font-size: 0.8rem;">${escapeHtml(p.regex)}</div>
@@ -1204,88 +1268,88 @@
                     <button class="cyber-btn small danger" onclick="removeCustomPattern(${i})" style="margin:0; padding: 2px 8px;">×</button>
                 </div>
             `).join('');
-        }
+                }
 
-        function getColorForLevel(level) {
-            switch (level) {
-                case 'INFO': return '#4FC3F7';
-                case 'WARN': return '#FFA726';
-                case 'CRITICAL': return '#FF5252';
-                default: return '#eee';
-            }
-        }
+                function getColorForLevel(level) {
+                    switch (level) {
+                        case 'INFO': return '#4FC3F7';
+                        case 'WARN': return '#FFA726';
+                        case 'CRITICAL': return '#FF5252';
+                        default: return '#eee';
+                    }
+                }
 
-        function addCustomPattern() {
-            const regex = document.getElementById('new-pattern-regex').value.trim();
-            const level = document.getElementById('new-pattern-level').value;
-            const message = document.getElementById('new-pattern-msg').value.trim();
+                function addCustomPattern() {
+                    const regex = document.getElementById('new-pattern-regex').value.trim();
+                    const level = document.getElementById('new-pattern-level').value;
+                    const message = document.getElementById('new-pattern-msg').value.trim();
 
-            if (!regex) return alert('Please enter a Regex pattern.');
-            if (!message) return alert('Please enter an alert message.');
+                    if (!regex) return alert('Please enter a Regex pattern.');
+                    if (!message) return alert('Please enter an alert message.');
 
-            // Validate Regex
-            try {
-                // If input manually wrapped in slashes, use as is. If not, assume body.
-                // But JS `new RegExp` takes string.
-                // We'll trust user input but validate.
-                new RegExp(regex);
-            } catch (e) {
-                return alert('Invalid Regex: ' + e.message);
-            }
+                    // Validate Regex
+                    try {
+                        // If input manually wrapped in slashes, use as is. If not, assume body.
+                        // But JS `new RegExp` takes string.
+                        // We'll trust user input but validate.
+                        new RegExp(regex);
+                    } catch (e) {
+                        return alert('Invalid Regex: ' + e.message);
+                    }
 
-            customPatterns.push({ regex, level, message, id: Date.now() });
-            saveCustomPatterns();
+                    customPatterns.push({ regex, level, message, id: Date.now() });
+                    saveCustomPatterns();
 
-            document.getElementById('new-pattern-regex').value = '';
-            document.getElementById('new-pattern-msg').value = '';
-            renderPatternList();
-        }
+                    document.getElementById('new-pattern-regex').value = '';
+                    document.getElementById('new-pattern-msg').value = '';
+                    renderPatternList();
+                }
 
-        function removeCustomPattern(index) {
-            customPatterns.splice(index, 1);
-            saveCustomPatterns();
-            renderPatternList();
-        }
+                function removeCustomPattern(index) {
+                    customPatterns.splice(index, 1);
+                    saveCustomPatterns();
+                    renderPatternList();
+                }
 
-        function saveCustomPatterns() {
-            ipcRenderer.invoke('settings:save-custom-patterns', customPatterns);
-        }
+                function saveCustomPatterns() {
+                    ipcRenderer.invoke('settings:save-custom-patterns', customPatterns);
+                }
 
-        loadCustomPatterns();
+                loadCustomPatterns();
 
 
-        // ═══ UNKNOWN LOG DISCOVERY (Fixed: event delegation, full sample display) ═══
-        // Store groups data for event delegation
-        let unknownGroupsData = [];
+                // ═══ UNKNOWN LOG DISCOVERY (Fixed: event delegation, full sample display) ═══
+                // Store groups data for event delegation
+                let unknownGroupsData = [];
 
-        function escapeHtml(str) {
-            if (typeof str !== 'string') return String(str || '');
-            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
+                function escapeHtml(str) {
+                    if (typeof str !== 'string') return String(str || '');
+                    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                }
 
-        // ... existing codes ...
+                // ... existing codes ...
 
-        function renderUnknowns(groups) {
-            unknownGroupsData = groups;
-            const list = document.getElementById('unknown-list');
-            unknownCount = groups.length;
-            document.getElementById('unknown-count-label').textContent = `(${unknownCount})`;
+                function renderUnknowns(groups) {
+                    unknownGroupsData = groups;
+                    const list = document.getElementById('unknown-list');
+                    unknownCount = groups.length;
+                    document.getElementById('unknown-count-label').textContent = `(${unknownCount})`;
 
-            // Update badge
-            const badge = document.getElementById('unknown-badge');
-            if (unknownCount > 0) {
-                badge.style.display = 'inline';
-                badge.textContent = unknownCount;
-            } else {
-                badge.style.display = 'none';
-            }
+                    // Update badge
+                    const badge = document.getElementById('unknown-badge');
+                    if (unknownCount > 0) {
+                        badge.style.display = 'inline';
+                        badge.textContent = unknownCount;
+                    } else {
+                        badge.style.display = 'none';
+                    }
 
-            if (groups.length === 0) {
-                list.innerHTML = '<div style="color: #555; font-style: italic; padding: 15px; text-align: center;">No unknown patterns detected yet.</div>';
-                return;
-            }
+                    if (groups.length === 0) {
+                        list.innerHTML = '<div style="color: #555; font-style: italic; padding: 15px; text-align: center;">No unknown patterns detected yet.</div>';
+                        return;
+                    }
 
-            list.innerHTML = groups.slice(0, 50).map((g, i) => `
+                    list.innerHTML = groups.slice(0, 50).map((g, i) => `
                 <div class="unknown-item">
                     <div class="unknown-header">
                         <span class="unknown-key">${escapeHtml(g.group)}</span>
@@ -1298,404 +1362,404 @@
                     <div class="unknown-sample" title="${escapeHtml(g.sample)}">${escapeHtml(g.sample)}</div>
                 </div>
             `).join('');
-        }
-
-        // Event delegation for unknown log buttons (fixes broken inline onclick)
-        document.getElementById('unknown-list').addEventListener('click', (e) => {
-            const btn = e.target.closest('button');
-            if (!btn) return;
-            const idx = parseInt(btn.dataset.idx);
-            if (isNaN(idx) || !unknownGroupsData[idx]) return;
-
-            if (btn.classList.contains('btn-copy')) {
-                navigator.clipboard.writeText(unknownGroupsData[idx].sample)
-                    .then(() => addDashItem('📋', 'Copied to clipboard'))
-                    .catch(() => addDashItem('❌', 'Copy failed'));
-            } else if (btn.classList.contains('btn-ignore')) {
-                ipcRenderer.send('log:ignore-unknown', unknownGroupsData[idx].group);
-                addDashItem('🚫', `Ignored: ${unknownGroupsData[idx].group.substring(0, 40)}`);
-            }
-        });
-
-        function refreshUnknowns() {
-            ipcRenderer.send('log:request-unknowns');
-        }
-
-        function clearUnknowns() {
-            ipcRenderer.send('log:clear-unknowns');
-        }
-
-        // ═══ ALERT COOLDOWNS ═══
-        function updateCooldown(alertType, seconds) {
-            document.getElementById(`cd-${alertType}-val`).textContent = `${seconds}s`;
-            ipcRenderer.send('alert:set-cooldown', { alertType, cooldownMs: seconds * 1000 });
-        }
-
-        // Initialize cooldowns from defaults
-        updateCooldown('suffocating', 5);
-        updateCooldown('depressurizing', 5);
-
-        // ═══ SHIP IMAGE ═══
-        function selectShipImage() {
-            ipcRenderer.invoke('app:select-ship-image').then(path => {
-                if (path) {
-                    document.getElementById('ship-image-path').value = path;
-                    document.getElementById('ship-preview').style.display = 'block';
-                    document.getElementById('ship-preview-img').src = path;
-                    // Broadcast to overlay
-                    ipcRenderer.send('app:login', ''); // slight hack, we directly use broadcast
-                    // Actually, send via main → overlay
-                    localStorage.setItem('shipImagePath', path);
-                    addDashItem('🖼️', `Ship image set: ${path.split(/[\\/]/).pop()}`);
                 }
-            });
-        }
 
-        function clearShipImage() {
-            document.getElementById('ship-image-path').value = '';
-            document.getElementById('ship-preview').style.display = 'none';
-            localStorage.removeItem('shipImagePath');
-            addDashItem('🖼️', 'Ship image cleared');
-        }
+                // Event delegation for unknown log buttons (fixes broken inline onclick)
+                document.getElementById('unknown-list').addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+                    const idx = parseInt(btn.dataset.idx);
+                    if (isNaN(idx) || !unknownGroupsData[idx]) return;
 
-        // ═══ EVENT LISTENERS ═══
-
-        // Game log events
-        ipcRenderer.on('log:status', (e, data) => {
-            const dot = document.getElementById('status-log-dot');
-            const txt = document.getElementById('status-log-text');
-            if (data.connected) {
-                dot.className = 'dot on'; txt.innerText = 'Active';
-                document.getElementById('config-log-path').value = data.path || 'Auto-detected';
-                if (data.path) addDashItem('📂', `Game.log: <span class="feed-highlight">${data.path}</span>`);
-            } else {
-                dot.className = 'dot off'; txt.innerText = 'Searching';
-            }
-        });
-
-        let lastGlobalLocation = '';
-
-        ipcRenderer.on('log:update', (e, data) => {
-            switch (data.type) {
-                case 'LOCATION':
-                    lastGlobalLocation = data.value;
-                    addDashItem('📍', `Location: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'LOCATION_HINT':
-                    const display = lastGlobalLocation ? `${lastGlobalLocation} — ${data.value}` : data.value;
-                    addDashItem('🗺️', `Area: <span class="feed-highlight">${display}</span>`);
-                    break;
-                case 'QUANTUM':
-                    addDashItem('🚀', `Quantum: <span class="feed-highlight">${data.value === 'entered' ? 'ENGAGED' : 'DISENGAGED'}</span>`);
-                    playSound('alert_zone');
-                    break;
-                case 'ZONE':
-                    if (data.value === 'armistice_enter') { addDashItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span>'); }
-                    else if (data.value === 'armistice_leave') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
-                    else if (data.value === 'monitored_enter') { addDashItem('📡', 'Entered <span class="feed-highlight">Monitored Space</span>'); }
-                    else if (data.value === 'monitored_leave') { addDashItem('📡', '<span class="feed-highlight" style="color:#ff4444">LEFT MONITORED SPACE</span> — Comms Down'); playSound('alert_zone'); }
-                    break;
-                case 'STATUS':
-                    if (data.value === 'suffocating') { addDashItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span>'); playSound('alert_status'); }
-                    else if (data.value === 'depressurizing') { addDashItem('💨', '<span class="feed-highlight" style="color:#ff4444">DEPRESSURIZATION</span>'); playSound('alert_status'); }
-                    else if (data.value === 'death') { addDashItem('💀', '<span class="feed-highlight" style="color:#ff4444">DEATH DETECTED</span>'); playSound('alert_death'); }
-                    break;
-                case 'LOGIN':
-                    addDashItem('👋', `Session: <span class="feed-highlight">${data.handle || 'Login Detected'}</span>`);
-                    break;
-                case 'PLAYER_NAME':
-                    addDashItem('🎮', `Pilot: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'CHARACTER_NAME':
-                    addDashItem('👤', `Character: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'CONNECTION':
-                    addDashItem('🔗', `Connection: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'LOADING':
-                    addDashItem('⏳', 'Loading screen...');
-                    break;
-                // ═══ NEW: Server & Environment ═══
-                case 'SERVER_ENV':
-                    addDashItem('🌍', `Server: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'SERVER_REGION':
-                    addDashItem('🌐', `Region: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'SESSION_ID':
-                    addDashItem('🔑', `Session: <span class="feed-highlight" style="font-size:0.7rem">${data.value.substring(0, 12)}...</span>`);
-                    break;
-                // ═══ NEW: Ship Events ═══
-                case 'SHIP_ENTER':
-                    addDashItem('🚀', `Boarded: <span class="feed-highlight" style="color:#00c8ff">${data.value}</span>`);
-                    document.getElementById('last-ship-debug').textContent = data.value; // Update Settings UI
-                    playSound('notification');
-                    break;
-                case 'SHIP_EXIT':
-                    addDashItem('🚶', `Exited ship: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'SHIP_CURRENT':
-                    addDashItem('🚀', `Current ship: <span class="feed-highlight" style="color:#00c8ff">${data.value}</span>`);
-                    break;
-                case 'VEHICLE_SPAWN':
-                    addDashItem('🛸', `Vehicle spawned: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                // ═══ NEW: Game Join/Leave ═══
-                case 'GAME_JOIN':
-                    addDashItem('🎮', '<span class="feed-highlight" style="color:#00ff88">CONNECTED TO SERVER</span>');
-                    playSound('notification');
-                    break;
-                case 'GAME_LEAVE':
-                    addDashItem('🚪', '<span class="feed-highlight" style="color:#ffaa00">DISCONNECTED</span>');
-                    playSound('alert_status');
-                    break;
-                case 'GAME_RESTART':
-                    addDashItem('🔄', '<span class="feed-highlight">Game restarting...</span>');
-                    break;
-                // ═══ NEW: Multi-Mission List ═══
-                case 'MISSION_ACCEPTED':
-                case 'MISSION_OBJECTIVE':
-                case 'MISSION_STATUS':
-                case 'MISSION_CHANGED':
-                    // These are handled via 'mission:list' broadcast usually, but if we get individual events we can ignore or log.
-                    // Main.js sends 'mission:list' after these.
-                    break;
-
-                // ═══ NEW: Insurance ═══
-                case 'INSURANCE_CLAIM':
-                    addDashItem('🛡️', `<span class="feed-highlight" style="color:#a855f7">INSURANCE CLAIM</span>`);
-                    playSound('alert_status');
-                    break;
-                // ═══ NEW: Docking ═══
-                case 'DOCKING':
-                    addDashItem('🔗', `Docking <span class="feed-highlight">${data.value}</span>`);
-                    playSound('notification');
-                    break;
-                // ═══ NEW: Inventory ═══
-                case 'INVENTORY':
-                    addDashItem('📦', `Inventory <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                // ═══ NEW: Medical & Spawn ═══
-                case 'MEDICAL_BED':
-                    addDashItem('🏥', '<span class="feed-highlight" style="color:#00c8ff">Medical Bed</span>');
-                    break;
-                case 'SPAWN_SET':
-                case 'SPAWN_POINT':
-                    addDashItem('📍', `Spawn: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-
-                // ═══ PHASE 2: INDUSTRIAL ═══
-                case 'MINING':
-                    if (data.subtype === 'LASER') {
-                        const color = data.state === 'ON' ? '#00ff88' : '#888';
-                        addDashItem('⛏️', `Mining Laser: <span class="feed-highlight" style="color:${color}">${data.state}</span>`);
-                    } else if (data.subtype === 'FRACTURE') {
-                        const color = data.success ? '#00ff88' : '#ff4444';
-                        const text = data.success ? 'SUCCESS' : 'FAILED';
-                        addDashItem('💥', `Fracture: <span class="feed-highlight" style="color:${color}">${text}</span>`);
-                        if (data.success) playSound('notification');
-                    } else if (data.subtype === 'EXTRACTION') {
-                        addDashItem('💎', `Extracted: <span class="feed-highlight" style="color:#ffa500">${data.amount.toFixed(2)} SCU</span> ${data.material}`);
+                    if (btn.classList.contains('btn-copy')) {
+                        navigator.clipboard.writeText(unknownGroupsData[idx].sample)
+                            .then(() => addDashItem('📋', 'Copied to clipboard'))
+                            .catch(() => addDashItem('❌', 'Copy failed'));
+                    } else if (btn.classList.contains('btn-ignore')) {
+                        ipcRenderer.send('log:ignore-unknown', unknownGroupsData[idx].group);
+                        addDashItem('🚫', `Ignored: ${unknownGroupsData[idx].group.substring(0, 40)}`);
                     }
-                    break;
+                });
 
-                case 'SALVAGE':
-                    if (data.subtype === 'BEAM') {
-                        const color = data.state === 'ON' ? '#00ff88' : '#888';
-                        addDashItem('🏗️', `Salvage Beam: <span class="feed-highlight" style="color:${color}">${data.state}</span>`);
-                    } else if (data.subtype === 'SCRAPE') {
-                        addDashItem('♻️', `Scraped: <span class="feed-highlight" style="color:#00c8ff">${data.amount.toFixed(2)} SCU</span> ${data.material}`);
-                    }
-                    break;
+                function refreshUnknowns() {
+                    ipcRenderer.send('log:request-unknowns');
+                }
 
-                case 'ENGINEERING':
-                    if (data.subtype === 'POWER') {
-                        addDashItem('⚡', `Power Plant: <span class="feed-highlight">${data.state}</span>`);
-                    } else if (data.subtype === 'FUSE_BREAK') {
-                        addDashItem('🔌', `Fuse Blown: <span class="feed-highlight" style="color:#ff4444">${data.component}</span> in ${data.room}`);
-                        playSound('alert_status');
-                    }
-                    break;
+                function clearUnknowns() {
+                    ipcRenderer.send('log:clear-unknowns');
+                }
 
-                // MISSION TRACKING
-                case 'MISSION_CURRENT':
-                    document.getElementById('mission-status-box').style.display = 'block';
-                    document.getElementById('mission-title').innerText = data.value;
-                    document.getElementById('mission-title').title = data.value; // Tooltip for overflow
-                    addDashItem('📜', `Mission Accepted: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'MISSION_OBJECTIVE':
-                    document.getElementById('mission-status-box').style.display = 'block';
-                    document.getElementById('mission-objective').innerText = data.value;
-                    addDashItem('🎯', `Objective: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'MISSION_CLEARED':
-                    document.getElementById('mission-title').innerText = 'Completed / Ended';
-                    document.getElementById('mission-objective').innerText = '-';
-                    setTimeout(() => {
-                        // Only hide if it hasn't been updated again
-                        if (document.getElementById('mission-title').innerText.includes('Completed')) {
-                            document.getElementById('mission-status-box').style.display = 'none';
+                // ═══ ALERT COOLDOWNS ═══
+                function updateCooldown(alertType, seconds) {
+                    document.getElementById(`cd-${alertType}-val`).textContent = `${seconds}s`;
+                    ipcRenderer.send('alert:set-cooldown', { alertType, cooldownMs: seconds * 1000 });
+                }
+
+                // Initialize cooldowns from defaults
+                updateCooldown('suffocating', 5);
+                updateCooldown('depressurizing', 5);
+
+                // ═══ SHIP IMAGE ═══
+                function selectShipImage() {
+                    ipcRenderer.invoke('app:select-ship-image').then(path => {
+                        if (path) {
+                            document.getElementById('ship-image-path').value = path;
+                            document.getElementById('ship-preview').style.display = 'block';
+                            document.getElementById('ship-preview-img').src = path;
+                            // Broadcast to overlay
+                            ipcRenderer.send('app:login', ''); // slight hack, we directly use broadcast
+                            // Actually, send via main → overlay
+                            localStorage.setItem('shipImagePath', path);
+                            addDashItem('🖼️', `Ship image set: ${path.split(/[\\/]/).pop()}`);
                         }
-                    }, 10000); // Keep result visible for 10s
-                    addDashItem('✅', 'Mission Ended');
-                    break;
+                    });
+                }
 
-                // ═══ NEW: Party ═══
-                case 'PARTY_INVITE':
-                    addDashItem('📩', '<span class="feed-highlight" style="color:#ffa500">Party invite pending</span>');
+                function clearShipImage() {
+                    document.getElementById('ship-image-path').value = '';
+                    document.getElementById('ship-preview').style.display = 'none';
+                    localStorage.removeItem('shipImagePath');
+                    addDashItem('🖼️', 'Ship image cleared');
+                }
+
+                // ═══ EVENT LISTENERS ═══
+
+                // Game log events
+                ipcRenderer.on('log:status', (e, data) => {
+                    const dot = document.getElementById('status-log-dot');
+                    const txt = document.getElementById('status-log-text');
+                    if (data.connected) {
+                        dot.className = 'dot on'; txt.innerText = 'Active';
+                        document.getElementById('config-log-path').value = data.path || 'Auto-detected';
+                        if (data.path) addDashItem('📂', `Game.log: <span class="feed-highlight">${data.path}</span>`);
+                    } else {
+                        dot.className = 'dot off'; txt.innerText = 'Searching';
+                    }
+                });
+
+                let lastGlobalLocation = '';
+
+                ipcRenderer.on('log:update', (e, data) => {
+                    switch (data.type) {
+                        case 'LOCATION':
+                            lastGlobalLocation = data.value;
+                            addDashItem('📍', `Location: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'LOCATION_HINT':
+                            const display = lastGlobalLocation ? `${lastGlobalLocation} — ${data.value}` : data.value;
+                            addDashItem('🗺️', `Area: <span class="feed-highlight">${display}</span>`);
+                            break;
+                        case 'QUANTUM':
+                            addDashItem('🚀', `Quantum: <span class="feed-highlight">${data.value === 'entered' ? 'ENGAGED' : 'DISENGAGED'}</span>`);
+                            playSound('alert_zone');
+                            break;
+                        case 'ZONE':
+                            if (data.value === 'armistice_enter') { addDashItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span>'); }
+                            else if (data.value === 'armistice_leave') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
+                            else if (data.value === 'monitored_enter') { addDashItem('📡', 'Entered <span class="feed-highlight">Monitored Space</span>'); }
+                            else if (data.value === 'monitored_leave') { addDashItem('📡', '<span class="feed-highlight" style="color:#ff4444">LEFT MONITORED SPACE</span> — Comms Down'); playSound('alert_zone'); }
+                            break;
+                        case 'STATUS':
+                            if (data.value === 'suffocating') { addDashItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span>'); playSound('alert_status'); }
+                            else if (data.value === 'depressurizing') { addDashItem('💨', '<span class="feed-highlight" style="color:#ff4444">DEPRESSURIZATION</span>'); playSound('alert_status'); }
+                            else if (data.value === 'death') { addDashItem('💀', '<span class="feed-highlight" style="color:#ff4444">DEATH DETECTED</span>'); playSound('alert_death'); }
+                            break;
+                        case 'LOGIN':
+                            addDashItem('👋', `Session: <span class="feed-highlight">${data.handle || 'Login Detected'}</span>`);
+                            break;
+                        case 'PLAYER_NAME':
+                            addDashItem('🎮', `Pilot: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'CHARACTER_NAME':
+                            addDashItem('👤', `Character: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'CONNECTION':
+                            addDashItem('🔗', `Connection: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'LOADING':
+                            addDashItem('⏳', 'Loading screen...');
+                            break;
+                        // ═══ NEW: Server & Environment ═══
+                        case 'SERVER_ENV':
+                            addDashItem('🌍', `Server: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'SERVER_REGION':
+                            addDashItem('🌐', `Region: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'SESSION_ID':
+                            addDashItem('🔑', `Session: <span class="feed-highlight" style="font-size:0.7rem">${data.value.substring(0, 12)}...</span>`);
+                            break;
+                        // ═══ NEW: Ship Events ═══
+                        case 'SHIP_ENTER':
+                            addDashItem('🚀', `Boarded: <span class="feed-highlight" style="color:#00c8ff">${data.value}</span>`);
+                            document.getElementById('last-ship-debug').textContent = data.value; // Update Settings UI
+                            playSound('notification');
+                            break;
+                        case 'SHIP_EXIT':
+                            addDashItem('🚶', `Exited ship: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'SHIP_CURRENT':
+                            addDashItem('🚀', `Current ship: <span class="feed-highlight" style="color:#00c8ff">${data.value}</span>`);
+                            break;
+                        case 'VEHICLE_SPAWN':
+                            addDashItem('🛸', `Vehicle spawned: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        // ═══ NEW: Game Join/Leave ═══
+                        case 'GAME_JOIN':
+                            addDashItem('🎮', '<span class="feed-highlight" style="color:#00ff88">CONNECTED TO SERVER</span>');
+                            playSound('notification');
+                            break;
+                        case 'GAME_LEAVE':
+                            addDashItem('🚪', '<span class="feed-highlight" style="color:#ffaa00">DISCONNECTED</span>');
+                            playSound('alert_status');
+                            break;
+                        case 'GAME_RESTART':
+                            addDashItem('🔄', '<span class="feed-highlight">Game restarting...</span>');
+                            break;
+                        // ═══ NEW: Multi-Mission List ═══
+                        case 'MISSION_ACCEPTED':
+                        case 'MISSION_OBJECTIVE':
+                        case 'MISSION_STATUS':
+                        case 'MISSION_CHANGED':
+                            // These are handled via 'mission:list' broadcast usually, but if we get individual events we can ignore or log.
+                            // Main.js sends 'mission:list' after these.
+                            break;
+
+                        // ═══ NEW: Insurance ═══
+                        case 'INSURANCE_CLAIM':
+                            addDashItem('🛡️', `<span class="feed-highlight" style="color:#a855f7">INSURANCE CLAIM</span>`);
+                            playSound('alert_status');
+                            break;
+                        // ═══ NEW: Docking ═══
+                        case 'DOCKING':
+                            addDashItem('🔗', `Docking <span class="feed-highlight">${data.value}</span>`);
+                            playSound('notification');
+                            break;
+                        // ═══ NEW: Inventory ═══
+                        case 'INVENTORY':
+                            addDashItem('📦', `Inventory <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        // ═══ NEW: Medical & Spawn ═══
+                        case 'MEDICAL_BED':
+                            addDashItem('🏥', '<span class="feed-highlight" style="color:#00c8ff">Medical Bed</span>');
+                            break;
+                        case 'SPAWN_SET':
+                        case 'SPAWN_POINT':
+                            addDashItem('📍', `Spawn: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+
+                        // ═══ PHASE 2: INDUSTRIAL ═══
+                        case 'MINING':
+                            if (data.subtype === 'LASER') {
+                                const color = data.state === 'ON' ? '#00ff88' : '#888';
+                                addDashItem('⛏️', `Mining Laser: <span class="feed-highlight" style="color:${color}">${data.state}</span>`);
+                            } else if (data.subtype === 'FRACTURE') {
+                                const color = data.success ? '#00ff88' : '#ff4444';
+                                const text = data.success ? 'SUCCESS' : 'FAILED';
+                                addDashItem('💥', `Fracture: <span class="feed-highlight" style="color:${color}">${text}</span>`);
+                                if (data.success) playSound('notification');
+                            } else if (data.subtype === 'EXTRACTION') {
+                                addDashItem('💎', `Extracted: <span class="feed-highlight" style="color:#ffa500">${data.amount.toFixed(2)} SCU</span> ${data.material}`);
+                            }
+                            break;
+
+                        case 'SALVAGE':
+                            if (data.subtype === 'BEAM') {
+                                const color = data.state === 'ON' ? '#00ff88' : '#888';
+                                addDashItem('🏗️', `Salvage Beam: <span class="feed-highlight" style="color:${color}">${data.state}</span>`);
+                            } else if (data.subtype === 'SCRAPE') {
+                                addDashItem('♻️', `Scraped: <span class="feed-highlight" style="color:#00c8ff">${data.amount.toFixed(2)} SCU</span> ${data.material}`);
+                            }
+                            break;
+
+                        case 'ENGINEERING':
+                            if (data.subtype === 'POWER') {
+                                addDashItem('⚡', `Power Plant: <span class="feed-highlight">${data.state}</span>`);
+                            } else if (data.subtype === 'FUSE_BREAK') {
+                                addDashItem('🔌', `Fuse Blown: <span class="feed-highlight" style="color:#ff4444">${data.component}</span> in ${data.room}`);
+                                playSound('alert_status');
+                            }
+                            break;
+
+                        // MISSION TRACKING
+                        case 'MISSION_CURRENT':
+                            document.getElementById('mission-status-box').style.display = 'block';
+                            document.getElementById('mission-title').innerText = data.value;
+                            document.getElementById('mission-title').title = data.value; // Tooltip for overflow
+                            addDashItem('📜', `Mission Accepted: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'MISSION_OBJECTIVE':
+                            document.getElementById('mission-status-box').style.display = 'block';
+                            document.getElementById('mission-objective').innerText = data.value;
+                            addDashItem('🎯', `Objective: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'MISSION_CLEARED':
+                            document.getElementById('mission-title').innerText = 'Completed / Ended';
+                            document.getElementById('mission-objective').innerText = '-';
+                            setTimeout(() => {
+                                // Only hide if it hasn't been updated again
+                                if (document.getElementById('mission-title').innerText.includes('Completed')) {
+                                    document.getElementById('mission-status-box').style.display = 'none';
+                                }
+                            }, 10000); // Keep result visible for 10s
+                            addDashItem('✅', 'Mission Ended');
+                            break;
+
+                        // ═══ NEW: Party ═══
+                        case 'PARTY_INVITE':
+                            addDashItem('📩', '<span class="feed-highlight" style="color:#ffa500">Party invite pending</span>');
+                            playSound('notification');
+                            break;
+                        case 'ACCOUNT_LOGIN':
+                            addDashItem('✅', '<span class="feed-highlight" style="color:#00ff88">Account Login Success</span>');
+                            break;
+                        // System info
+                        case 'SYSTEM_GPU':
+                            addDashItem('🖥️', `GPU: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'SYSTEM_VRAM':
+                            addDashItem('🖥️', `VRAM: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'SYSTEM_CPU':
+                            addDashItem('🖥️', `CPU: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'SYSTEM_RAM':
+                            addDashItem('🖥️', `RAM: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'GAME_VERSION':
+                            addDashItem('📦', `SC Branch: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'RESOLUTION':
+                            addDashItem('🖥️', `Display: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'JOYSTICK':
+                            addDashItem('🕹️', `Controller: <span class="feed-highlight">${data.value}</span>`);
+                            break;
+                        case 'EQUIPMENT':
+                            addDashItem('🎒', `Loadout: <span class="feed-highlight">${data.value.item}</span> → ${data.value.port}`);
+                            break;
+                    }
+                });
+
+                ipcRenderer.on('log:error', (e, data) => {
+                    addDashItem('❌', `<span style="color:#ff4444">${data.message}</span>`);
+                    document.getElementById('status-log-dot').className = 'dot off';
+                    document.getElementById('status-log-text').innerText = 'Error';
+                });
+
+                // Unknown log events
+                ipcRenderer.on('log:unknown', (e, data) => {
+                    renderUnknowns(data.groups || []);
+                });
+
+                // API connection
+                ipcRenderer.on('api:status', (e, status) => {
+                    const dot = document.getElementById('status-api-dot');
+                    const txt = document.getElementById('status-api-text');
+                    if (status.connected) {
+                        dot.className = 'dot on'; txt.innerText = 'Secure';
+                        addDashItem('✅', 'VerseCon API Connected');
+                    } else {
+                        dot.className = 'dot off'; txt.innerText = 'Disconnected';
+                    }
+                });
+
+                // Party data
+                ipcRenderer.on('api:party', (e, data) => {
+                    addDashItem('👥', `Party: <span class="feed-highlight">${data.members ? data.members.length : 0} Members</span>`);
+                });
+
+                // VerseCon platform events
+                ipcRenderer.on('vcon:beacon', (e, data) => {
+                    addVconItem('🆘', `<span class="feed-highlight" style="color:#FF2E63">BEACON</span> — ${data.message || 'Distress signal!'}`);
+                    playSound('beacon');
+                });
+
+                ipcRenderer.on('vcon:job', (e, data) => {
+                    addVconItem('📜', `<span class="feed-highlight">CONTRACT</span> — ${data.message || 'New contract posted'}`);
+                    playSound('contract');
+                });
+
+                ipcRenderer.on('vcon:party_event', (e, data) => {
+                    const icon = data.type === 'LFG' ? '🎮' : '🎯';
+                    const label = data.type === 'LFG' ? 'LFG' : 'OPERATION';
+                    addVconItem(icon, `<span class="feed-highlight">${label}</span> — ${data.message || 'New event'}`);
                     playSound('notification');
-                    break;
-                case 'ACCOUNT_LOGIN':
-                    addDashItem('✅', '<span class="feed-highlight" style="color:#00ff88">Account Login Success</span>');
-                    break;
-                // System info
-                case 'SYSTEM_GPU':
-                    addDashItem('🖥️', `GPU: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'SYSTEM_VRAM':
-                    addDashItem('🖥️', `VRAM: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'SYSTEM_CPU':
-                    addDashItem('🖥️', `CPU: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'SYSTEM_RAM':
-                    addDashItem('🖥️', `RAM: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'GAME_VERSION':
-                    addDashItem('📦', `SC Branch: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'RESOLUTION':
-                    addDashItem('🖥️', `Display: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'JOYSTICK':
-                    addDashItem('🕹️', `Controller: <span class="feed-highlight">${data.value}</span>`);
-                    break;
-                case 'EQUIPMENT':
-                    addDashItem('🎒', `Loadout: <span class="feed-highlight">${data.value.item}</span> → ${data.value.port}`);
-                    break;
-            }
-        });
+                });
 
-        ipcRenderer.on('log:error', (e, data) => {
-            addDashItem('❌', `<span style="color:#ff4444">${data.message}</span>`);
-            document.getElementById('status-log-dot').className = 'dot off';
-            document.getElementById('status-log-text').innerText = 'Error';
-        });
+                // v2.2 - Platform Notifications (Toasts & Feed)
+                ipcRenderer.on('vcon:notification', (e, data) => {
+                    // data = { title, message, type: 'info|success|warning|error' }
+                    const iconMap = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
+                    const icon = iconMap[data.type] || '🔔';
+                    addVconItem(icon, `<span class="feed-highlight">${data.title}</span> — ${data.message}`);
+                    playSound('notification');
+                });
 
-        // Unknown log events
-        ipcRenderer.on('log:unknown', (e, data) => {
-            renderUnknowns(data.groups || []);
-        });
+                // Command events
+                ipcRenderer.on('command:receive', (e, data) => {
+                    addCommandLog(data.preset || data.text, data.target || 'YOU', data.from || 'COMMAND');
+                    playSound(data.preset === 'EMERGENCY' ? 'sos' : 'command');
+                    // Also show in dashboard feed
+                    addDashItem('📢', `<span class="feed-highlight" style="color:#ffa500">ORDER: ${data.preset || data.text}</span> from ${data.from || 'Command'}`);
+                });
 
-        // API connection
-        ipcRenderer.on('api:status', (e, status) => {
-            const dot = document.getElementById('status-api-dot');
-            const txt = document.getElementById('status-api-text');
-            if (status.connected) {
-                dot.className = 'dot on'; txt.innerText = 'Secure';
-                addDashItem('✅', 'VerseCon API Connected');
-            } else {
-                dot.className = 'dot off'; txt.innerText = 'Disconnected';
-            }
-        });
+                ipcRenderer.on('command:sent', (e, data) => {
+                    // Visual confirmation
+                });
 
-        // Party data
-        ipcRenderer.on('api:party', (e, data) => {
-            addDashItem('👥', `Party: <span class="feed-highlight">${data.members ? data.members.length : 0} Members</span>`);
-        });
+                // Auth deep link
+                ipcRenderer.on('auth:success', (e, token) => {
+                    document.getElementById('auth-ui-guest').style.display = 'none';
+                    document.getElementById('auth-ui-user').style.display = 'block';
+                    addDashItem('✅', 'Authenticated via Browser!');
+                });
 
-        // VerseCon platform events
-        ipcRenderer.on('vcon:beacon', (e, data) => {
-            addVconItem('🆘', `<span class="feed-highlight" style="color:#FF2E63">BEACON</span> — ${data.message || 'Distress signal!'}`);
-            playSound('beacon');
-        });
+                // DND toggle
+                ipcRenderer.on('app:dnd', (e, data) => {
+                    addDashItem('🔕', data.enabled ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF');
+                });
 
-        ipcRenderer.on('vcon:job', (e, data) => {
-            addVconItem('📜', `<span class="feed-highlight">CONTRACT</span> — ${data.message || 'New contract posted'}`);
-            playSound('contract');
-        });
+                // Keyboard shortcut for sending commands
+                document.getElementById('cmd-custom-text').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') sendCustomCommand();
+                });
+                // v2.2 - Last Detected Ship Debugging
+                ipcRenderer.on('settings:last-ship', (e, shipName) => {
+                    document.getElementById('last-ship-debug').textContent = shipName || 'None';
+                    document.getElementById('last-ship-debug').style.color = '#fff';
+                });
+                // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
+                let defaultPatterns = {};
+                let patternOverrides = {};
 
-        ipcRenderer.on('vcon:party_event', (e, data) => {
-            const icon = data.type === 'LFG' ? '🎮' : '🎯';
-            const label = data.type === 'LFG' ? 'LFG' : 'OPERATION';
-            addVconItem(icon, `<span class="feed-highlight">${label}</span> — ${data.message || 'New event'}`);
-            playSound('notification');
-        });
+                async function loadBuiltinPatterns() {
+                    try {
+                        defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
+                        patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
+                        renderBuiltinPatterns();
+                    } catch (e) {
+                        console.error('Failed to load patterns:', e);
+                    }
+                }
 
-        // v2.2 - Platform Notifications (Toasts & Feed)
-        ipcRenderer.on('vcon:notification', (e, data) => {
-            // data = { title, message, type: 'info|success|warning|error' }
-            const iconMap = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
-            const icon = iconMap[data.type] || '🔔';
-            addVconItem(icon, `<span class="feed-highlight">${data.title}</span> — ${data.message}`);
-            playSound('notification');
-        });
+                function renderBuiltinPatterns() {
+                    const list = document.getElementById('builtin-pattern-list');
+                    if (!list) return;
+                    list.innerHTML = '';
 
-        // Command events
-        ipcRenderer.on('command:receive', (e, data) => {
-            addCommandLog(data.preset || data.text, data.target || 'YOU', data.from || 'COMMAND');
-            playSound(data.preset === 'EMERGENCY' ? 'sos' : 'command');
-            // Also show in dashboard feed
-            addDashItem('📢', `<span class="feed-highlight" style="color:#ffa500">ORDER: ${data.preset || data.text}</span> from ${data.from || 'Command'}`);
-        });
+                    const keys = Object.keys(defaultPatterns).sort();
 
-        ipcRenderer.on('command:sent', (e, data) => {
-            // Visual confirmation
-        });
+                    keys.forEach(key => {
+                        const config = patternOverrides[key] || {};
+                        const isDisabled = config.disabled;
+                        const currentValue = config.regex || defaultPatterns[key];
+                        const customMsg = config.message || '';
 
-        // Auth deep link
-        ipcRenderer.on('auth:success', (e, token) => {
-            document.getElementById('auth-ui-guest').style.display = 'none';
-            document.getElementById('auth-ui-user').style.display = 'block';
-            addDashItem('✅', 'Authenticated via Browser!');
-        });
-
-        // DND toggle
-        ipcRenderer.on('app:dnd', (e, data) => {
-            addDashItem('🔕', data.enabled ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF');
-        });
-
-        // Keyboard shortcut for sending commands
-        document.getElementById('cmd-custom-text').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendCustomCommand();
-        });
-        // v2.2 - Last Detected Ship Debugging
-        ipcRenderer.on('settings:last-ship', (e, shipName) => {
-            document.getElementById('last-ship-debug').textContent = shipName || 'None';
-            document.getElementById('last-ship-debug').style.color = '#fff';
-        });
-        // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
-        let defaultPatterns = {};
-        let patternOverrides = {};
-
-        async function loadBuiltinPatterns() {
-            try {
-                defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
-                patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
-                renderBuiltinPatterns();
-            } catch (e) {
-                console.error('Failed to load patterns:', e);
-            }
-        }
-
-        function renderBuiltinPatterns() {
-            const list = document.getElementById('builtin-pattern-list');
-            if (!list) return;
-            list.innerHTML = '';
-
-            const keys = Object.keys(defaultPatterns).sort();
-
-            keys.forEach(key => {
-                const config = patternOverrides[key] || {};
-                const isDisabled = config.disabled;
-                const currentValue = config.regex || defaultPatterns[key];
-                const customMsg = config.message || '';
-
-                const item = document.createElement('div');
-                item.className = 'map-item';
-                item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
-                item.innerHTML = `
+                        const item = document.createElement('div');
+                        item.className = 'map-item';
+                        item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
+                        item.innerHTML = `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                         <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
                         <label style="font-size: 0.8rem; cursor: pointer;">
@@ -1717,19 +1781,19 @@
                         ${isDisabled ? 'disabled' : ''}
                         placeholder="Default system alert used if empty...">
                 `;
-                list.appendChild(item);
-            });
-        }
+                        list.appendChild(item);
+                    });
+                }
 
-        function renderBuiltinList() {
-            if (!builtinList) return;
-            builtinList.innerHTML = Object.entries(builtinPatterns).map(([key, regexSource]) => {
-                const override = patternOverrides[key] || {};
-                const isDisabled = override.disabled;
-                const customRegex = override.regex || regexSource;
-                const customMsg = override.message || ''; // New: Message Override
+                function renderBuiltinList() {
+                    if (!builtinList) return;
+                    builtinList.innerHTML = Object.entries(builtinPatterns).map(([key, regexSource]) => {
+                        const override = patternOverrides[key] || {};
+                        const isDisabled = override.disabled;
+                        const customRegex = override.regex || regexSource;
+                        const customMsg = override.message || ''; // New: Message Override
 
-                return `
+                        return `
                 <div class="map-item" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                         <span style="color: var(--accent); font-weight: bold;">${key}</span>
@@ -1759,117 +1823,117 @@
                         placeholder="RawValue=FriendlyName | RawValue2=FriendlyName2">
                 </div>
             `;
-            }).join('');
-        }
+                    }).join('');
+                }
 
-        function updatePatternValueMap(key, value) {
-            if (!patternOverrides[key]) patternOverrides[key] = {};
-            patternOverrides[key].valueMap = value;
-            savePatternOverrides();
-        }
+                function updatePatternValueMap(key, value) {
+                    if (!patternOverrides[key]) patternOverrides[key] = {};
+                    patternOverrides[key].valueMap = value;
+                    savePatternOverrides();
+                }
 
-        function togglePattern(key, enabled) {
-            if (!patternOverrides[key]) patternOverrides[key] = {};
-            patternOverrides[key].disabled = !enabled;
-            // If re-enabling and no other overrides, maybe clean up?
-            // For now just save state.
-            savePatternOverrides();
-            renderBuiltinList();
-        }
+                function togglePattern(key, enabled) {
+                    if (!patternOverrides[key]) patternOverrides[key] = {};
+                    patternOverrides[key].disabled = !enabled;
+                    // If re-enabling and no other overrides, maybe clean up?
+                    // For now just save state.
+                    savePatternOverrides();
+                    renderBuiltinList();
+                }
 
-        function updatePatternRegex(key, value) {
-            if (!patternOverrides[key]) patternOverrides[key] = {};
-            patternOverrides[key].regex = value;
-            // If value matches default, strictly we could remove it, but explicit override is safer for user intent
-            savePatternOverrides();
-        }
+                function updatePatternRegex(key, value) {
+                    if (!patternOverrides[key]) patternOverrides[key] = {};
+                    patternOverrides[key].regex = value;
+                    // If value matches default, strictly we could remove it, but explicit override is safer for user intent
+                    savePatternOverrides();
+                }
 
-        function updatePatternMessage(key, value) {
-            if (!patternOverrides[key]) patternOverrides[key] = {};
-            patternOverrides[key].message = value;
-            savePatternOverrides();
-        }
+                function updatePatternMessage(key, value) {
+                    if (!patternOverrides[key]) patternOverrides[key] = {};
+                    patternOverrides[key].message = value;
+                    savePatternOverrides();
+                }
 
-        async function savePatternOverrides() {
-            await ipcRenderer.invoke('settings:save-pattern-overrides', patternOverrides);
-            const btn = document.activeElement;
-            if (btn && btn.tagName === 'BUTTON') {
-                const originalText = btn.innerText;
-                btn.innerText = 'Saved!';
-                setTimeout(() => btn.innerText = originalText, 2000);
-            }
-        }
-
-        async function resetPatternOverrides() {
-            if (confirm('Reset all built-in patterns to default?')) {
-                patternOverrides = {};
-                await ipcRenderer.invoke('settings:save-pattern-overrides', patternOverrides);
-                renderBuiltinPatterns();
-            }
-        }
-
-        // Raw log stream
-        ipcRenderer.on('log:raw', (e, line) => {
-            updateRecentLocations(line); // Pass to Settings Sniffer
-
-            const rawFeed = document.getElementById('raw-log-list');
-            if (rawFeed) {
-                const div = document.createElement('div');
-                div.className = 'log-line';
-                div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.02); padding: 2px 0; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s;';
-                div.title = 'Click to copy & use in Custom Locations';
-                div.textContent = line;
-
-                div.onclick = () => {
-                    // Copy to clipboard
-                    navigator.clipboard.writeText(line);
-
-                    // Flash effect
-                    div.style.background = 'rgba(255,165,0,0.2)';
-                    setTimeout(() => div.style.background = 'transparent', 200);
-
-                    // Auto-fill Custom Location Input if relevant
-                    const locInput = document.getElementById('new-loc-key');
-                    if (locInput) {
-                        // Try to extract RoomName or Location first
-                        let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
-                        if (match) {
-                            locInput.value = match[1];
-                            document.getElementById('new-loc-val').focus();
-                            alert('Code copied to Custom Location input: ' + match[1]);
-                        } else {
-                            // Just copy whole line? Or maybe user wants to copy-paste manually.
-                            // Let's copy whole line to input if empty?
-                            if (!locInput.value) locInput.value = line;
-                            // Notification
-                            addDashItem('📋', 'Log line copied to clipboard');
-                        }
+                async function savePatternOverrides() {
+                    await ipcRenderer.invoke('settings:save-pattern-overrides', patternOverrides);
+                    const btn = document.activeElement;
+                    if (btn && btn.tagName === 'BUTTON') {
+                        const originalText = btn.innerText;
+                        btn.innerText = 'Saved!';
+                        setTimeout(() => btn.innerText = originalText, 2000);
                     }
-                };
+                }
 
-                rawFeed.prepend(div);
-                if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
-            }
-        });
+                async function resetPatternOverrides() {
+                    if (confirm('Reset all built-in patterns to default?')) {
+                        patternOverrides = {};
+                        await ipcRenderer.invoke('settings:save-pattern-overrides', patternOverrides);
+                        renderBuiltinPatterns();
+                    }
+                }
 
-        // ═══ NEW: Mission List Renderer ═══
-        ipcRenderer.on('mission:list', (e, missions) => {
-            renderMissionList(missions);
-        });
+                // Raw log stream
+                ipcRenderer.on('log:raw', (e, line) => {
+                    updateRecentLocations(line); // Pass to Settings Sniffer
 
-        function renderMissionList(missions) {
-            const container = document.getElementById('mission-status-box');
-            if (!missions || missions.length === 0) {
-                container.style.display = 'none';
-                return;
-            }
+                    const rawFeed = document.getElementById('raw-log-list');
+                    if (rawFeed) {
+                        const div = document.createElement('div');
+                        div.className = 'log-line';
+                        div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.02); padding: 2px 0; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s;';
+                        div.title = 'Click to copy & use in Custom Locations';
+                        div.textContent = line;
 
-            container.style.display = 'block';
+                        div.onclick = () => {
+                            // Copy to clipboard
+                            navigator.clipboard.writeText(line);
 
-            // Sort: Tracked first, then new
-            missions.sort((a, b) => (b.tracked ? 1 : 0) - (a.tracked ? 1 : 0) || b.timestamp - a.timestamp);
+                            // Flash effect
+                            div.style.background = 'rgba(255,165,0,0.2)';
+                            setTimeout(() => div.style.background = 'transparent', 200);
 
-            container.innerHTML = missions.map(m => `
+                            // Auto-fill Custom Location Input if relevant
+                            const locInput = document.getElementById('new-loc-key');
+                            if (locInput) {
+                                // Try to extract RoomName or Location first
+                                let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
+                                if (match) {
+                                    locInput.value = match[1];
+                                    document.getElementById('new-loc-val').focus();
+                                    alert('Code copied to Custom Location input: ' + match[1]);
+                                } else {
+                                    // Just copy whole line? Or maybe user wants to copy-paste manually.
+                                    // Let's copy whole line to input if empty?
+                                    if (!locInput.value) locInput.value = line;
+                                    // Notification
+                                    addDashItem('📋', 'Log line copied to clipboard');
+                                }
+                            }
+                        };
+
+                        rawFeed.prepend(div);
+                        if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
+                    }
+                });
+
+                // ═══ NEW: Mission List Renderer ═══
+                ipcRenderer.on('mission:list', (e, missions) => {
+                    renderMissionList(missions);
+                });
+
+                function renderMissionList(missions) {
+                    const container = document.getElementById('mission-status-box');
+                    if (!missions || missions.length === 0) {
+                        container.style.display = 'none';
+                        return;
+                    }
+
+                    container.style.display = 'block';
+
+                    // Sort: Tracked first, then new
+                    missions.sort((a, b) => (b.tracked ? 1 : 0) - (a.tracked ? 1 : 0) || b.timestamp - a.timestamp);
+
+                    container.innerHTML = missions.map(m => `
                 <div class="mission-entry ${m.tracked ? 'tracked' : ''}" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
                         <div style="font-size:0.7rem; color:${m.tracked ? 'var(--accent)' : '#888'}; font-weight:700; letter-spacing:1px">
@@ -1882,8 +1946,8 @@
                                         color:${m.tracked ? 'orange' : '#aaa'}; padding:1px 4px; border-radius:2px">
                                 ${m.status === 'active' ? 'IN PROGRESS' : m.status.toUpperCase()}
                             </div>
-                            <span onclick="dismissMission('${m.id}')" style="cursor:pointer; color:#ff4444; font-size:0.8rem;" title="Dismiss / Remove">❌</span>
-                        </div>
+                                    <span onclick="dismissMission('${m.id.replace(/'/g, "\\'")}')" style="cursor:pointer; color:#ff4444; font-size:0.8rem;" title="Dismiss / Remove" class="no-drag">❌</span>
+                                </div>
                     </div>
                     <div style="font-weight:600; color:${m.tracked ? 'white' : '#ccc'}; margin-bottom:4px; font-size: 0.85rem; line-height:1.2;">
                         ${escapeHtml(m.title)}
@@ -1895,86 +1959,127 @@
                 </div>
             `).join('');
 
-            // Allow renaming logic to work
-            const tracked = missions.find(m => m.tracked);
-            if (tracked) window.currentMissionId = tracked.id;
-        }
-
-        window.dismissMission = function (id) {
-            ipcRenderer.send('mission:dismiss', id);
-        };
-
-        // ═══════════════════════════════════════════════════════
-        // SETTINGS: RECENT LOG SNIFFER (New)
-        // ═══════════════════════════════════════════════════════
-        const recentLocations = [];
-
-        function updateRecentLocations(line) {
-            // Sniff location lines
-            let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
-            if (match) {
-                const loc = match[1];
-                // Avoid dupes
-                if (!recentLocations.includes(loc)) {
-                    recentLocations.unshift(loc);
-                    if (recentLocations.length > 5) recentLocations.pop();
-                    renderRecentLocations();
+                    // Allow renaming logic to work
+                    const tracked = missions.find(m => m.tracked);
+                    if (tracked) window.currentMissionId = tracked.id;
                 }
-            }
-        }
 
-        function renderRecentLocations() {
-            const container = document.getElementById('recent-locs-container');
-            if (!container) return; // Might need to add to HTML
+                window.dismissMission = function (id) {
+                    // Encode/Escape not strictly needed if we pass ID cleanly, but IPC handles strings fine.
+                    ipcRenderer.send('mission:dismiss', id);
+                };
 
-            if (recentLocations.length === 0) {
-                container.innerHTML = '<div style="font-style:italic; color:#555;">No recent locations detected...</div>';
-                return;
-            }
+                // ═══════════════════════════════════════════════════════
+                // SETTINGS: PATTERN GENERATOR (New)
+                // ═══════════════════════════════════════════════════════
+                function generatePattern() {
+                    const input = document.getElementById('pattern-gen-input').value.trim();
+                    if (!input) return;
 
-            container.innerHTML = recentLocations.map(loc => `
+                    // Simple heuristic to create a regex from a log line
+                    // 1. Escape special characters
+                    let escap = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                    // 2. Replace timestamps with rigid regex (e.g. <2026-02-09T...>)
+                    // <\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z?>
+                    escap = escap.replace(/&lt;\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*?&gt;/g, '<.*?>'); // simplistic
+                    escap = escap.replace(/<\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*?>/g, '<.*?>');
+
+                    // 3. Replace quoted strings if they look variable?
+                    // checking for "Something" -> "[^"]+"
+                    // Maybe safer to leave them unless user wants wildcards.
+
+                    // 4. Replace specific ID-like sequences?
+                    // matching hexadecimal hashes or long digits
+                    escap = escap.replace(/0x[0-9a-fA-F]+/g, '0x[0-9a-fA-F]+');
+
+                    // Output
+                    const output = document.getElementById('pattern-gen-output');
+                    output.value = escap;
+
+                    // Flash success
+                    output.style.borderColor = 'var(--success)';
+                    setTimeout(() => output.style.borderColor = 'rgba(255,255,255,0.1)', 500);
+                }
+
+                function copyGeneratedPattern() {
+                    const output = document.getElementById('pattern-gen-output');
+                    output.select();
+                    document.execCommand('copy');
+                    addDashItem('📋', 'Pattern copied to clipboard');
+                }
+
+                // ═══════════════════════════════════════════════════════
+                // SETTINGS: RECENT LOG SNIFFER
+                // ═══════════════════════════════════════════════════════
+                const recentLocations = [];
+
+                function updateRecentLocations(line) {
+                    // Sniff location lines
+                    let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
+                    if (match) {
+                        const loc = match[1];
+                        // Avoid dupes
+                        if (!recentLocations.includes(loc)) {
+                            recentLocations.unshift(loc);
+                            if (recentLocations.length > 5) recentLocations.pop();
+                            renderRecentLocations();
+                        }
+                    }
+                }
+
+                function renderRecentLocations() {
+                    const container = document.getElementById('recent-locs-container');
+                    if (!container) return; // Might need to add to HTML
+
+                    if (recentLocations.length === 0) {
+                        container.innerHTML = '<div style="font-style:italic; color:#555;">No recent locations detected...</div>';
+                        return;
+                    }
+
+                    container.innerHTML = recentLocations.map(loc => `
                   <div onclick="document.getElementById('new-loc-key').value='${loc}'; document.getElementById('new-loc-val').focus();" 
                        style="cursor:pointer; padding:4px; border-bottom:1px solid rgba(255,255,255,0.05); font-family:monospace; font-size:0.75rem; color:#aaa;">
                        ${loc} <span style="float:right; color:var(--accent);">Use ➔</span>
                   </div>
              `).join('');
-        }
+                }
 
-        // ═══════════════════════════════════════════════════════
-        // SETTINGS: PATTERN MANAGER (Enhanced)
-        // ═══════════════════════════════════════════════════════
+                // ═══════════════════════════════════════════════════════
+                // SETTINGS: PATTERN MANAGER (Enhanced)
+                // ═══════════════════════════════════════════════════════
 
-        async function loadBuiltinPatterns() {
-            try {
-                defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
-                patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
-                renderBuiltinPatterns();
-            } catch (e) {
-                console.error('Failed to load patterns:', e);
-            }
-        }
+                async function loadBuiltinPatterns() {
+                    try {
+                        defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
+                        patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
+                        renderBuiltinPatterns();
+                    } catch (e) {
+                        console.error('Failed to load patterns:', e);
+                    }
+                }
 
-        function renderBuiltinPatterns() {
-            const list = document.getElementById('builtin-pattern-list');
-            if (!list) return;
-            list.innerHTML = '';
+                function renderBuiltinPatterns() {
+                    const list = document.getElementById('builtin-pattern-list');
+                    if (!list) return;
+                    list.innerHTML = '';
 
-            const keys = Object.keys(defaultPatterns).sort();
+                    const keys = Object.keys(defaultPatterns).sort();
 
-            keys.forEach(key => {
-                const config = patternOverrides[key] || {};
-                const isDisabled = config.disabled;
-                const currentRegex = config.regex || defaultPatterns[key];
-                const defaultRegex = defaultPatterns[key]; // For reference
-                const customMsg = config.message || '';
+                    keys.forEach(key => {
+                        const config = patternOverrides[key] || {};
+                        const isDisabled = config.disabled;
+                        const currentRegex = config.regex || defaultPatterns[key];
+                        const defaultRegex = defaultPatterns[key]; // For reference
+                        const customMsg = config.message || '';
 
-                // We don't easily know the "default message" unless we map it server-side, 
-                // but we can at least show the regex clearly.
+                        // We don't easily know the "default message" unless we map it server-side, 
+                        // but we can at least show the regex clearly.
 
-                const item = document.createElement('div');
-                item.className = 'map-item';
-                item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
-                item.innerHTML = `
+                        const item = document.createElement('div');
+                        item.className = 'map-item';
+                        item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
+                        item.innerHTML = `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                         <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
                         <label style="font-size: 0.8rem; cursor: pointer;">
@@ -1997,39 +2102,39 @@
                         ${isDisabled ? 'disabled' : ''}
                         placeholder="Leave empty to use system default...">
                 `;
-                list.appendChild(item);
-            });
-        }
+                        list.appendChild(item);
+                    });
+                }
 
-        function saveNewCustomLocation() {
-            const key = document.getElementById('new-loc-key').value.trim();
-            const val = document.getElementById('new-loc-val').value.trim();
-            if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
+                function saveNewCustomLocation() {
+                    const key = document.getElementById('new-loc-key').value.trim();
+                    const val = document.getElementById('new-loc-val').value.trim();
+                    if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
-            customLocations[key] = val;
-            ipcRenderer.send('settings:save-custom-locations', customLocations);
+                    customLocations[key] = val;
+                    ipcRenderer.send('settings:save-custom-locations', customLocations);
 
-            // Clear inputs
-            document.getElementById('new-loc-key').value = '';
-            document.getElementById('new-loc-val').value = '';
-            renderCustomLocationList();
-        }
+                    // Clear inputs
+                    document.getElementById('new-loc-key').value = '';
+                    document.getElementById('new-loc-val').value = '';
+                    renderCustomLocationList();
+                }
 
-        function addCustomLocationPrompt() {
-            document.getElementById('new-loc-key').focus();
-        }
+                function addCustomLocationPrompt() {
+                    document.getElementById('new-loc-key').focus();
+                }
 
-        window.deleteCustomLocation = function (key) {
-            if (confirm(`Remove location mapping for "${key}"?`)) {
-                delete customLocations[key];
-                ipcRenderer.send('settings:save-custom-locations', customLocations);
-                renderCustomLocationList();
-            }
-        };
+                window.deleteCustomLocation = function (key) {
+                    if (confirm(`Remove location mapping for "${key}"?`)) {
+                        delete customLocations[key];
+                        ipcRenderer.send('settings:save-custom-locations', customLocations);
+                        renderCustomLocationList();
+                    }
+                };
 
-        // Init
-        loadBuiltinPatterns();
-        loadCustomLocationList();
+                // Init
+                loadBuiltinPatterns();
+                loadCustomLocationList();
     </script>
 </body>
 

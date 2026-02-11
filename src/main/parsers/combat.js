@@ -57,6 +57,14 @@ class CombatParser extends BaseParser {
             handled = true;
         }
 
+        // 3. Vehicle Destruction
+        if (this.patterns.destruction.test(line) || this.patterns.vehicle_death.test(line)) {
+            this.emit('gamestate', { type: 'DEATH', value: 'Vehicle Destroyed' });
+            // Triggers "Critical Damage" alert
+            this.emit('gamestate', { type: 'VEHICLE_DEATH', value: 'Critical Failure' });
+            handled = true;
+        }
+
         return handled;
     }
 }

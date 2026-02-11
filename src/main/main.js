@@ -387,6 +387,22 @@ ipcMain.on('settings:save-custom-locations', (event, locations) => {
     broadcast('settings:custom-locations-updated', locations);
 });
 
+// Generic Settings Save
+ipcMain.on('settings:save', (event, newConfig) => {
+    // Merge known keys
+    if (newConfig.logPath !== undefined) config.logPath = newConfig.logPath;
+    if (newConfig.volume !== undefined) config.volume = newConfig.volume;
+    if (newConfig.soundEnabled !== undefined) config.soundEnabled = newConfig.soundEnabled;
+    if (newConfig.overlayEnabled !== undefined) config.overlayEnabled = newConfig.overlayEnabled;
+    if (newConfig.autoCleanMissions !== undefined) config.autoCleanMissions = newConfig.autoCleanMissions;
+    if (newConfig.shareLocation !== undefined) config.shareLocation = newConfig.shareLocation; // Phase 5
+
+    saveConfig();
+
+    // Broadcast updates if needed
+    broadcast('settings:updated', config);
+});
+
 // ═══════════════════════════════════════════════════════
 // BROADCAST (ALL WINDOWS)
 // ═══════════════════════════════════════════════════════
@@ -398,6 +414,19 @@ function broadcast(channel, data) {
 
 // ═══════════════════════════════════════════════════════
 // EVENT WIRING
+// ═══════════════════════════════════════════════════════
+
+// API Client Events
+APIClient.on('party', (data) => {
+    // Send to Dashboard (for feed/lists)
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+        dashboardWindow.webContents.send('api:party', data);
+    }
+    // Send to Overlay (for HUD list)
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('api:party', data);
+    }
+});
 // ═══════════════════════════════════════════════════════
 
 // Track connection states for tray
@@ -416,6 +445,11 @@ LogWatcher.on('raw-line', (line) => {
 LogWatcher.on('gamestate', (data) => {
     broadcast('log:update', data);
 
+    // ═════ FRIEND SHARING (Phase 5) ═══
+    if (data.type === 'LOCATION' && config.shareLocation) {
+        APIClient.updateLocation(data);
+    }
+
     // Critical alerts → show alert window + tray notification
     if (data.type === 'STATUS' || data.type === 'ZONE' || data.type === 'HAZARD_FIRE') {
         if (alertWindow && !alertWindow.isDestroyed()) {
@@ -432,6 +466,20 @@ LogWatcher.on('gamestate', (data) => {
         }
     }
 
+    // ═══ HUD ALERTS (Phase 3) ═══
+    if (data.type === 'INTERDICTION') {
+        if (alertWindow && !alertWindow.isDestroyed()) {
+            alertWindow.show();
+            alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'interdiction' });
+        }
+    }
+    if (data.type === 'VEHICLE_DEATH') {
+        if (alertWindow && !alertWindow.isDestroyed()) {
+            alertWindow.show();
+            alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'soft_death' });
+        }
+    }
+
     // Ship events - tray notification
     if (data.type === 'SHIP_ENTER') {
         showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
@@ -442,6 +490,15 @@ LogWatcher.on('gamestate', (data) => {
     } else if (data.type === 'SHIP_EXIT') {
         showTrayNotification('🚀 Ship Exited', `Left: ${data.value}`);
     }
+
+    // ═══ SOCIAL (Phase 5) ═══
+    if (data.type === 'SOCIAL_PROXIMITY') {
+        // Just broadcast for now, maybe add to overlay later if needed
+    }
+
+    // API Party Updates are already handled via 'party:update' from APIClient
+    // which emits 'party' event to Main. We need to forward that to Overlay.
+
 
     // Mission events (Legacy single event)
     if (data.type === 'MISSION') {

@@ -63,6 +63,9 @@ class NavigationParser extends BaseParser {
         } else if (this.patterns.quantum_exited.test(line)) {
             this.emit('gamestate', { type: 'QUANTUM', value: 'exited' });
             handled = true;
+        } else if (this.patterns.interdiction.test(line)) {
+            this.emit('gamestate', { type: 'INTERDICTION', value: 'Quantum Jammed' });
+            handled = true;
         } else if (this.patterns.quantum_arrived.test(line)) {
             this.emit('gamestate', { type: 'QUANTUM', value: 'arrived' });
             handled = true;

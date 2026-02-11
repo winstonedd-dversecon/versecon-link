@@ -51,5 +51,6 @@ engine.register(require('./engineering')); // Phase 2
 engine.register(require('./economy'));
 engine.register(require('./zone'));
 engine.register(require('./custom'));
+engine.register(require('./social')); // Phase 5
 
 module.exports = engine;
