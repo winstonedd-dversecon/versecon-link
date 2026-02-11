@@ -1258,13 +1258,17 @@
             }
         });
 
+        let lastGlobalLocation = '';
+
         ipcRenderer.on('log:update', (e, data) => {
             switch (data.type) {
                 case 'LOCATION':
+                    lastGlobalLocation = data.value;
                     addDashItem('📍', `Location: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'LOCATION_HINT':
-                    addDashItem('🗺️', `Area: <span class="feed-highlight">${data.value}</span>`);
+                    const display = lastGlobalLocation ? `${lastGlobalLocation} — ${data.value}` : data.value;
+                    addDashItem('🗺️', `Area: <span class="feed-highlight">${display}</span>`);
                     break;
                 case 'QUANTUM':
                     addDashItem('🚀', `Quantum: <span class="feed-highlight">${data.value === 'entered' ? 'ENGAGED' : 'DISENGAGED'}</span>`);

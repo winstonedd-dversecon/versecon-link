@@ -46,30 +46,37 @@ class APIClient extends EventEmitter {
         });
 
         // ═══ PARTY / SOCIAL ═══
-        this.socket.on('party:update', (data) => {
-            console.log('[API] Party Update Received', data);
-            this.emit('party', data);
-        });
+        this.socket.on('party:update', (data) => this.emit('party', data));
+        this.socket.on('party:attendee-update', (data) => this.emit('party', data));
 
         // ═══ VERSECON PLATFORM EVENTS ═══
-        this.socket.on('job:created', (data) => {
+        // Jobs / Contracts
+        this.socket.on('job-created', (data) => {
             console.log('[API] New Contract:', data);
             this.emit('job', { ...data, eventType: 'created' });
         });
 
-        this.socket.on('job:update', (data) => {
-            this.emit('job', { ...data, eventType: 'update' });
-        });
+        this.socket.on('job-accepted', (data) => this.emit('job', { ...data, eventType: 'accepted' }));
+        this.socket.on('job-completed', (data) => this.emit('job', { ...data, eventType: 'completed' }));
+        this.socket.on('job-cancelled', (data) => this.emit('job', { ...data, eventType: 'cancelled' }));
+        this.socket.on('job-aborted', (data) => this.emit('job', { ...data, eventType: 'aborted' }));
+        this.socket.on('job-ready', (data) => this.emit('job', { ...data, eventType: 'ready' }));
+        this.socket.on('job-deployed', (data) => this.emit('job', { ...data, eventType: 'deployed' }));
 
+        // Beacons / Distress
         this.socket.on('beacon:created', (data) => {
             console.log('[API] New Beacon:', data);
             this.emit('beacon', data);
         });
+        this.socket.on('beacon-deployed', (data) => this.emit('beacon', { ...data, status: 'deployed' }));
 
-        this.socket.on('party:created', (data) => {
+        // Operations / LFG
+        this.socket.on('party-created', (data) => {
             console.log('[API] New Operation/LFG:', data);
             this.emit('party_event', data);
         });
+        this.socket.on('party:deployed', (data) => this.emit('party_event', { ...data, status: 'deployed' }));
+        this.socket.on('party:completed', (data) => this.emit('party_event', { ...data, status: 'completed' }));
 
         this.socket.on('trade:match', (data) => {
             console.log('[API] Trade Match:', data);
@@ -77,20 +84,20 @@ class APIClient extends EventEmitter {
         });
 
         // ═══ COMMAND MODULE ═══
-        this.socket.on('command:receive', (data) => {
-            console.log('[API] Command Received:', data);
-            this.emit('command', data);
-        });
+        this.socket.on('command:receive', (data) => this.emit('command', data));
+        this.socket.on('command:status', (data) => this.emit('command_status', data));
 
-        this.socket.on('command:status', (data) => {
-            console.log('[API] Command ACK Status:', data);
-            this.emit('command_status', data);
-        });
-
-        // ═══ NOTIFICATIONS ═══
-        this.socket.on('notification', (data) => {
+        // ═══ NOTIFICATIONS (Toast + Personal) ═══
+        this.socket.on('notification:toast', (data) => {
+            console.log('[API] Toast Notification:', data);
             this.emit('notification', data);
         });
+        this.socket.on('notification:personal', (data) => {
+            console.log('[API] Personal Notification:', data);
+            this.emit('notification', data);
+        });
+        // Fallback for legacy generic event
+        this.socket.on('notification', (data) => this.emit('notification', data));
     }
 
     async updateLocation(loc) {

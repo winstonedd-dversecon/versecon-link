@@ -148,7 +148,7 @@ class LogWatcher extends EventEmitter {
 
         // Hazards & Misc
         hazard_fire: /Fire detected/i,
-        location_obj: /objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//,
+        location_obj: /<StatObjLoad\s+0x[0-9A-Fa-f]+\s+Format>\s+'[^']*?objectcontainers\/pu\/loc\/(?:flagship|mod)\/(?:stanton\/)?(?:station\/ser\/)?(?:[^\/]+\/)*([^\/]{5,})\//i,
         ship_exit_confirm: /<Vehicle Control Flow>.*releasing/i
     };
 
@@ -424,6 +424,57 @@ class LogWatcher extends EventEmitter {
         return name.trim();
     }
 
+    getCleanLocation(rawPath) {
+        if (!rawPath) return '';
+        // 1. Technical mapping for known common locations
+        const map = {
+            'rs_comm_arc-l4': 'ARC-L4 Station',
+            'rs_comm_arc-l1': 'ARC-L1 station',
+            'rs_comm_arc-l3': 'ARC-L3 Station',
+            'rs_entry_arc-l1': 'ARC-L1 Entry',
+            'rs_entry_arc-l3': 'ARC-L3 Entry',
+            'rs_entry_arc-l4': 'ARC-L4 Entry',
+            'rs_entry_stan-terra_jp1': 'Stanton-Terra Jump Point',
+            'rs_comm_stan-pyro_jp1': 'Stanton-Pyro Jump Point',
+            'reststop_comm': 'Reststop Commercial',
+            'reststop_entry': 'Reststop Lobby',
+            'area18': 'Area 18',
+            'lorville': 'Lorville',
+            'new_babbage': 'New Babbage',
+            'orison': 'Orison',
+            'seraphim_station': 'Seraphim Station',
+            'port_tressler': 'Port Tressler',
+            'everus_harbor': 'Everus Harbor',
+            'baijini_point': 'Baijini Point',
+            'astroarmada': 'Astro Armada',
+            'casaba': 'Casaba Outlet',
+            'pizzaslot': 'Pizza Slot',
+            'dumper': 'Dumpers Depot',
+            'cru_l1': 'CRU-L1 Station',
+            'cru_l4': 'CRU-L4 Station',
+            'cru_l5': 'CRU-L5 Station',
+            'hur_l1': 'HUR-L1 Station',
+            'hur_l2': 'HUR-L2 Station',
+            'hur_l3': 'HUR-L3 Station',
+            'hur_l4': 'HUR-L4 Station',
+            'hur_l5': 'HUR-L5 Station',
+            'mic_l1': 'MIC-L1 Station'
+        };
+
+        if (map[rawPath.toLowerCase()]) return map[rawPath.toLowerCase()];
+
+        // 2. Generic cleaning
+        let name = rawPath.replace(/_/g, ' ');
+
+        // Capitalize words
+        name = name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+        // 3. Remove known trash suffixes/prefixes
+        name = name.replace(/ RS[A-Z0-9-]+$/i, '').replace(/^rs /i, '').replace(/ stan /i, ' ');
+
+        return name.trim();
+    }
+
     processLine(line, initialRead = false) {
         if (!line || !line.trim()) return false;
 
@@ -596,14 +647,13 @@ class LogWatcher extends EventEmitter {
         }
 
         // 9. Location Hints (Object Containers)
-        const objMatch = line.match(this.patterns.location_obj) || line.match(/objectcontainers\/pu\/loc\/(?:flagship|mod)\/([^\/]+)\/([^\/]+)\//);
+        const objMatch = line.match(this.patterns.location_obj);
         if (objMatch) {
-            const system = objMatch[1];
-            const location = objMatch[2];
-            const key = `${system}/${location}`;
-            if (key !== this.lastLocationHint) {
-                this.lastLocationHint = key;
-                this.emit('gamestate', { type: 'LOCATION_HINT', value: key });
+            const rawVal = objMatch[1];
+            const cleanVal = this.getCleanLocation(rawVal);
+            if (cleanVal && cleanVal !== this.lastLocationHint) {
+                this.lastLocationHint = cleanVal;
+                this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
                 matched = true;
             }
         }
