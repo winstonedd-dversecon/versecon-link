@@ -48,8 +48,26 @@ class LogWatcher extends EventEmitter {
             /DestroyEntity.*Aggregate/, /Failed to attach to itemport/
         ];
 
+        // Legacy support (some UI components might expect these)
+        this.patterns = {};
+
+        // State Cache (for emitCurrentState)
+        this.cachedState = {
+            ship: null,
+            server: null,
+            spawn: null,
+            session: null
+        };
+
         // Bind LogEngine events to this emitter
         LogEngine.on('gamestate', (data) => {
+            // Cache critical state
+            if (data.type === 'SHIP_ENTER') this.cachedState.ship = data.value;
+            // if (data.type === 'SHIP_EXIT') this.cachedState.ship = null; // Optional: keep last known?
+            if (data.type === 'SERVER_ENV') this.cachedState.server = data.value;
+            if (data.type === 'SESSION_ID') this.cachedState.session = data.value;
+            if (data.type === 'SPAWN_SET') this.cachedState.spawn = data.value;
+
             // Check alert cooldowns if applicable
             if (data.type === 'STATUS' || data.type === 'HAZARD_FIRE') {
                 if (this.shouldSuppressAlert(data.value || 'fire')) return;
@@ -57,9 +75,15 @@ class LogWatcher extends EventEmitter {
             this.emit('gamestate', data);
         });
         LogEngine.on('login', (data) => this.emit('login', data));
+    }
 
-        // Legacy support (some UI components might expect these)
-        this.patterns = {};
+    // --- State Management ---
+
+    emitCurrentState() {
+        if (this.cachedState.ship) this.emit('gamestate', { type: 'SHIP_CURRENT', value: this.cachedState.ship });
+        if (this.cachedState.server) this.emit('gamestate', { type: 'SERVER_ENV', value: this.cachedState.server });
+        if (this.cachedState.spawn) this.emit('gamestate', { type: 'SPAWN_POINT', value: this.cachedState.spawn });
+        if (this.cachedState.session) this.emit('gamestate', { type: 'SESSION_ID', value: this.cachedState.session });
     }
 
     // --- Configuration Methods (called by main.js) ---
@@ -210,6 +234,8 @@ class LogWatcher extends EventEmitter {
         return false;
     }
 
+    // --- Unknown Log Logic ---
+
     captureUnknownLine(line) {
         let cleaned = line.replace(/<[^>]+>/g, '')
             .replace(/^<\d{4}-\d{2}-\d{2}T[\d:.]+Z>\s*/, '')
@@ -240,6 +266,8 @@ class LogWatcher extends EventEmitter {
     }
 
     emitUnknowns() {
+        // Safe check for map existence
+        if (!this.unknownGroups) return;
         const groups = Array.from(this.unknownGroups.values()).sort((a, b) => b.count - a.count);
         this.emit('unknown', { groups, totalGroups: groups.length });
     }
