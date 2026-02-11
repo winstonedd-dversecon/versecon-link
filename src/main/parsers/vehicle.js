@@ -6,13 +6,18 @@ class VehicleParser extends BaseParser {
         this.patterns = {
             vehicle_control: /<Vehicle Control Flow>/,
             vehicle_name: /for\s+'([^']+)'/,
-            seat_enter: /<Vehicle Seat Enter>/, // New Picologs pattern potentially
+            seat_enter: /<Vehicle Seat Enter>/,
             seat_exit: /<Vehicle Seat Exit>/,
             spawn_flow: /<Spawn Flow>/,
             spawn_reservation: /lost\s+reservation\s+for\s+spawnpoint\s+([^\\s]+)\s+\[(\d+)\]/,
             ship_exit_confirm: /<Vehicle Control Flow>.*releasing/i
         };
         this.currentShip = null;
+        this.shipMap = {};
+    }
+
+    setShipMap(map) {
+        this.shipMap = map || {};
     }
 
     parse(line) {
@@ -27,7 +32,9 @@ class VehicleParser extends BaseParser {
 
                 if (line.includes('granted')) {
                     this.currentShip = cleanedName;
-                    this.emit('gamestate', { type: 'SHIP_ENTER', value: cleanedName });
+                    const payload = { type: 'SHIP_ENTER', value: cleanedName };
+                    if (this.shipMap[cleanedName]) payload.image = this.shipMap[cleanedName];
+                    this.emit('gamestate', payload);
                 } else if (line.includes('releasing')) {
                     this.currentShip = null; // We left the seat/ship
                     this.emit('gamestate', { type: 'SHIP_EXIT', value: cleanedName });

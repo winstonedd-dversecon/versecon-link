@@ -46,5 +46,6 @@ engine.register(require('./vehicle'));
 engine.register(require('./combat'));
 engine.register(require('./mission'));
 engine.register(require('./economy'));
+engine.register(require('./custom'));
 
 module.exports = engine;

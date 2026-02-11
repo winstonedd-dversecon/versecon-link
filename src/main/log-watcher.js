@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('events');
 const LogEngine = require('./parsers');
+const vehicleParser = require('./parsers/vehicle');
+const customParser = require('./parsers/custom');
 
 class LogWatcher extends EventEmitter {
     static DEFAULT_PATTERNS = {
@@ -24,6 +26,9 @@ class LogWatcher extends EventEmitter {
         this.isWatching = false;
         this.lastSize = 0;
 
+        // Alert cooldowns
+        this.alertCooldowns = {};
+
         // Unknown log discovery state
         this.unknownGroups = new Map();
         this.unknownIgnored = new Set();
@@ -44,12 +49,48 @@ class LogWatcher extends EventEmitter {
         ];
 
         // Bind LogEngine events to this emitter
-        LogEngine.on('gamestate', (data) => this.emit('gamestate', data));
+        LogEngine.on('gamestate', (data) => {
+            // Check alert cooldowns if applicable
+            if (data.type === 'STATUS' || data.type === 'HAZARD_FIRE') {
+                if (this.shouldSuppressAlert(data.value || 'fire')) return;
+            }
+            this.emit('gamestate', data);
+        });
         LogEngine.on('login', (data) => this.emit('login', data));
 
         // Legacy support (some UI components might expect these)
         this.patterns = {};
     }
+
+    // --- Configuration Methods (called by main.js) ---
+
+    setShipMap(map) {
+        vehicleParser.setShipMap(map);
+    }
+
+    setCustomPatterns(patterns) {
+        customParser.setPatterns(patterns);
+    }
+
+    setPatternOverrides(overrides) {
+        // TODO: Implement overrides for specific built-in patterns if needed
+        // For now, no-op to prevent crash
+        console.log('[LogWatcher] Pattern overrides not yet supported in modular parser');
+    }
+
+    setAlertCooldown(alertType, cooldownMs) {
+        this.alertCooldowns[alertType] = { cooldownMs, lastFired: 0 };
+    }
+
+    shouldSuppressAlert(alertType) {
+        const cd = this.alertCooldowns[alertType];
+        if (!cd || cd.cooldownMs <= 0) return false;
+        const now = Date.now();
+        if (now - cd.lastFired < cd.cooldownMs) return true;
+        cd.lastFired = now;
+        return false;
+    }
+
 
     findLogFile() {
         const candidates = [];
