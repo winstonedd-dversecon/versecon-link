@@ -569,7 +569,7 @@
 
         <!-- MISSION TRACKER (New) -->
         <div class="status-box" id="mission-status-box"
-            style="display:none; margin-bottom: 10px; border-color: var(--accent);">
+            style="display:none; margin-bottom: 10px; border-color: var(--accent); max-height: 300px; overflow-y: auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
                 <div style="font-size:0.7rem; color:var(--accent); font-weight:700; letter-spacing:1px">ACTIVE CONTRACT
                 </div>
@@ -1484,6 +1484,39 @@
                     addDashItem('📍', `Spawn: <span class="feed-highlight">${data.value}</span>`);
                     break;
 
+                // ═══ PHASE 2: INDUSTRIAL ═══
+                case 'MINING':
+                    if (data.subtype === 'LASER') {
+                        const color = data.state === 'ON' ? '#00ff88' : '#888';
+                        addDashItem('⛏️', `Mining Laser: <span class="feed-highlight" style="color:${color}">${data.state}</span>`);
+                    } else if (data.subtype === 'FRACTURE') {
+                        const color = data.success ? '#00ff88' : '#ff4444';
+                        const text = data.success ? 'SUCCESS' : 'FAILED';
+                        addDashItem('💥', `Fracture: <span class="feed-highlight" style="color:${color}">${text}</span>`);
+                        if (data.success) playSound('notification');
+                    } else if (data.subtype === 'EXTRACTION') {
+                        addDashItem('💎', `Extracted: <span class="feed-highlight" style="color:#ffa500">${data.amount.toFixed(2)} SCU</span> ${data.material}`);
+                    }
+                    break;
+
+                case 'SALVAGE':
+                    if (data.subtype === 'BEAM') {
+                        const color = data.state === 'ON' ? '#00ff88' : '#888';
+                        addDashItem('🏗️', `Salvage Beam: <span class="feed-highlight" style="color:${color}">${data.state}</span>`);
+                    } else if (data.subtype === 'SCRAPE') {
+                        addDashItem('♻️', `Scraped: <span class="feed-highlight" style="color:#00c8ff">${data.amount.toFixed(2)} SCU</span> ${data.material}`);
+                    }
+                    break;
+
+                case 'ENGINEERING':
+                    if (data.subtype === 'POWER') {
+                        addDashItem('⚡', `Power Plant: <span class="feed-highlight">${data.state}</span>`);
+                    } else if (data.subtype === 'FUSE_BREAK') {
+                        addDashItem('🔌', `Fuse Blown: <span class="feed-highlight" style="color:#ff4444">${data.component}</span> in ${data.room}`);
+                        playSound('alert_status');
+                    }
+                    break;
+
                 // MISSION TRACKING
                 case 'MISSION_CURRENT':
                     document.getElementById('mission-status-box').style.display = 'block';
@@ -1777,6 +1810,8 @@
 
         // Raw log stream
         ipcRenderer.on('log:raw', (e, line) => {
+            updateRecentLocations(line); // Pass to Settings Sniffer
+
             const rawFeed = document.getElementById('raw-log-list');
             if (rawFeed) {
                 const div = document.createElement('div');
@@ -1842,9 +1877,12 @@
                              <!-- ID for renaming context -->
                              ${m.tracked ? `<span onclick="window.currentMissionId='${m.id}'; renameCurrentMission()" style="cursor:pointer; margin-left:5px; opacity:0.7;" title="Rename Mission">✏️</span>` : ''}
                         </div>
-                        <div style="font-size:0.6rem; background:${m.tracked ? 'rgba(255,165,0,0.2)' : 'rgba(255,255,255,0.05)'}; 
-                                    color:${m.tracked ? 'orange' : '#aaa'}; padding:1px 4px; border-radius:2px">
-                            ${m.status === 'active' ? 'IN PROGRESS' : m.status.toUpperCase()}
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="font-size:0.6rem; background:${m.tracked ? 'rgba(255,165,0,0.2)' : 'rgba(255,255,255,0.05)'}; 
+                                        color:${m.tracked ? 'orange' : '#aaa'}; padding:1px 4px; border-radius:2px">
+                                ${m.status === 'active' ? 'IN PROGRESS' : m.status.toUpperCase()}
+                            </div>
+                            <span onclick="dismissMission('${m.id}')" style="cursor:pointer; color:#ff4444; font-size:0.8rem;" title="Dismiss / Remove">❌</span>
                         </div>
                     </div>
                     <div style="font-weight:600; color:${m.tracked ? 'white' : '#ccc'}; margin-bottom:4px; font-size: 0.85rem; line-height:1.2;">
@@ -1862,32 +1900,105 @@
             if (tracked) window.currentMissionId = tracked.id;
         }
 
-        // ═══ CUSTOM LOCATIONS ═══
-        let customLocations = {};
+        window.dismissMission = function (id) {
+            ipcRenderer.send('mission:dismiss', id);
+        };
 
-        async function loadCustomLocationList() {
-            customLocations = await ipcRenderer.invoke('settings:get-custom-locations') || {};
-            renderCustomLocationList();
+        // ═══════════════════════════════════════════════════════
+        // SETTINGS: RECENT LOG SNIFFER (New)
+        // ═══════════════════════════════════════════════════════
+        const recentLocations = [];
+
+        function updateRecentLocations(line) {
+            // Sniff location lines
+            let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
+            if (match) {
+                const loc = match[1];
+                // Avoid dupes
+                if (!recentLocations.includes(loc)) {
+                    recentLocations.unshift(loc);
+                    if (recentLocations.length > 5) recentLocations.pop();
+                    renderRecentLocations();
+                }
+            }
         }
 
-        function renderCustomLocationList() {
-            const list = document.getElementById('custom-location-list');
-            if (Object.keys(customLocations).length === 0) {
-                list.innerHTML = '<div style="color:#666; font-style:italic; padding:10px; text-align:center;">No custom locations set.</div>';
+        function renderRecentLocations() {
+            const container = document.getElementById('recent-locs-container');
+            if (!container) return; // Might need to add to HTML
+
+            if (recentLocations.length === 0) {
+                container.innerHTML = '<div style="font-style:italic; color:#555;">No recent locations detected...</div>';
                 return;
             }
-            // Sort by key length descending
-            const keys = Object.keys(customLocations).sort((a, b) => b.length - a.length);
 
-            list.innerHTML = keys.map(key => `
-                <div class="map-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <div style="flex: 1; overflow:hidden;">
-                        <div style="color: #aaa; font-family:monospace; font-size:0.75rem;">${escapeHtml(key)}</div>
-                        <div style="color: var(--accent); font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">➔ ${escapeHtml(customLocations[key])}</div>
+            container.innerHTML = recentLocations.map(loc => `
+                  <div onclick="document.getElementById('new-loc-key').value='${loc}'; document.getElementById('new-loc-val').focus();" 
+                       style="cursor:pointer; padding:4px; border-bottom:1px solid rgba(255,255,255,0.05); font-family:monospace; font-size:0.75rem; color:#aaa;">
+                       ${loc} <span style="float:right; color:var(--accent);">Use ➔</span>
+                  </div>
+             `).join('');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // SETTINGS: PATTERN MANAGER (Enhanced)
+        // ═══════════════════════════════════════════════════════
+
+        async function loadBuiltinPatterns() {
+            try {
+                defaultPatterns = await ipcRenderer.invoke('settings:get-default-patterns');
+                patternOverrides = await ipcRenderer.invoke('settings:get-pattern-overrides');
+                renderBuiltinPatterns();
+            } catch (e) {
+                console.error('Failed to load patterns:', e);
+            }
+        }
+
+        function renderBuiltinPatterns() {
+            const list = document.getElementById('builtin-pattern-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            const keys = Object.keys(defaultPatterns).sort();
+
+            keys.forEach(key => {
+                const config = patternOverrides[key] || {};
+                const isDisabled = config.disabled;
+                const currentRegex = config.regex || defaultPatterns[key];
+                const defaultRegex = defaultPatterns[key]; // For reference
+                const customMsg = config.message || '';
+
+                // We don't easily know the "default message" unless we map it server-side, 
+                // but we can at least show the regex clearly.
+
+                const item = document.createElement('div');
+                item.className = 'map-item';
+                item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
+                item.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
+                        <label style="font-size: 0.8rem; cursor: pointer;">
+                            <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
+                        </label>
                     </div>
-                    <button class="cyber-btn small danger" onclick="deleteCustomLocation('${escapeHtml(key)}')" style="margin:0; padding: 2px 8px;">×</button>
-                </div>
-            `).join('');
+                    
+                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Trigger Regex:</div>
+                    <div style="font-family:monospace; font-size:0.7rem; color:#666; margin-bottom:2px;">Default: ${escapeHtml(defaultRegex.toString())}</div>
+                    <input type="text" class="modern-input" style="width: 100%; font-family: monospace; font-size: 0.8rem; margin-bottom: 8px; color: #aaffaa;"
+                        value="${escapeHtml(currentRegex.toString())}" 
+                        onchange="updatePatternRegex('${key}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}
+                        placeholder="Regex Pattern">
+                    
+                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Alert Message (Override):</div>
+                    <input type="text" class="modern-input" style="width: 100%; font-size: 0.8rem;"
+                        value="${escapeHtml(customMsg)}"
+                        onchange="updatePatternMessage('${key}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}
+                        placeholder="Leave empty to use system default...">
+                `;
+                list.appendChild(item);
+            });
         }
 
         function saveNewCustomLocation() {

@@ -45,6 +45,9 @@ engine.register(require('./navigation'));
 engine.register(require('./vehicle'));
 engine.register(require('./combat'));
 engine.register(require('./mission'));
+engine.register(require('./mining')); // Phase 2
+engine.register(require('./salvage')); // Phase 2
+engine.register(require('./engineering')); // Phase 2
 engine.register(require('./economy'));
 engine.register(require('./zone'));
 engine.register(require('./custom'));

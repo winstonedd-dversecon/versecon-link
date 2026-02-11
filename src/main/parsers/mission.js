@@ -11,38 +11,53 @@ class MissionParser extends BaseParser {
             contract_available: /<ContractAvailable>/,
             contract_accepted: /<ContractAccepted>/,
             reputation: /<Reputation>/,
-            // Capture ID: MissionID="123" or MissionID: 123
-            mission_id: /MissionID[:=]\s*"?(\d+)"?/i
+            // Capture ID: MissionID="123" or MissionID: 123 or Mission[123]
+            mission_id: /(?:MissionID|Mission|ContractID)[:=]?\s*\[?"?(\d+)"?\]?/i
         };
         this.missionMap = new Map(); // ID -> Title
+        this.lastSeenId = null;
+        this.lastSeenIdTime = 0;
     }
 
     parse(line) {
         let handled = false;
+        const now = Date.now();
 
-        // 0. Extract Mission ID (if present)
-        let currentId = null;
+        // 0. Extract Mission ID (if present on ANY line)
+        // This acts as a short-term buffer because ID often appears on preceding line
         const idMatch = line.match(this.patterns.mission_id);
-        if (idMatch) currentId = idMatch[1];
+        if (idMatch) {
+            this.lastSeenId = idMatch[1];
+            this.lastSeenIdTime = now;
+        }
 
-        // 1. Mission Accepted (via Notification)
-        // [Notice] <UpdateNotificationItem> Notification "Contract Accepted: Delivery in the Dark"
-        // TODO: This notification line might NOT have the ID. 
-        // We might need to correlate via previous <ContractAccepted> line which usually has ID.
+        // Expiration for ID buffer (e.g. 2 seconds) to prevent stale association
+        // But for "Completed", the ID might have been seen 100ms ago.
+        let effectiveId = idMatch ? idMatch[1] : (now - this.lastSeenIdTime < 5000 ? this.lastSeenId : null);
 
+        // 1. Mission Accepted
+        // Case A: MobiGlas Event (Reliable ID)
+        if (line.includes('MobiGlas::OnAcceptMission')) {
+            // Try to find ID
+            if (effectiveId) {
+                // We need the title. Often not on this line. 
+                // But we might have a Notification line nearby.
+                // For now, tracking the ID is enough to bind the NEXT notification.
+            }
+        }
+
+        // Case B: Notification (Has Title, usually no ID)
         const contractMatch = line.match(/Notification "Contract Accepted:\s*([^"]+)"/i);
         if (contractMatch) {
             let title = contractMatch[1].trim();
             if (title.endsWith(':')) title = title.slice(0, -1).trim();
 
-            // If we found an ID in this line, map it
-            if (currentId) {
-                this.missionMap.set(currentId, title);
+            if (effectiveId) {
+                this.missionMap.set(effectiveId, title);
             }
-            // If no ID on this line, we might have seen <ContractAccepted> recently with an ID.
-            // For now, just emit both.
 
-            this.emit('gamestate', { type: 'MISSION_ACCEPTED', value: title, id: currentId });
+            // If checking fails, we still emit. main.js handles ID generation if missing.
+            this.emit('gamestate', { type: 'MISSION_ACCEPTED', value: title, id: effectiveId });
             handled = true;
         }
 
@@ -51,9 +66,9 @@ class MissionParser extends BaseParser {
         // Let's look for <SetTrackedMission> or similar, or just assume any line with ONLY MissionID implies tracking?
         // Risky. Let's look for "Track" or "Marker".
         if (line.includes('TrackedMission') || line.includes('MissionMarker')) {
-            if (currentId && this.missionMap.has(currentId)) {
-                const title = this.missionMap.get(currentId);
-                this.emit('gamestate', { type: 'MISSION_CHANGED', value: title, id: currentId });
+            if (effectiveId && this.missionMap.has(effectiveId)) {
+                const title = this.missionMap.get(effectiveId);
+                this.emit('gamestate', { type: 'MISSION_CHANGED', value: title, id: effectiveId });
                 handled = true;
             }
         }
@@ -62,19 +77,19 @@ class MissionParser extends BaseParser {
         const objMatch = line.match(/Notification "New Objective:\s*([^"]+)"/i);
         if (objMatch) {
             const objective = objMatch[1].trim();
-            this.emit('gamestate', { type: 'MISSION_OBJECTIVE', value: objective, id: currentId });
+            this.emit('gamestate', { type: 'MISSION_OBJECTIVE', value: objective, id: effectiveId });
             handled = true;
         }
 
         // 3. Mission Ended
-        if (this.patterns.mission_ended.test(line) || /Notification "Contract Complete/i.test(line)) {
-            const status = line.includes('Success') || line.includes('Complete') ? 'completed' :
-                line.includes('Fail') || line.includes('Failed') ? 'failed' : 'ended';
+        // Regex for standard log vs notification
+        if (this.patterns.mission_ended.test(line) || /Notification "Contract (Complete|Failed)/i.test(line)) {
+            const isSuccess = line.includes('Success') || line.includes('Complete');
+            const status = isSuccess ? 'completed' : 'failed';
 
-            this.emit('gamestate', { type: 'MISSION_STATUS', value: status, id: currentId });
+            this.emit('gamestate', { type: 'MISSION_STATUS', value: status, id: effectiveId });
 
-            // Cleanup map
-            if (currentId) this.missionMap.delete(currentId);
+            if (effectiveId) this.missionMap.delete(effectiveId);
             handled = true;
         }
 

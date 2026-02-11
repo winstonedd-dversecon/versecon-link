@@ -735,6 +735,41 @@ ipcMain.handle('settings:save-custom-patterns', async (event, patterns) => {
 });
 
 // ═══════════════════════════════════════════════════════
+// NEW HANDLERS (v2.5 Fixes)
+// ═══════════════════════════════════════════════════════
+
+ipcMain.on('mission:dismiss', (event, id) => {
+    if (config.activeMissions && config.activeMissions[id]) {
+        console.log('[Main] Dismissing mission:', id);
+        delete config.activeMissions[id];
+
+        // If it was the current mission, clear that too
+        if (config.currentMission === config.missionMap?.[id]) {
+            config.currentMission = null;
+            config.currentObjective = null;
+        }
+
+        saveConfig();
+        broadcast('mission:list', Object.values(config.activeMissions));
+    }
+});
+
+ipcMain.handle('settings:get-custom-locations', async () => {
+    return config.customLocations || {};
+});
+
+ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
+    console.log('[Main] Saving custom locations:', locations);
+    config.customLocations = locations;
+    saveConfig();
+    // Assuming LogWatcher/LogEngine needs to know? 
+    // Actually, dashboard handles the mapping for display, 
+    // but if we want backend to know, we might need a setter.
+    // For now, only Dashboard uses it for display mapping.
+    return true;
+});
+
+// ═══════════════════════════════════════════════════════
 // APP LIFECYCLE
 // ═══════════════════════════════════════════════════════
 
