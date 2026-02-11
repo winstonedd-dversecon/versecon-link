@@ -1,6 +1,5 @@
-{
   "name": "versecon-link",
-  "version": "1.0.0",
+  "version": "2.4.0",
   "description": "Star Citizen Log Reader & Overlay Controller for VerseCon",
   "main": "src/main/main.js",
   "scripts": {
