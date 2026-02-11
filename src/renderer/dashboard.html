@@ -736,6 +736,10 @@
                 <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
                     Map ship names found in logs (e.g., "Clipper") to specific images.
                     <br>Partial matches work (e.g., "Clipper" matches "DRAK_Clipper").
+                    <div style="margin-top: 5px; color: var(--accent);">
+                        Last Detected: <span id="last-ship-debug"
+                            style="color: #666; font-family: monospace;">Waiting...</span>
+                    </div>
                 </div>
 
                 <div id="ship-map-list"
@@ -1457,7 +1461,11 @@
         document.getElementById('cmd-custom-text').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendCustomCommand();
         });
-
+        // v2.2 - Last Detected Ship Debugging
+        ipcRenderer.on('settings:last-ship', (e, shipName) => {
+            document.getElementById('last-ship-debug').textContent = shipName || 'None';
+            document.getElementById('last-ship-debug').style.color = '#fff';
+        });
         // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
         let defaultPatterns = {};
         let patternOverrides = {};

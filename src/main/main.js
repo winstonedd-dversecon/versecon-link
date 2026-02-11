@@ -398,6 +398,10 @@ LogWatcher.on('gamestate', (data) => {
     // Ship events - tray notification
     if (data.type === 'SHIP_ENTER') {
         showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
+        // Send to dashboard for debug
+        if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+            dashboardWindow.webContents.send('settings:last-ship', data.value);
+        }
     } else if (data.type === 'SHIP_EXIT') {
         showTrayNotification('🚀 Ship Exited', `Left: ${data.value}`);
     }
@@ -505,6 +509,7 @@ APIClient.on('job', (data) => {
 // v2.2 - Generic Notification Tunnel (Fixes missing toasts)
 APIClient.on('notification', (data) => {
     // data = { title, message, type: 'info|success|warning|error' }
+    console.log('[Main] Received Notification from API:', data);
     broadcast('vcon:notification', data);
     showTrayNotification(data.title || 'VerseCon Alert', data.message);
 });
@@ -529,7 +534,11 @@ ipcMain.handle('settings:get-custom-patterns', async () => config.customPatterns
 ipcMain.handle('settings:get-default-patterns', async () => {
     // Return regexes as strings for UI
     const defaults = {};
-    for (const [key, regex] of Object.entries(LogWatcher.DEFAULT_PATTERNS)) {
+    // LogWatcher is an instance, so accessing static property requires constructor
+    // Or we could export the class separately, but this is quicker given the structure.
+    const patterns = LogWatcher.constructor.DEFAULT_PATTERNS || {};
+
+    for (const [key, regex] of Object.entries(patterns)) {
         defaults[key] = regex.source;
     }
     return defaults;
