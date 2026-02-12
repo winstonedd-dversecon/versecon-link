@@ -42,6 +42,7 @@ class LogEngine extends EventEmitter {
 // Instantiate and register parsers
 const engine = new LogEngine();
 engine.register(require('./navigation'));
+engine.register(require('./session'));
 engine.register(require('./vehicle'));
 engine.register(require('./combat'));
 engine.register(require('./mission'));

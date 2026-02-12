@@ -345,6 +345,12 @@
                 <div class="fd-label">Home</div>
                 <div class="fd-value" id="val-spawn">Unknown</div>
             </div>
+
+            <!-- Session -->
+            <div class="fd-col">
+                <div class="fd-label" id="label-env">LIVE</div>
+                <div class="fd-value" id="val-timer">00:00:00</div>
+            </div>
         </div>
     </div>
 
@@ -394,6 +400,28 @@
         // State
         let currentShip = null;
         let activeCommand = null;
+        let startTime = null;
+        let timerInterval = null;
+
+        function updateTimer() {
+            if (!startTime) return;
+            const now = Date.now();
+            const start = new Date(startTime).getTime();
+            const diff = now - start;
+
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+
+            document.getElementById('val-timer').textContent =
+                `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+        }
 
         // ═══ LOCAL DRAG LOGIC ═══
         // Move the HUD element itself, not the window
@@ -476,6 +504,19 @@
                 case 'LOCATION':
                 case 'LOCATION_HINT':
                     document.getElementById('val-location').textContent = data.value;
+                    break;
+
+                case 'SESSION_START':
+                    startTime = data.value;
+                    startTimer();
+                    break;
+
+                case 'SERVER_ENV':
+                    document.getElementById('label-env').textContent = data.value.toUpperCase();
+                    break;
+
+                case 'BUILD_INFO':
+                    addFeedEntry('🛠️', `Build ${data.value}`);
                     break;
 
                 case 'SHIP_ENTER':
@@ -562,11 +603,23 @@
         // Commands
         ipcRenderer.on('command:receive', (e, d) => {
             activeCommand = d;
+            showCommand(d);
+        });
+
+        ipcRenderer.on('command:sent', (e, d) => {
+            activeCommand = d;
+            showCommand(d, true);
+        });
+
+        function showCommand(d, sent = false) {
             const box = document.getElementById('mod-command');
             box.classList.remove('hidden');
             document.getElementById('cmd-text').textContent = d.text || d.preset;
-            document.getElementById('cmd-from').textContent = `FROM ${d.from}`.toUpperCase();
-        });
+            document.getElementById('cmd-from').textContent = (sent ? `SENT TO ${d.target || 'ALL'}` : `FROM ${d.from}`).toUpperCase();
+
+            // Auto-hide sent commands after 5s
+            if (sent) setTimeout(() => box.classList.add('hidden'), 5000);
+        }
 
         document.getElementById('ack-btn').addEventListener('click', () => {
             document.getElementById('mod-command').classList.add('hidden');

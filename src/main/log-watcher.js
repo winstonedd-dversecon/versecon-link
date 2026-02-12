@@ -56,7 +56,9 @@ class LogWatcher extends EventEmitter {
             ship: null,
             server: null,
             spawn: null,
-            session: null
+            session: null,
+            startTime: null,
+            build: null
         };
 
         // Bind LogEngine events to this emitter
@@ -67,6 +69,8 @@ class LogWatcher extends EventEmitter {
             if (data.type === 'SERVER_ENV') this.cachedState.server = data.value;
             if (data.type === 'SESSION_ID') this.cachedState.session = data.value;
             if (data.type === 'SPAWN_SET') this.cachedState.spawn = data.value;
+            if (data.type === 'SESSION_START') this.cachedState.startTime = data.value;
+            if (data.type === 'BUILD_INFO') this.cachedState.build = data.value;
 
             // Check alert cooldowns if applicable
             if (data.type === 'STATUS' || data.type === 'HAZARD_FIRE') {
@@ -84,6 +88,8 @@ class LogWatcher extends EventEmitter {
         if (this.cachedState.server) this.emit('gamestate', { type: 'SERVER_ENV', value: this.cachedState.server });
         if (this.cachedState.spawn) this.emit('gamestate', { type: 'SPAWN_POINT', value: this.cachedState.spawn });
         if (this.cachedState.session) this.emit('gamestate', { type: 'SESSION_ID', value: this.cachedState.session });
+        if (this.cachedState.startTime) this.emit('gamestate', { type: 'SESSION_START', value: this.cachedState.startTime });
+        if (this.cachedState.build) this.emit('gamestate', { type: 'BUILD_INFO', value: this.cachedState.build });
     }
 
     // --- Configuration Methods (called by main.js) ---

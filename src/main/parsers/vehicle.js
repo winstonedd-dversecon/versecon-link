@@ -35,7 +35,7 @@ class VehicleParser extends BaseParser {
                     const payload = { type: 'SHIP_ENTER', value: cleanedName };
                     if (this.shipMap[cleanedName]) payload.image = this.shipMap[cleanedName];
                     this.emit('gamestate', payload);
-                } else if (line.includes('releasing')) {
+                } else if (line.includes('releasing') && this.currentShip === cleanedName) {
                     this.currentShip = null; // We left the seat/ship
                     this.emit('gamestate', { type: 'SHIP_EXIT', value: cleanedName });
                 }
