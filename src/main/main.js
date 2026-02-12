@@ -116,8 +116,7 @@ function createWindows() {
         }
     });
 
-    // 2. Overlay Window (Transparent HUD) - DISABLED FOR DEBUGGING
-    /*
+    // 2. Overlay Window (Transparent HUD)
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
@@ -157,10 +156,8 @@ function createWindows() {
     overlayWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
     });
-    */
 
-    // 3. Alert Window (Full-screen transparent for HUD warnings) - DISABLED FOR DEBUGGING
-    /*
+    // 3. Alert Window (Full-screen transparent for HUD warnings)
     alertWindow = new BrowserWindow({
         width: primaryDisplay.size.width,
         height: primaryDisplay.size.height,
@@ -183,7 +180,7 @@ function createWindows() {
     alertWindow.setAlwaysOnTop(true, 'screen-saver'); // Fix: Ensure it shows over game
     alertWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     alertWindow.hide(); // Hidden by default, shown on alerts
-    */
+
 }
 
 // ═══════════════════════════════════════════════════════
@@ -204,7 +201,7 @@ function createTray() {
     updateTrayMenu();
 
     tray.on('click', () => {
-        if (dashboardWindow) {
+        if (dashboardWindow && !dashboardWindow.isDestroyed()) {
             if (dashboardWindow.isVisible()) {
                 dashboardWindow.focus();
             } else {
@@ -221,16 +218,16 @@ function updateTrayMenu() {
         {
             label: 'Show Dashboard',
             click: () => {
-                if (dashboardWindow) {
+                if (dashboardWindow && !dashboardWindow.isDestroyed()) {
                     dashboardWindow.show();
                     dashboardWindow.focus();
                 }
             }
         },
         {
-            label: overlayWindow && overlayWindow.isVisible() ? 'Hide Overlay' : 'Show Overlay',
+            label: overlayWindow && !overlayWindow.isDestroyed() && overlayWindow.isVisible() ? 'Hide Overlay' : 'Show Overlay',
             click: () => {
-                if (overlayWindow) {
+                if (overlayWindow && !overlayWindow.isDestroyed()) {
                     overlayWindow.isVisible() ? overlayWindow.hide() : overlayWindow.show();
                     updateTrayMenu();
                 }
@@ -297,12 +294,14 @@ ipcMain.on('app:login', (event, token) => {
 });
 
 ipcMain.on('app:toggle-overlay', () => {
-    if (overlayWindow.isVisible()) {
-        overlayWindow.hide();
-    } else {
-        overlayWindow.show();
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        if (overlayWindow.isVisible()) {
+            overlayWindow.hide();
+        } else {
+            overlayWindow.show();
+        }
+        updateTrayMenu();
     }
-    updateTrayMenu();
 });
 
 ipcMain.handle('app:select-log', async () => {
