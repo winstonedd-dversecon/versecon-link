@@ -116,7 +116,8 @@ function createWindows() {
         }
     });
 
-    // 2. Overlay Window (Transparent HUD)
+    // 2. Overlay Window (Transparent HUD) - DISABLED FOR DEBUGGING
+    /*
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
@@ -156,8 +157,10 @@ function createWindows() {
     overlayWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
     });
+    */
 
-    // 3. Alert Window (Full-screen transparent for HUD warnings)
+    // 3. Alert Window (Full-screen transparent for HUD warnings) - DISABLED FOR DEBUGGING
+    /*
     alertWindow = new BrowserWindow({
         width: primaryDisplay.size.width,
         height: primaryDisplay.size.height,
@@ -180,6 +183,7 @@ function createWindows() {
     alertWindow.setAlwaysOnTop(true, 'screen-saver'); // Fix: Ensure it shows over game
     alertWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     alertWindow.hide(); // Hidden by default, shown on alerts
+    */
 }
 
 // ═══════════════════════════════════════════════════════
