@@ -31,27 +31,29 @@ class NavigationParser extends BaseParser {
             const rawRoom = roomMatch[1];
             if (this.customLocations && this.customLocations[rawRoom]) {
                 const customName = this.customLocations[rawRoom];
-                this.emit('gamestate', { type: 'LOCATION', value: customName });
+                this.emit('gamestate', { type: 'LOCATION', value: customName, raw: rawRoom });
                 return true; // Priority
             }
+            // Emit raw even if ignored for "Sniffer" in UI
+            this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
         }
 
         // 1. Precise Location
         const locMatch = line.match(this.patterns.location);
         if (locMatch) {
-            let val = locMatch[1];
+            let rawVal = locMatch[1];
 
             // Check override for this raw location string too
-            if (this.customLocations && this.customLocations[val]) {
-                this.emit('gamestate', { type: 'LOCATION', value: this.customLocations[val] });
+            if (this.customLocations && this.customLocations[rawVal]) {
+                this.emit('gamestate', { type: 'LOCATION', value: this.customLocations[rawVal], raw: rawVal });
                 handled = true;
             } else {
                 // Cleaning logic: OOC_Stanton_1b_Aberdeen -> Aberdeen
-                val = val.replace(/^OOC_/, '')
+                let val = rawVal.replace(/^OOC_/, '')
                     .replace(/Stanton_\d+[a-z]?_/, '')
                     .replace(/_/g, ' ');
 
-                this.emit('gamestate', { type: 'LOCATION', value: val });
+                this.emit('gamestate', { type: 'LOCATION', value: val, raw: rawVal });
                 handled = true;
             }
         }

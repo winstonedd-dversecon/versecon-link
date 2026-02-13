@@ -126,6 +126,30 @@ class APIClient extends EventEmitter {
         }
     }
 
+    async registerFriendCode(code) {
+        if (!this.token) return;
+        try {
+            await axios.post(`${this.baseUrl}/api/me/friend-code`, { code }, {
+                headers: { 'x-session-token': this.token }
+            });
+        } catch (e) {
+            console.error('[API] Failed to register friend code', e.message);
+        }
+    }
+
+    async fetchFriendList() {
+        if (!this.token) return [];
+        try {
+            const res = await axios.get(`${this.baseUrl}/api/me/friends`, {
+                headers: { 'x-session-token': this.token }
+            });
+            return res.data;
+        } catch (e) {
+            console.error('[API] Failed to fetch friends', e.message);
+            return [];
+        }
+    }
+
     async ackCommand(commandId) {
         if (!this.token) return;
         try {

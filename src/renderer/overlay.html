@@ -340,6 +340,12 @@
                 </div>
             </div>
 
+            <!-- Hangar -->
+            <div class="fd-col hidden" id="col-hangar">
+                <div class="fd-label" id="label-hangar">HANGAR</div>
+                <div class="fd-value" id="val-hangar-timer">00:00</div>
+            </div>
+
             <!-- Spawn -->
             <div class="fd-col">
                 <div class="fd-label">Home</div>
@@ -402,19 +408,32 @@
         let activeCommand = null;
         let startTime = null;
         let timerInterval = null;
+        let hangarStartTime = null;
 
         function updateTimer() {
-            if (!startTime) return;
-            const now = Date.now();
-            const start = new Date(startTime).getTime();
-            const diff = now - start;
+            // 1. Session Timer
+            if (startTime) {
+                const now = Date.now();
+                const start = new Date(startTime).getTime();
+                const diff = now - start;
 
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
 
-            document.getElementById('val-timer').textContent =
-                `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                document.getElementById('val-timer').textContent =
+                    `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+
+            // 2. Hangar Timer
+            if (hangarStartTime) {
+                const now = Date.now();
+                const diff = now - hangarStartTime;
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                document.getElementById('val-hangar-timer').textContent =
+                    `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
         }
 
         function startTimer() {
@@ -517,6 +536,20 @@
 
                 case 'BUILD_INFO':
                     addFeedEntry('🛠️', `Build ${data.value}`);
+                    break;
+
+                case 'HANGAR_STATE':
+                    const hangarCol = document.getElementById('col-hangar');
+                    const hangarLabel = document.getElementById('label-hangar');
+                    if (data.value === 'CLOSED') {
+                        hangarCol.classList.add('hidden');
+                        hangarStartTime = null;
+                    } else {
+                        hangarCol.classList.remove('hidden');
+                        hangarLabel.textContent = `HANGAR ${data.value}`;
+                        if (!hangarStartTime) hangarStartTime = Date.now();
+                        startTimer();
+                    }
                     break;
 
                 case 'SHIP_ENTER':

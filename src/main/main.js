@@ -30,6 +30,15 @@ const DEFAULT_PATTERNS = LogWatcher.constructor.DEFAULT_PATTERNS; // Ensure this
 // CONFIG HELPERS
 // ═══════════════════════════════════════════════════════
 
+function generateFriendCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 function loadConfig() {
     try {
         if (fs.existsSync(CONFIG_PATH)) {
@@ -37,6 +46,10 @@ function loadConfig() {
             config = JSON.parse(data);
             if (!config.shipMap) config.shipMap = {};
             if (!config.customPatterns) config.customPatterns = [];
+            if (!config.friendCode) {
+                config.friendCode = generateFriendCode();
+                saveConfig();
+            }
             console.log('[Main] Config loaded:', config);
         }
     } catch (e) {
@@ -82,6 +95,9 @@ function createWindows() {
             dashboardWindow.webContents.send('log:update', { type: 'SPAWN_POINT', value: config.spawnPoint });
         }
 
+        // Sync Friend Code
+        dashboardWindow.webContents.send('settings:friend-code', config.friendCode);
+
         // Initialize Auto-Updater (Phase 6)
         if (!parkingUpdateManager) {
             parkingUpdateManager = new UpdateManager(dashboardWindow);
@@ -95,13 +111,23 @@ function createWindows() {
 
         // Initialize Telemetry Engine (Phase 6)
         if (!telemetryEngine) {
-            telemetryEngine = new TelemetryEngine(config.logPath || null);
+            telemetryEngine = new TelemetryEngine();
 
-            // Wire Telemetry Events to API and Dashboard
-            telemetryEngine.on('telemetry', (event) => {
-                console.log('[Main] Telemetry Event:', event.type);
-                broadcast('telemetry:event', event);
+            LogWatcher.on('raw-line', (line) => telemetryEngine.handleLogLine(line));
+            LogWatcher.on('gamestate', (data) => {
+                if (data.type === 'SESSION_ID') telemetryEngine.updateSessionId(data.value);
             });
+
+            telemetryEngine.on('telemetry', (data) => {
+                console.log('[Main] Telemetry Event:', data.type);
+                broadcast('telemetry:event', data);
+                if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+                    dashboardWindow.webContents.send('telemetry:update', data);
+                }
+            });
+            telemetryEngine.start();
+
+            // Initialize Friend Sync logic
 
             // Legacy Compatibility: Feed raw lines to LogWatcher
             telemetryEngine.on('raw', (line) => {
@@ -180,7 +206,6 @@ function createWindows() {
     alertWindow.setAlwaysOnTop(true, 'screen-saver'); // Fix: Ensure it shows over game
     alertWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     alertWindow.hide(); // Hidden by default, shown on alerts
-
 }
 
 // ═══════════════════════════════════════════════════════
@@ -485,11 +510,12 @@ let logConnected = false;
 let apiConnected = false;
 
 // Log Watcher Events
+let lastRawEmit = 0;
 LogWatcher.on('raw-line', (line) => {
-    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
-        // Send every line? this might be heavy. 
-        // Let's send it and rely on renderer to cap the list size.
+    const now = Date.now();
+    if (dashboardWindow && !dashboardWindow.isDestroyed() && (now - lastRawEmit > 100)) {
         dashboardWindow.webContents.send('log:raw', line);
+        lastRawEmit = now;
     }
 });
 
@@ -702,6 +728,13 @@ LogWatcher.on('gamestate', (data) => {
         config.currentObjective = data.value;
         saveConfig();
         if (dashboardWindow) dashboardWindow.webContents.send('log:update', { type: 'MISSION_OBJECTIVE', value: data.value });
+    }
+    if (data.type === 'SESSION_START') cachedState.startTime = data.value;
+    if (data.type === 'BUILD_INFO') cachedState.build = data.value;
+    if (data.type === 'HANGAR_STATE') {
+        cachedState.hangarState = data.value;
+        cachedState.hangarStartTime = Date.now();
+        broadcast('gamestate', { type: 'HANGAR_STATE', value: data.value });
     }
     if (data.type === 'MISSION_STATUS' && (data.value === 'completed' || data.value === 'failed')) {
         if (data.id && config.missionMap) {

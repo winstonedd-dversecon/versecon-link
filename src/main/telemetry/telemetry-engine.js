@@ -1,14 +1,12 @@
 const { EventEmitter } = require('events');
 const crypto = require('crypto');
-const LogPoller = require('./log-poller');
 const NetworkWatcher = require('./network-watcher');
 const LogEngine = require('../parsers'); // Reuse existing regex parsers
 
 class TelemetryEngine extends EventEmitter {
-    constructor(logPath) {
+    constructor() {
         super();
-        this.logPoller = new LogPoller(logPath, 50); // 50ms poll
-        this.networkWatcher = new NetworkWatcher(500); // 500ms network check
+        this.networkWatcher = new NetworkWatcher(5000); // 5s network check - MUCH safer for system load
 
         this.session = {
             id: null,
@@ -21,10 +19,6 @@ class TelemetryEngine extends EventEmitter {
     }
 
     init() {
-        // Wire up Poller
-        this.logPoller.on('line', (line) => this.handleLogLine(line));
-        this.logPoller.on('rotation', () => this.emit('telemetry', { type: 'CLIENT_RESTART' }));
-
         // Wire up Network
         this.networkWatcher.on('connected', (conn) => {
             this.session.remoteIp = conn.remoteIp;
@@ -45,25 +39,23 @@ class TelemetryEngine extends EventEmitter {
                 confidence: 0.9,
                 timestamp: Date.now()
             });
-            // Reset network session but keep log session incase of reconnect?
             this.session.remoteIp = null;
         });
     }
 
     start() {
-        this.logPoller.start();
         this.networkWatcher.start();
     }
 
     stop() {
-        this.logPoller.stop();
         this.networkWatcher.stop();
     }
 
     setLogPath(path) {
-        this.logPoller.stop();
-        this.logPoller.filePath = path;
-        this.logPoller.start();
+        // LogWatcher handles path changes, we just need to restart network watcher if needed
+        this.networkWatcher.stop();
+        this.session.remoteIp = null;
+        this.networkWatcher.start();
     }
 
     handleLogLine(line) {
