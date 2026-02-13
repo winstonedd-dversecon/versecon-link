@@ -59,12 +59,7 @@ class TelemetryEngine extends EventEmitter {
     }
 
     handleLogLine(line) {
-        // 1. Pass to Legacy Parsers (for existing Dashboard features)
-        // LogEngine typically expects just the line, but might need modification
-        // We can emit 'raw' for main.js to pick up if needed
-        this.emit('raw', line);
-
-        // 2. Telemetry Extraction
+        // 1. Telemetry Extraction
         // Check for Session ID
         // Pattern: "Global Session ID: [UUID]" or similar
         // (We need to confirm exact log pattern or use LogEngine's result)

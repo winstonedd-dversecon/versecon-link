@@ -129,15 +129,9 @@ function createWindows() {
 
             // Initialize Friend Sync logic
 
-            // Legacy Compatibility: Feed raw lines to LogWatcher
-            telemetryEngine.on('raw', (line) => {
-                LogWatcher.processLine(line, false);
-            });
-
             // Start if path exists
             if (config.logPath) {
-                console.log('[Main] Starting Telemetry Engine on:', config.logPath);
-                telemetryEngine.setLogPath(config.logPath);
+                console.log('[Main] Starting Telemetry Engine (Network Watcher)');
             }
         }
     });
