@@ -89,6 +89,7 @@ function createWindows() {
     dashboardWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
         LogWatcher.emitUnknowns();
+        dashboardWindow.webContents.send('log:status', { connected: LogWatcher.isWatching, path: LogWatcher.filePath });
         // Restore persistent spawn point if not yet in cache
         if (config.spawnPoint && !LogWatcher.cachedState.spawn) {
             LogWatcher.cachedState.spawn = config.spawnPoint;
@@ -175,6 +176,7 @@ function createWindows() {
 
     overlayWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
+        overlayWindow.webContents.send('log:status', { connected: LogWatcher.isWatching, path: LogWatcher.filePath });
     });
 
     // 3. Alert Window (Full-screen transparent for HUD warnings)
@@ -504,12 +506,20 @@ let logConnected = false;
 let apiConnected = false;
 
 // Log Watcher Events
-let lastRawEmit = 0;
+let logBuffer = [];
+let logTimeout = null;
+
 LogWatcher.on('raw-line', (line) => {
-    const now = Date.now();
-    if (dashboardWindow && !dashboardWindow.isDestroyed() && (now - lastRawEmit > 100)) {
-        dashboardWindow.webContents.send('log:raw', line);
-        lastRawEmit = now;
+    logBuffer.push(line);
+
+    if (!logTimeout) {
+        logTimeout = setTimeout(() => {
+            if (dashboardWindow && !dashboardWindow.isDestroyed() && logBuffer.length > 0) {
+                dashboardWindow.webContents.send('log:raw-batch', logBuffer);
+            }
+            logBuffer = [];
+            logTimeout = null;
+        }, 50);
     }
 });
 
@@ -676,6 +686,9 @@ LogWatcher.on('gamestate', (data) => {
         saveConfig();
         // Also update cached state in LogWatcher just in case
         LogWatcher.cachedState.spawn = data.value;
+    }
+    if (data.type === 'SHIP_ENTER') {
+        LogWatcher.cachedState.ship = data.value;
     }
     // Custom Alerts (User Defined)
     if (data.type === 'CUSTOM') {

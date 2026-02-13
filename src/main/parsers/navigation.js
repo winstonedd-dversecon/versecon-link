@@ -6,6 +6,7 @@ class NavigationParser extends BaseParser {
         this.patterns = {
             location: /Location\[([^\]]+)\]/i,
             location_obj: /<StatObjLoad\s+0x[0-9A-Fa-f]+\s+Format>\s+'[^']*?objectcontainers\/pu\/loc\/(?:flagship|mod)\/(?:stanton\/)?(?:station\/ser\/)?(?:[^\/]+\/)*([^\/]{5,})\//i,
+            location_ooc: /OOC_Stanton_([^_]+)_([^_]+)_([^\s]+)/i,
             room_name: /RoomName:\s*([^\s]+)/i,
             quantum_entered: /<Jump Drive Requesting State Change>.*to Traveling/,
             quantum_exited: /<Jump Drive Requesting State Change>.*to Idle/,
@@ -56,6 +57,16 @@ class NavigationParser extends BaseParser {
                 this.emit('gamestate', { type: 'LOCATION', value: val, raw: rawVal });
                 handled = true;
             }
+        }
+
+        // 1b. OOC Fallback (Broad)
+        const oocMatch = line.match(this.patterns.location_ooc);
+        if (oocMatch) {
+            const planet = oocMatch[2].replace(/_/g, ' ');
+            const station = oocMatch[3].replace(/_/g, ' ');
+            const val = `${station} (${planet})`;
+            this.emit('gamestate', { type: 'LOCATION', value: val, raw: oocMatch[0] });
+            handled = true;
         }
 
         // 2. Quantum State

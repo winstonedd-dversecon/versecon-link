@@ -346,10 +346,11 @@
                 <div class="fd-value" id="val-hangar-timer">00:00</div>
             </div>
 
-            <!-- Spawn -->
+            <!-- Network / Shard -->
             <div class="fd-col">
-                <div class="fd-label">Home</div>
-                <div class="fd-value" id="val-spawn">Unknown</div>
+                <div class="fd-label">Network / Shard</div>
+                <div class="fd-value" id="val-shard" style="font-size: 0.8rem;">Disconnected</div>
+                <div class="fd-label" id="val-net-ip" style="font-size: 0.5rem; opacity: 0.5;">0.0.0.0</div>
             </div>
 
             <!-- Session -->
@@ -517,6 +518,25 @@
         ipcRenderer.on('log:status', (e, d) => document.getElementById('dot-log').classList.toggle('on', d.connected));
         ipcRenderer.on('api:status', (e, d) => document.getElementById('dot-api').classList.toggle('on', d.connected));
 
+        // Network Telemetry
+        ipcRenderer.on('telemetry:update', (e, event) => {
+            if (event.type === 'SERVER_CONNECTED') {
+                document.getElementById('val-net-ip').textContent = event.data.ip;
+                addFeedEntry('🌐', 'Network Linked');
+            }
+            if (event.type === 'SERVER_DISCONNECTED') {
+                document.getElementById('val-net-ip').textContent = '0.0.0.0';
+                document.getElementById('val-shard').textContent = 'Disconnected';
+                addFeedEntry('🔌', 'Network Lost');
+            }
+            if (event.type === 'SHARD_CONFIRMED') {
+                // Show short version of shard sig
+                const sig = event.shardSignature.substring(0, 8).toUpperCase();
+                document.getElementById('val-shard').textContent = `SHARD-${sig}`;
+                document.getElementById('val-shard').style.color = 'var(--cyan)';
+            }
+        });
+
         // Game Events
         ipcRenderer.on('log:update', (e, data) => {
             switch (data.type) {
@@ -552,9 +572,10 @@
                     }
                     break;
 
+                case 'SHIP_CURRENT':
                 case 'SHIP_ENTER':
                     document.getElementById('val-ship').textContent = data.value;
-                    addFeedEntry('🚀', `Boarded ${data.value}`);
+                    if (data.type === 'SHIP_ENTER') addFeedEntry('🚀', `Boarded ${data.value}`);
                     break;
 
                 case 'SHIP_EXIT':
@@ -563,7 +584,7 @@
                     break;
 
                 case 'SPAWN_SET':
-                    document.getElementById('val-spawn').textContent = data.value;
+                    // We still track this internally but it's hidden from main HUD now
                     addFeedEntry('🏠', 'Spawn Updated');
                     break;
 

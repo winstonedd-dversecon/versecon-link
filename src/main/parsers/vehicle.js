@@ -8,6 +8,8 @@ class VehicleParser extends BaseParser {
             vehicle_name: /for\s+'([^']+)'/,
             seat_enter: /<Vehicle Seat Enter>/,
             seat_exit: /<Vehicle Seat Exit>/,
+            seat_enter_raw: /SeatEnter\s+'([^']+)'/,
+            seat_exit_raw: /SeatExit\s+'([^']+)'/,
             spawn_flow: /<Spawn Flow>/,
             spawn_reservation: /lost\s+reservation\s+for\s+spawnpoint\s+([^\\s]+)\s+\[(\d+)\]/,
             ship_exit_confirm: /<Vehicle Control Flow>.*releasing/i
@@ -23,8 +25,27 @@ class VehicleParser extends BaseParser {
     parse(line) {
         let handled = false;
 
-        // 1. Vehicle Entry / Exit
-        if (this.patterns.vehicle_control.test(line)) {
+        // 1. Vehicle Seat Entry / Exit
+        if (this.patterns.seat_enter_raw.test(line)) {
+            const shipMatch = line.match(this.patterns.seat_enter_raw);
+            if (shipMatch) {
+                const name = this.getCleanShipName(shipMatch[1]);
+                this.currentShip = name;
+                this.emit('gamestate', { type: 'SHIP_ENTER', value: name });
+                handled = true;
+            }
+        } else if (this.patterns.seat_exit_raw.test(line)) {
+            const shipMatch = line.match(this.patterns.seat_exit_raw);
+            if (shipMatch) {
+                const name = this.getCleanShipName(shipMatch[1]);
+                this.currentShip = null;
+                this.emit('gamestate', { type: 'SHIP_EXIT', value: name });
+                handled = true;
+            }
+        }
+
+        // 2. Control Flow Fallback
+        if (!handled && this.patterns.vehicle_control.test(line)) {
             const vehicleMatch = line.match(this.patterns.vehicle_name);
             if (vehicleMatch) {
                 const rawName = vehicleMatch[1];

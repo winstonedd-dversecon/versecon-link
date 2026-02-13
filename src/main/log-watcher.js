@@ -212,7 +212,7 @@ class LogWatcher extends EventEmitter {
             let stat = fs.statSync(this.filePath);
             this.lastSize = stat.size;
 
-            fs.watchFile(this.filePath, { interval: 1000 }, (curr, prev) => {
+            fs.watchFile(this.filePath, { interval: 100 }, (curr, prev) => {
                 if (curr.size > this.lastSize) {
                     const stream = fs.createReadStream(this.filePath, {
                         start: this.lastSize,

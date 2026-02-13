@@ -1984,49 +1984,49 @@
             }
         }
 
-        // Raw log stream
-        ipcRenderer.on('log:raw', (e, line) => {
+        // Raw log stream (v2.6 Batching)
+        ipcRenderer.on('log:raw-batch', (e, batch) => {
+            if (!Array.isArray(batch)) return;
+            batch.forEach(line => addRawLogLine(line));
+        });
+
+        // Legacy support if needed
+        ipcRenderer.on('log:raw', (e, line) => addRawLogLine(line));
+
+        function addRawLogLine(line) {
             updateRecentLocations(line); // Pass to Settings Sniffer
 
             const rawFeed = document.getElementById('raw-log-list');
-            if (rawFeed) {
-                const div = document.createElement('div');
-                div.className = 'log-line';
-                div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.02); padding: 2px 0; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s;';
-                div.title = 'Click to copy & use in Custom Locations';
-                div.textContent = line;
+            if (!rawFeed) return;
 
-                div.onclick = () => {
-                    // Copy to clipboard
-                    navigator.clipboard.writeText(line);
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.02); padding: 2px 0; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s;';
+            div.title = 'Click to copy & use in Custom Locations';
+            div.textContent = line;
 
-                    // Flash effect
-                    div.style.background = 'rgba(255,165,0,0.2)';
-                    setTimeout(() => div.style.background = 'transparent', 200);
+            div.onclick = () => {
+                navigator.clipboard.writeText(line);
+                div.style.background = 'rgba(255,165,0,0.2)';
+                setTimeout(() => div.style.background = 'transparent', 200);
 
-                    // Auto-fill Custom Location Input if relevant
-                    const locInput = document.getElementById('new-loc-key');
-                    if (locInput) {
-                        // Try to extract RoomName or Location first
-                        let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
-                        if (match) {
-                            locInput.value = match[1];
-                            document.getElementById('new-loc-val').focus();
-                            alert('Code copied to Custom Location input: ' + match[1]);
-                        } else {
-                            // Just copy whole line? Or maybe user wants to copy-paste manually.
-                            // Let's copy whole line to input if empty?
-                            if (!locInput.value) locInput.value = line;
-                            // Notification
-                            addDashItem('📋', 'Log line copied to clipboard');
-                        }
+                const locInput = document.getElementById('new-loc-key');
+                if (locInput) {
+                    let match = line.match(/RoomName:\s*([^\s]+)/) || line.match(/Location\[([^\]]+)\]/);
+                    if (match) {
+                        locInput.value = match[1];
+                        document.getElementById('new-loc-val').focus();
+                        alert('Code copied to Custom Location input: ' + match[1]);
+                    } else {
+                        if (!locInput.value) locInput.value = line;
+                        addDashItem('📋', 'Log line copied to clipboard');
                     }
-                };
+                }
+            };
 
-                rawFeed.prepend(div);
-                if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
-            }
-        });
+            rawFeed.prepend(div);
+            if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
+        }
 
         // ═══ NEW: Mission List Renderer ═══
         ipcRenderer.on('mission:list', (e, missions) => {
