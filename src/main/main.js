@@ -729,11 +729,11 @@ LogWatcher.on('gamestate', (data) => {
         saveConfig();
         if (dashboardWindow) dashboardWindow.webContents.send('log:update', { type: 'MISSION_OBJECTIVE', value: data.value });
     }
-    if (data.type === 'SESSION_START') cachedState.startTime = data.value;
-    if (data.type === 'BUILD_INFO') cachedState.build = data.value;
+    if (data.type === 'SESSION_START') LogWatcher.cachedState.startTime = data.value;
+    if (data.type === 'BUILD_INFO') LogWatcher.cachedState.build = data.value;
     if (data.type === 'HANGAR_STATE') {
-        cachedState.hangarState = data.value;
-        cachedState.hangarStartTime = Date.now();
+        LogWatcher.cachedState.hangarState = data.value;
+        LogWatcher.cachedState.hangarStartTime = Date.now();
         broadcast('gamestate', { type: 'HANGAR_STATE', value: data.value });
     }
     if (data.type === 'MISSION_STATUS' && (data.value === 'completed' || data.value === 'failed')) {
