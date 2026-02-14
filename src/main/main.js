@@ -452,12 +452,8 @@ if (config.customLocations) {
     NavigationParser.setCustomLocations(config.customLocations);
 }
 
-ipcMain.on('settings:save-custom-locations', (event, locations) => {
-    config.customLocations = locations;
-    saveConfig();
-    NavigationParser.setCustomLocations(locations);
-    broadcast('settings:custom-locations-updated', locations);
-});
+// Custom location save handled by ipcMain.handle('settings:save-custom-locations') below
+// (removed duplicate ipcMain.on handler)
 
 // Generic Settings Save
 ipcMain.on('settings:save', (event, newConfig) => {
@@ -910,10 +906,8 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     console.log('[Main] Saving custom locations:', locations);
     config.customLocations = locations;
     saveConfig();
-    // Assuming LogWatcher/LogEngine needs to know? 
-    // Actually, dashboard handles the mapping for display, 
-    // but if we want backend to know, we might need a setter.
-    // For now, only Dashboard uses it for display mapping.
+    NavigationParser.setCustomLocations(locations);
+    broadcast('settings:custom-locations-updated', locations);
     return true;
 });
 

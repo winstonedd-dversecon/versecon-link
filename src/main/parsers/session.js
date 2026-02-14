@@ -20,13 +20,15 @@ class SessionParser extends BaseParser {
     parse(line) {
         let handled = false;
 
-        // 1. Session Start Time
-        const startMatch = line.match(this.patterns.log_start);
-        if (startMatch) {
-            const timestamp = startMatch[1];
-            this.sessionData.startTime = timestamp;
-            this.emit('gamestate', { type: 'SESSION_START', value: timestamp });
-            handled = true;
+        // 1. Session Start Time (only emit ONCE to prevent timer resets)
+        if (!this.sessionData.startTime) {
+            const startMatch = line.match(this.patterns.log_start);
+            if (startMatch) {
+                const timestamp = startMatch[1];
+                this.sessionData.startTime = timestamp;
+                this.emit('gamestate', { type: 'SESSION_START', value: timestamp });
+                handled = true;
+            }
         }
 
         // 2. Build Info

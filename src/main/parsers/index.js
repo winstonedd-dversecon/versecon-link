@@ -51,7 +51,7 @@ engine.register(require('./mining')); // Phase 2
 engine.register(require('./salvage')); // Phase 2
 engine.register(require('./engineering')); // Phase 2
 engine.register(require('./economy'));
-engine.register(require('./zone'));
+// engine.register(require('./zone')); // DISABLED: navigation.js now handles zones with verified patterns
 engine.register(require('./custom'));
 engine.register(require('./social')); // Phase 5
 

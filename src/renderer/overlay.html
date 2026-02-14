@@ -52,7 +52,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 600px;
+            width: 800px;
         }
 
         /* Drag Handle incorporated into design */
@@ -89,15 +89,14 @@
             border-top: 2px solid var(--accent);
             border-bottom-left-radius: 12px;
             border-bottom-right-radius: 12px;
-            padding: 8px 20px;
+            padding: 8px 20px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            /* Sci-fi shape */
-            clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
-            padding-bottom: 12px;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
         }
 
         /* Data Columns */
@@ -121,10 +120,13 @@
         }
 
         .fd-value {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             color: #fff;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 165px;
         }
 
         .fd-value.large {
@@ -292,22 +294,59 @@
             display: none !important;
         }
 
+        /* ═══ SHIP IMAGE PANEL ═══ */
+        .ship-image-panel {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 220px;
+            height: 130px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .ship-image-panel.visible {
+            opacity: 1;
+        }
+
+        .ship-image-panel img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ship-image-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            text-align: center;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         /* ═══ RESPONSIVE SCALING ═══ */
-        /* Base is 1080p. Scale up for QHD and 4K */
         @media screen and (min-width: 2560px) {
             body {
                 zoom: 1.33;
             }
-
-            /* 1440p */
         }
 
         @media screen and (min-width: 3840px) {
             body {
                 zoom: 2.0;
             }
-
-            /* 4K */
         }
     </style>
 </head>
@@ -359,6 +398,12 @@
                 <div class="fd-value" id="val-timer">00:00:00</div>
             </div>
         </div>
+    </div>
+
+    <!-- ═══ SHIP IMAGE (below flight deck) ═══ -->
+    <div class="ship-image-panel" id="ship-image-panel">
+        <img id="ship-image-img" src="" alt="">
+        <div class="ship-image-label" id="ship-image-label"></div>
     </div>
 
     <!-- ═══ CENTER: ALERTS ═══ -->
@@ -518,22 +563,13 @@
         ipcRenderer.on('log:status', (e, d) => document.getElementById('dot-log').classList.toggle('on', d.connected));
         ipcRenderer.on('api:status', (e, d) => document.getElementById('dot-api').classList.toggle('on', d.connected));
 
-        // Network Telemetry
+        // Network Telemetry (only disconnect tracking — shard comes from log parser now)
         ipcRenderer.on('telemetry:update', (e, event) => {
-            if (event.type === 'SERVER_CONNECTED') {
-                document.getElementById('val-net-ip').textContent = event.data.ip;
-                addFeedEntry('🌐', 'Network Linked');
-            }
             if (event.type === 'SERVER_DISCONNECTED') {
                 document.getElementById('val-net-ip').textContent = '0.0.0.0';
                 document.getElementById('val-shard').textContent = 'Disconnected';
+                document.getElementById('val-shard').style.color = '';
                 addFeedEntry('🔌', 'Network Lost');
-            }
-            if (event.type === 'SHARD_CONFIRMED') {
-                // Show short version of shard sig
-                const sig = event.shardSignature.substring(0, 8).toUpperCase();
-                document.getElementById('val-shard').textContent = `SHARD-${sig}`;
-                document.getElementById('val-shard').style.color = 'var(--cyan)';
             }
         });
 
@@ -576,10 +612,18 @@
                 case 'SHIP_ENTER':
                     document.getElementById('val-ship').textContent = data.value;
                     if (data.type === 'SHIP_ENTER') addFeedEntry('🚀', `Boarded ${data.value}`);
+                    // Show ship image if available
+                    if (data.image) {
+                        const panel = document.getElementById('ship-image-panel');
+                        document.getElementById('ship-image-img').src = data.image;
+                        document.getElementById('ship-image-label').textContent = data.value;
+                        panel.classList.add('visible');
+                    }
                     break;
 
                 case 'SHIP_EXIT':
                     document.getElementById('val-ship').textContent = 'On Foot';
+                    document.getElementById('ship-image-panel').classList.remove('visible');
                     addFeedEntry('🦶', `Exited Vehicle`);
                     break;
 
@@ -628,6 +672,19 @@
 
                 case 'QUANTUM':
                     addFeedEntry('🌌', `Quantum ${data.value}`);
+                    break;
+
+                case 'HAZARD_FIRE':
+                    showAlert('🔥 FIRE', data.value || 'Fire detected on ship');
+                    addFeedEntry('🔥', `Fire: ${data.value || 'Detected'}`);
+                    break;
+
+                case 'ENGINEERING':
+                    if (data.subtype === 'FUSE_BREAK') {
+                        addFeedEntry('⚡', `Fuse Break: ${data.room}`);
+                    } else if (data.subtype === 'POWER') {
+                        addFeedEntry('🔌', `Power: ${data.state}`);
+                    }
                     break;
             }
         });
