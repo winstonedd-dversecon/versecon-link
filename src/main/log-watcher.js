@@ -58,19 +58,27 @@ class LogWatcher extends EventEmitter {
             spawn: null,
             session: null,
             startTime: null,
-            build: null
+            build: null,
+            location: null,
+            jurisdiction: null,
+            zone: null,
+            shard: null
         };
 
         // Bind LogEngine events to this emitter
         LogEngine.on('gamestate', (data) => {
             // Cache critical state
             if (data.type === 'SHIP_ENTER') this.cachedState.ship = data.value;
-            // if (data.type === 'SHIP_EXIT') this.cachedState.ship = null; // Optional: keep last known?
+            if (data.type === 'SHIP_EXIT') this.cachedState.ship = null;
             if (data.type === 'SERVER_ENV') this.cachedState.server = data.value;
+            if (data.type === 'SERVER_CONNECTED') this.cachedState.shard = data.value;
             if (data.type === 'SESSION_ID') this.cachedState.session = data.value;
             if (data.type === 'SPAWN_SET') this.cachedState.spawn = data.value;
             if (data.type === 'SESSION_START') this.cachedState.startTime = data.value;
             if (data.type === 'BUILD_INFO') this.cachedState.build = data.value;
+            if (data.type === 'LOCATION') this.cachedState.location = data.value;
+            if (data.type === 'JURISDICTION') this.cachedState.jurisdiction = data.value;
+            if (data.type === 'ZONE') this.cachedState.zone = data.value;
 
             // Check alert cooldowns if applicable
             if (data.type === 'STATUS' || data.type === 'HAZARD_FIRE') {
@@ -86,10 +94,12 @@ class LogWatcher extends EventEmitter {
     emitCurrentState() {
         if (this.cachedState.ship) this.emit('gamestate', { type: 'SHIP_CURRENT', value: this.cachedState.ship });
         if (this.cachedState.server) this.emit('gamestate', { type: 'SERVER_ENV', value: this.cachedState.server });
-        if (this.cachedState.spawn) this.emit('gamestate', { type: 'SPAWN_POINT', value: this.cachedState.spawn });
+        if (this.cachedState.shard) this.emit('gamestate', { type: 'SERVER_CONNECTED', value: this.cachedState.shard });
+        if (this.cachedState.spawn) this.emit('gamestate', { type: 'SPAWN_SET', value: this.cachedState.spawn });
         if (this.cachedState.session) this.emit('gamestate', { type: 'SESSION_ID', value: this.cachedState.session });
         if (this.cachedState.startTime) this.emit('gamestate', { type: 'SESSION_START', value: this.cachedState.startTime });
         if (this.cachedState.build) this.emit('gamestate', { type: 'BUILD_INFO', value: this.cachedState.build });
+        if (this.cachedState.location) this.emit('gamestate', { type: 'LOCATION', value: this.cachedState.location });
     }
 
     // --- Configuration Methods (called by main.js) ---

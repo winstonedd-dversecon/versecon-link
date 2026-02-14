@@ -1563,10 +1563,8 @@
                     playSound('alert_zone');
                     break;
                 case 'ZONE':
-                    if (data.value === 'armistice_enter') { addDashItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span>'); }
-                    else if (data.value === 'armistice_leave') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
-                    else if (data.value === 'monitored_enter') { addDashItem('📡', 'Entered <span class="feed-highlight">Monitored Space</span>'); }
-                    else if (data.value === 'monitored_leave') { addDashItem('📡', '<span class="feed-highlight" style="color:#ff4444">LEFT MONITORED SPACE</span> — Comms Down'); playSound('alert_zone'); }
+                    if (data.value === 'Armistice Zone') { addDashItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span>'); }
+                    else if (data.value === 'Open Space') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
                     break;
                 case 'STATUS':
                     if (data.value === 'suffocating') { addDashItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span>'); playSound('alert_status'); }
@@ -1594,6 +1592,14 @@
                     break;
                 case 'SERVER_REGION':
                     addDashItem('🌐', `Region: <span class="feed-highlight">${data.value}</span>`);
+                    break;
+                case 'SERVER_CONNECTED':
+                    if (data.value && data.value.shard) {
+                        addDashItem('🌐', `Shard: <span class="feed-highlight" style="color:#00c8ff">${data.value.shard}</span>`);
+                    }
+                    break;
+                case 'JURISDICTION':
+                    addDashItem('🏛️', `<span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'SESSION_ID':
                     addDashItem('🔑', `Session: <span class="feed-highlight" style="font-size:0.7rem">${data.value.substring(0, 12)}...</span>`);

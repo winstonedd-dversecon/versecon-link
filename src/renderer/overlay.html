@@ -606,10 +606,24 @@
                     break;
 
                 case 'ZONE':
-                    if (data.value === 'armistice_enter') addFeedEntry('🛡️', 'Entered Armistice');
-                    else if (data.value === 'armistice_leave') addFeedEntry('⚠️', 'Left Armistice');
-                    else if (data.value === 'monitored_enter') addFeedEntry('📡', 'Monitored Space');
-                    else if (data.value === 'monitored_leave') addFeedEntry('🚫', 'Comms Offline');
+                    if (data.value === 'Armistice Zone') addFeedEntry('🛡️', 'Entered Armistice');
+                    else if (data.value === 'Open Space') addFeedEntry('⚠️', 'Left Armistice');
+                    break;
+
+                case 'JURISDICTION':
+                    addFeedEntry('🏛️', data.value);
+                    break;
+
+                case 'SERVER_CONNECTED':
+                    if (data.value && data.value.shard) {
+                        const shardParts = data.value.shard.split('_');
+                        const sig = shardParts.length >= 3 ? shardParts[2] : data.value.shard;
+                        document.getElementById('val-shard').textContent = `SHARD-${sig}`;
+                        document.getElementById('val-shard').style.color = 'var(--cyan)';
+                        const ipEl = document.getElementById('val-network');
+                        if (ipEl) ipEl.textContent = data.value.address;
+                    }
+                    addFeedEntry('🌐', 'Server Connected');
                     break;
 
                 case 'QUANTUM':
