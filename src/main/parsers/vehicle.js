@@ -42,6 +42,7 @@ class VehicleParser extends BaseParser {
         };
         this.currentShip = null;
         this.shipMap = {};
+        this.lastEnterTime = 0;
     }
 
     setShipMap(map) {
@@ -65,40 +66,52 @@ class VehicleParser extends BaseParser {
 
     parse(line) {
         let handled = false;
+        const now = Date.now();
 
         // ── 1. SHIP ENTER: VOIP Channel Join ──
-        // Fires when player boards any ship (joins its VOIP channel)
-        const voipMatch = line.match(this.patterns.voip_join);
-        if (voipMatch) {
-            const shipName = voipMatch[1].trim();
-            this.currentShip = shipName;
-            const payload = { type: 'SHIP_ENTER', value: shipName };
-            // Check shipMap for user-configured image
-            if (this.shipMap[shipName]) payload.image = this.shipMap[shipName];
-            this.emit('gamestate', payload);
-            handled = true;
+        // IMPORTANT: The VOIP join message appears on MULTIPLE log lines:
+        //   - <SHUDEvent_OnNotification> Added notification "You have joined channel..."
+        //   - "You have joined channel..." (continuation line)  
+        //   - <UpdateNotificationItem> Notification "You have joined channel..."
+        // We ONLY match on SHUDEvent to avoid duplicates.
+        if (line.includes('SHUDEvent_OnNotification') && line.includes('joined channel')) {
+            const voipMatch = line.match(this.patterns.voip_join);
+            if (voipMatch) {
+                const shipName = voipMatch[1].trim();
+
+                // Dedup: ignore if same ship within 5 seconds
+                if (shipName === this.currentShip && (now - this.lastEnterTime) < 5000) {
+                    return true; // Absorbed, no duplicate
+                }
+
+                this.currentShip = shipName;
+                this.lastEnterTime = now;
+                const payload = { type: 'SHIP_ENTER', value: shipName };
+                if (this.shipMap[shipName]) payload.image = this.shipMap[shipName];
+                this.emit('gamestate', payload);
+                handled = true;
+            }
         }
 
         // ── 2. SHIP EXIT: ClearDriver (releasing control) ──
-        // Fires when player leaves the pilot seat
+        // NOTE: ClearDriver fires when leaving the PILOT SEAT, not the ship.
+        // Player may still be walking around inside. We emit a softer event
+        // and only clear currentShip if no re-enter within a window.
         if (!handled) {
             const driverMatch = line.match(this.patterns.clear_driver);
             if (driverMatch) {
                 const rawCode = driverMatch[1];
                 const cleanName = this.getCleanShipName(rawCode);
-                this.currentShip = null;
-                this.emit('gamestate', { type: 'SHIP_EXIT', value: cleanName });
+                // Don't clear currentShip — user may still be aboard
+                this.emit('gamestate', { type: 'SHIP_EXIT', value: cleanName, soft: true });
                 handled = true;
             }
         }
 
         // ── 3. Hangar State Detection ──
-        const hangarMatch = line.match(this.patterns.hangar_state);
-        if (hangarMatch) {
-            const state = hangarMatch[1];
-            this.emit('gamestate', { type: 'HANGAR_STATE', value: state });
-            handled = true;
-        }
+        // NOTE: Removed — hangar.js handles this with proper state mapping
+        // (TRANSIT/READY/CLOSED). Having two parsers emit HANGAR_STATE caused
+        // the overlay to show raw states like "OpeningLoadingGate".
 
         // ── 4. Spawn Flow (Where did I wake up?) ──
         if (this.patterns.spawn_flow.test(line)) {

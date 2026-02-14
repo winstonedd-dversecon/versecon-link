@@ -456,8 +456,13 @@
         let timerInterval = null;
         let hangarStartTime = null;
 
+        // Auto-start session timer immediately (counts from app launch)
+        // Will be corrected if/when SESSION_START event arrives with the real start time
+        startTime = new Date().toISOString();
+        setTimeout(() => startTimer(), 0); // Deferred to ensure startTimer function is defined
+
         function updateTimer() {
-            // 1. Session Timer
+            // 1. Session Timer (always runs)
             if (startTime) {
                 const now = Date.now();
                 const start = new Date(startTime).getTime();
@@ -594,7 +599,7 @@
                     addFeedEntry('🛠️', `Build ${data.value}`);
                     break;
 
-                case 'HANGAR_STATE':
+                case 'HANGAR_STATE': {
                     const hangarCol = document.getElementById('col-hangar');
                     const hangarLabel = document.getElementById('label-hangar');
                     if (data.value === 'CLOSED') {
@@ -602,11 +607,15 @@
                         hangarStartTime = null;
                     } else {
                         hangarCol.classList.remove('hidden');
-                        hangarLabel.textContent = `HANGAR ${data.value}`;
+                        // Show human-readable hangar status
+                        const hangarText = data.value === 'TRANSIT' ? '🔄 ELEVATOR MOVING'
+                            : data.value === 'READY' ? '✅ HANGAR OPEN'
+                                : `HANGAR ${data.value}`;
+                        hangarLabel.textContent = hangarText;
                         if (!hangarStartTime) hangarStartTime = Date.now();
-                        startTimer();
                     }
                     break;
+                }
 
                 case 'SHIP_CURRENT':
                 case 'SHIP_ENTER':
@@ -622,9 +631,10 @@
                     break;
 
                 case 'SHIP_EXIT':
-                    document.getElementById('val-ship').textContent = 'On Foot';
+                    // ClearDriver = left pilot seat, NOT necessarily left the ship
+                    document.getElementById('val-ship').textContent = data.value ? `${data.value} (Aboard)` : 'On Foot';
                     document.getElementById('ship-image-panel').classList.remove('visible');
-                    addFeedEntry('🦶', `Exited Vehicle`);
+                    addFeedEntry('🪑', `Left Pilot Seat`);
                     break;
 
                 case 'SPAWN_SET':
@@ -660,11 +670,23 @@
 
                 case 'SERVER_CONNECTED':
                     if (data.value && data.value.shard) {
+                        // Shard format: "pub_use1b_11218823_110"
+                        // Parts: [pub, use1b, 11218823, 110]
+                        // Display: region (use1b) + instance (110) = "USE1B-110"
                         const shardParts = data.value.shard.split('_');
-                        const sig = shardParts.length >= 3 ? shardParts[2] : data.value.shard;
-                        document.getElementById('val-shard').textContent = `SHARD-${sig}`;
+                        let shardDisplay;
+                        if (shardParts.length >= 4) {
+                            // Region (e.g. use1b, euw1a) + Instance number (e.g. 110)
+                            shardDisplay = `${shardParts[1].toUpperCase()}-${shardParts[3]}`;
+                        } else if (shardParts.length >= 2) {
+                            shardDisplay = shardParts[1].toUpperCase();
+                        } else {
+                            shardDisplay = data.value.shard;
+                        }
+                        document.getElementById('val-shard').textContent = shardDisplay;
                         document.getElementById('val-shard').style.color = 'var(--cyan)';
-                        const ipEl = document.getElementById('val-network');
+                        // Show IP
+                        const ipEl = document.getElementById('val-net-ip');
                         if (ipEl) ipEl.textContent = data.value.address;
                     }
                     addFeedEntry('🌐', 'Server Connected');
@@ -685,6 +707,55 @@
                     } else if (data.subtype === 'POWER') {
                         addFeedEntry('🔌', `Power: ${data.state}`);
                     }
+                    break;
+
+                // ── Combat Events ──
+                case 'DEATH':
+                    if (data.details && data.details.killer) {
+                        showAlert('☠️ KILLED', `${data.details.victim} killed by ${data.details.killer}`);
+                        addFeedEntry('☠️', `${data.details.victim} → ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
+                    } else {
+                        showAlert('💀 DEATH', 'You died');
+                        addFeedEntry('💀', 'Death detected');
+                    }
+                    break;
+
+                case 'VEHICLE_DESTRUCTION':
+                    if (data.details) {
+                        const shipName = data.details.vehicle || 'Ship';
+                        const msg = data.details.isTotalLoss
+                            ? `${shipName} DESTROYED by ${data.details.attacker || 'Unknown'}`
+                            : `${shipName} CRIPPLED by ${data.details.attacker || 'Unknown'}`;
+                        showAlert(data.details.isTotalLoss ? '💥 DESTROYED' : '⚠️ CRIPPLED', msg);
+                        addFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', msg);
+                    } else {
+                        showAlert('💥 DESTROYED', data.value || 'Vehicle Destroyed');
+                        addFeedEntry('💥', data.value || 'Vehicle Destroyed');
+                    }
+                    break;
+
+                // ── Mission Events ──
+                case 'MISSION_ACCEPTED':
+                    addFeedEntry('📋', `Contract: ${data.value}`);
+                    break;
+
+                case 'MISSION_STATUS':
+                    if (data.value === 'completed') {
+                        addFeedEntry('✅', `Mission Complete${data.title ? ': ' + data.title : ''}`);
+                    } else if (data.value === 'failed') {
+                        addFeedEntry('❌', `Mission Failed${data.title ? ': ' + data.title : ''}`);
+                        showAlert('❌ FAILED', data.title || 'Mission Failed');
+                    } else if (data.value === 'abandoned') {
+                        addFeedEntry('🚪', `Mission Abandoned${data.title ? ': ' + data.title : ''}`);
+                    }
+                    break;
+
+                case 'MISSION_OBJECTIVE':
+                    addFeedEntry('🎯', data.value);
+                    break;
+
+                case 'MISSION_CHANGED':
+                    addFeedEntry('📍', `Tracking: ${data.value}`);
                     break;
             }
         });

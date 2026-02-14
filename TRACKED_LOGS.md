@@ -2,38 +2,38 @@
 
 This document lists the regex patterns used by the Log Engine to track game state.
 
-> **LAST VERIFIED**: 2026-02-14 against real `Game.log` from session 2026-02-09 (3968 lines)
+> **LAST VERIFIED**: 2026-02-14 against real `Game (2).log` (Esperia Prowler session, 6448 lines)
 
-## Phase 1: Core
+## Phase 1: Core (VERIFIED ✅)
 
-### Navigation (`navigation.js`) - VERIFIED ✅
+### Navigation (`navigation.js`)
 
 - **Location (Primary)**: `<RequestLocationInventory> Player\[...\] requested inventory for Location\[([^\]]+)\]`
-  - Example: `Location[Stanton1_Lorville]`
+  - Example: `Location[RR_HUR_LEO]`
 - **Location (OOC Fallback)**: `[STAMINA] RoomName: (OOC_Stanton_..._Name)`
   - Example: `OOC_Stanton_1_Hurston`
 - **Server Connection**: `<Join PU> address\[([^\]]+)\] port\[([^\]]+)\] shard\[([^\]]+)\]`
-  - Example: `address[34.150.199.123] port[64319] shard[pub_use1b_11173070_100]`
-- **Jurisdiction Zone**: `Added notification "Entered (.*?) Jurisdiction`
+  - Example: `address[34.11.90.244] port[64307] shard[pub_use1b_11218823_110]`
+- **Monitored Space**: `Added notification "Entered Monitored Space: "`
 - **Armistice Enter**: `Added notification "Entering Armistice Zone`
 - **Armistice Leave**: `Added notification "Leaving Armistice Zone`
-- **Quantum Jump**: `<Jump Drive Requesting State Change>.*to Traveling` (Unverified - kept for QT sessions)
-- **Quantum Exit**: `<Jump Drive Requesting State Change>.*to Idle` (Unverified - kept for QT sessions)
+- **Jurisdiction**: `Added notification "Entered (.*?) Jurisdiction`
+- **Quantum Jump**: `<Jump Drive Requesting State Change>.*to Traveling` ⚠️ Unverified
+- **Quantum Exit**: `<Jump Drive Requesting State Change>.*to Idle` ⚠️ Unverified
 
-### Vehicle (`vehicle.js`) - PARTIALLY VERIFIED
+### Vehicle (`vehicle.js`) - VERIFIED ✅
 
-> [!WARNING]
-> The following patterns from previous agents **DO NOT EXIST** in current SC builds (verified 2026-02-14):
->
-> - `<Vehicle Control Flow>` — **NOT FOUND**
-> - `SeatEnter '...'` — **NOT FOUND**
-> - `SeatExit '...'` — **NOT FOUND**
-> - `Notification "You have joined channel '...'"` — **NOT FOUND** (this is a party notification, not vehicle)
+> [!IMPORTANT]
+> SC 4.6 does NOT log `SetDriver`, `SeatEnter`, or `SeatExit`.
 
-- **Ship Room (Verified)**: `Fire Area 'Room_(Cockpit|SnubBay|Habitation|Tail|Cargo_Hold)...'`
-  - Example: `Fire Area 'Room_Cockpit_AN_Room'`
-- **Hangar State (Verified)**: `LoadingPlatformManager.*?ShipElevator.*?Platform state changed to (\w+)`
-  - Example: `LoadingPlatformManager_ShipElevator_HangarXLTop] Platform state changed to OpeningLoadingGate`
+- **Ship Enter (VOIP Join)**: `You have joined channel '(.+?)\s*:\s*[^']+'`
+  - Example: `You have joined channel 'Esperia Prowler Utility : TypicallyBrit_ish'`
+  - Works for ALL 200+ ships — generic regex
+- **Ship Exit (ClearDriver)**: `ClearDriver.*releasing control token for '([^']+)'`
+  - Example: `releasing control token for 'ESPR_Prowler_Utility_9448279551878'`
+  - `getCleanShipName()` strips trailing entity ID, converts underscores to spaces
+- **Hangar State**: `LoadingPlatformManager.*?ShipElevator.*?Platform state changed to (\w+)`
+  - Example: `Platform state changed to OpeningLoadingGate`
 
 ### Session (`session.js`) - VERIFIED ✅
 
@@ -42,29 +42,67 @@ This document lists the regex patterns used by the Log Engine to track game stat
 - **Environment**: `Config: (.+)` (e.g., `shipping`)
 - **Session ID**: `session=([a-f0-9]+)`
 
-### Combat (`combat.js`) - UNVERIFIED
+---
 
-- **Death**: `<Actor Death>.*killed by \[(.*?)\]` (No deaths occurred in test session)
+## Phase 2: Combat & Missions (RESEARCH 🔬)
+
+> [!WARNING]
+> These patterns are from community research (MASTER_GUIDE). They are implemented
+> but have NOT been verified against a real combat/death log session yet.
+> The first time you die in-game with VerseCon Link running, check if these fire!
+
+### Combat (`combat.js`)
+
+- **Actor Death (Detailed)**:
+
+  ```
+  <Actor Death>.*?'([^']+)'\s*\[\d+\].*?killed by\s+'([^']+)'\s*\[\d+\].*?using\s+'([^']+)'.*?damage type\s+'([^']+)'
+  ```
+
+  - Captures: victim, killer, weapon, damageType
+  - Also extracts: zone (`in zone '...'`), direction vector (`from direction x: Y, z:`)
+- **Actor Death (Fallback)**: `<Actor Death>` → emits generic `STATUS: death`
+- **Vehicle Destruction (Detailed)**:
+
+  ```
+  <Vehicle Destruction>.*?Vehicle\s+'([^']+)'\s*\[\d+\].*?driven by\s+'([^']+)'\s*\[\d+\].*?from destroy level\s+(\d+)\s+to\s+(\d+).*?caused by\s+'([^']+)'
+  ```
+
+  - Captures: vehicle, driver, fromLevel, toLevel, attacker
+  - Destroy levels: 0=intact, 1=crippled, 2=destroyed
+  - Includes crew correlation (deaths within 500ms window)
+- **Suffocation**: `Player.*started suffocating`
+- **Depressurization**: `Player.*started depressurization`
+- **Fire Hazard**: `<Fire.*Hazard>|Fire detected`
+
+### Mission (`mission.js`)
+
+- **Mission Ended (Structured)**: `<MissionEnded>\s*mission_id\s*\[([^\]]+)\]\s*-\s*mission_state\s*\[([^\]]+)\]`
+  - Example: `<MissionEnded> mission_id [UUID] - mission_state [MISSION_STATE_SUCCEEDED]`
+  - States: SUCCEEDED, FAILED, ABANDONED
+- **Contract Accepted**: `Added notification "Contract Accepted:\s*([^"]+)"`
+- **Contract Complete**: `Added notification "Contract Complete[d]?:\s*([^"]+)"`
+- **Contract Failed**: `Added notification "Contract Failed:\s*([^"]+)"`
+- **New Objective**: `Added notification "New Objective:\s*([^"]+)"`
+- **Mission ID (metadata)**: `MissionId:\s*\[([^\]]+)\]` (ignores null UUIDs)
 
 ---
 
-## Phase 2: Industrial (DRAFT - Needs Verification)
+## Phase 3: Industrial (SPECULATIVE ❌)
 
-> [!WARNING]
-> These patterns are speculative. None were found in the test `Game.log`.
+> [!CAUTION]
+> These patterns are 100% speculative — NEVER found in any real Star Citizen log.
+> Mining, salvage, and engineering do not appear to log to Game.log.
+> The parsers are still registered but will never match.
 
-### Mining (`mining.js`)
+### Mining (`mining.js`) - NEVER VERIFIED
 
-- **Laser Active**: `<MiningLaser::SetLaserActive>.*Active\[(\d)\]`
-- **Fracture**: `<MiningFracture::OnFracture>.*Success\[(\d)\]`
-- **Extraction**: `<MiningExtraction::OnExtraction>.*Amount\[([\d\.]+)\]`
+### Salvage (`salvage.js`) - NEVER VERIFIED
 
-### Salvage (`salvage.js`)
+### Engineering (`engineering.js`) - NEVER VERIFIED
 
-- **Beam Active**: `<SalvageBeam::SetBeamActive>.*Active\[(\d)\]`
-- **Material Scrape**: `<SalvageMaterial::OnScrape>.*Amount\[([\d\.]+)\] Type\[(.*?)\]`
+---
 
-### Engineering (`engineering.js`)
+## Disabled Parsers
 
-- **Power State**: `<PowerPlant::SetState>.*State\[(.*?)\]`
-- **Fuse Break**: `<Fuse::OnBreak>.*Room\[(.*?)\] ID\[(.*?)\]`
+- **Zone** (`zone.js`): ❌ DISABLED in `index.js` — emits old-format values that conflict with `navigation.js`
