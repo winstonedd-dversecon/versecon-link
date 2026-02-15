@@ -520,6 +520,31 @@ LogWatcher.on('raw-line', (line) => {
 });
 
 LogWatcher.on('gamestate', (data) => {
+    // ═══ SHIP IMAGE RESOLUTION (must run BEFORE broadcast) ═══
+    // Attach image path to ship events so overlay receives it
+    if ((data.type === 'SHIP_ENTER' || data.type === 'SHIP_CURRENT') && !data.image && data.value && config.shipMap) {
+        const shipName = data.value;
+        const lower = shipName.toLowerCase();
+        // Exact match first
+        if (config.shipMap[shipName]) {
+            data.image = config.shipMap[shipName];
+        } else {
+            // Fuzzy partial match (case-insensitive, bidirectional)
+            for (const [key, imgPath] of Object.entries(config.shipMap)) {
+                const keyLower = key.toLowerCase();
+                if (lower.includes(keyLower) || keyLower.includes(lower)) {
+                    data.image = imgPath;
+                    break;
+                }
+            }
+        }
+        if (data.image) {
+            console.log(`[Main] Ship image resolved: "${shipName}" → ${data.image}`);
+        } else {
+            console.log(`[Main] Ship image NOT found for: "${shipName}" | shipMap keys: [${Object.keys(config.shipMap).join(', ')}]`);
+        }
+    }
+
     broadcast('log:update', data);
 
     // ═════ FRIEND SHARING (Phase 5) ═══
@@ -562,30 +587,9 @@ LogWatcher.on('gamestate', (data) => {
         }
     }
 
-    // Ship events - tray notification + image fallback
-    if (data.type === 'SHIP_ENTER' || data.type === 'SHIP_CURRENT') {
-        // Fallback: if parser didn't attach image, resolve from config.shipMap
-        if (!data.image && data.value && config.shipMap) {
-            const shipName = data.value;
-            const lower = shipName.toLowerCase();
-            // Exact match first
-            if (config.shipMap[shipName]) {
-                data.image = config.shipMap[shipName];
-            } else {
-                // Fuzzy partial match
-                for (const [key, imgPath] of Object.entries(config.shipMap)) {
-                    const keyLower = key.toLowerCase();
-                    if (lower.includes(keyLower) || keyLower.includes(lower)) {
-                        data.image = imgPath;
-                        break;
-                    }
-                }
-            }
-        }
-        if (data.type === 'SHIP_ENTER') {
-            showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
-        }
-        // Send to dashboard for debug
+    // Ship events - tray notification
+    if (data.type === 'SHIP_ENTER') {
+        showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
         if (dashboardWindow && !dashboardWindow.isDestroyed()) {
             dashboardWindow.webContents.send('settings:last-ship', data.value);
         }

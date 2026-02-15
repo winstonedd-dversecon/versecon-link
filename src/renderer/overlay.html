@@ -640,10 +640,19 @@
                     if (data.type === 'SHIP_ENTER') addFeedEntry('🚀', `Boarded ${data.value}`);
                     // Show ship image if available
                     if (data.image) {
+                        console.log('[Overlay] Ship image received:', data.image);
                         const panel = document.getElementById('ship-image-panel');
-                        document.getElementById('ship-image-img').src = data.image;
+                        // Ensure absolute paths have file:// protocol for Electron renderer
+                        let imgSrc = data.image;
+                        if (imgSrc && !imgSrc.startsWith('file://') && !imgSrc.startsWith('http')) {
+                            // Handle Windows (C:\) and Linux (/) absolute paths
+                            imgSrc = 'file:///' + imgSrc.replace(/\\/g, '/').replace(/^\/+/, '');
+                        }
+                        document.getElementById('ship-image-img').src = imgSrc;
                         document.getElementById('ship-image-label').textContent = data.value;
                         panel.classList.add('visible');
+                    } else {
+                        console.log('[Overlay] No ship image for:', data.value);
                     }
                     break;
 
