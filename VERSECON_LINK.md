@@ -1,7 +1,7 @@
 # VerseCon Link — Agent Handoff Documentation
 
-> **Last Updated**: 2026-02-14  
-> **Version**: 2.4.0 (Electron)  
+> **Last Updated**: 2026-02-15  
+> **Version**: 2.7.0 (Electron)  
 > **Purpose**: Desktop companion app that reads Star Citizen's `Game.log` in real-time, parses game events, and displays an in-game overlay + dashboard.
 
 ---
@@ -40,7 +40,8 @@ The script auto-backs up the existing log with a timestamp, and prints a quick a
 
 ```text
 versecon-link/
-├── package.json             # Electron app config, v2.4.0
+├── package.json             # Electron app config, v2.7.0
+├── known-patterns.json      # Log pattern database (20+ patterns, exportable)
 ├── fetch-log.sh             # Pull latest Game.log from Windows PC
 ├── TRACKED_LOGS.md          # Regex pattern reference (keep in sync!)
 ├── VERSECON_LINK.md          # THIS FILE — agent handoff doc
@@ -56,9 +57,9 @@ versecon-link/
 │   │   ├── parsers/          # 15 parser modules (see below)
 │   │   └── telemetry/        # Network watcher + telemetry engine
 │   ├── renderer/             # Electron Renderer (UI)
-│   │   ├── dashboard.html    # Main control panel (104KB)
+│   │   ├── dashboard.html    # Main control panel (~125KB, 6 tabs)
 │   │   ├── overlay.html      # In-game HUD overlay (transparent, always-on-top)
-│   │   ├── alert.html        # Full-screen alert pop-ups
+│   │   ├── alert.html        # Full-screen alert pop-ups (status, fire, death, destruction)
 │   │   └── audio-synth.js    # Web Audio API sound effects
 │   └── styles/               # CSS files
 └── test/                     # Test files
@@ -75,7 +76,9 @@ LogWatcher (log-watcher.js) — tails file, reads last 10K lines on startup
     ▼
 LogEngine (parsers/index.js) — routes each line to ALL registered parsers
     ▼
-main.js — listens for 'gamestate' events, broadcasts to ALL renderer windows via IPC
+main.js — listens for 'gamestate' events
+  → Ship image resolution (fuzzy match config.shipMap BEFORE broadcast)
+  → broadcast() to ALL renderer windows via IPC
     ▼
 Renderer Windows (overlay.html, dashboard.html, alert.html)
 ```
@@ -104,11 +107,12 @@ Renderer Windows (overlay.html, dashboard.html, alert.html)
 | **Social** | `social.js` | ⚠️ UNVERIFIED | Friend detection |
 | **Zone** | `zone.js` | ❌ DISABLED | Conflicts with `navigation.js` |
 
-### Vehicle Parser — Dedup & Soft Exit
+### Vehicle Parser — Dedup, Soft Exit & Ship Images
 
 - **SHIP_ENTER**: Only matches `SHUDEvent_OnNotification` lines (avoids 3x duplicates from continuation/update lines). 5-second dedup timer for same ship.
 - **SHIP_EXIT**: Fires on `ClearDriver` (leaving pilot seat). Does NOT clear `currentShip` — player may still be aboard. Overlay shows `🪑 Left Pilot Seat` and `ShipName (Aboard)`.
 - **HANGAR_STATE**: Only from `hangar.js` (vehicle.js duplicate removed). Shows `🔄 ELEVATOR MOVING` / `✅ HANGAR OPEN`.
+- **Ship Image Resolution**: Uses `findShipImage()` — fuzzy partial matching (case-insensitive, bidirectional substring). Map key `"Prowler"` matches detected name `"Esperia Prowler Utility"`. Falls back to `main.js` if parser didn't resolve (e.g., shipMap updated after parser init). Overlay converts paths to `file:///` protocol for Windows compatibility.
 
 ### Fire Detection (3-Layer Filter)
 
@@ -188,9 +192,15 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 
 ### Dashboard (`dashboard.html`)
 
-- Main control panel (104KB)
+- Main control panel (~125KB, 6 tabs: Dashboard, VerseCon Feed, Command, Settings, Players, Log Database)
 - Live log viewer (click line to copy), Ship Image Manager, Custom Locations, Custom Patterns
 - Alert cooldown settings, Connection status
+- **Log Database** (v2.7): Browse/search/filter all known SC log patterns, add/edit/delete with inline regex tester, export/import JSON
+
+### Alert Window (`alert.html`)
+
+- Full-screen vignette + border flash effects for critical events
+- **Supported alerts**: `status` (death/suffocating), `zone` (armistice enter/leave), `fire` (🔥 engineering), `killed` (☠️ actor death), `vehicle_destroyed` (💥 ship lost), `vehicle_crippled` (⚠️ critical damage)
 
 ### Overlay Safe Zones (DO NOT BLOCK)
 
@@ -203,6 +213,14 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 ---
 
 ## 🐛 Known Issues & Gotchas
+
+### Fixed (2026-02-15 — v2.7)
+
+1. **Ship image not loading** — `broadcast()` was called BEFORE ship image resolution, so overlay never received `data.image`. **Fix**: Moved image lookup before broadcast + fuzzy matching + `file:///` protocol conversion.
+2. **Grab button broken** — Referenced wrong IDs (`new-loc-raw` → `new-loc-key`). **Fixed**.
+3. **Custom locations not syncing to overlay** — No listener existed. **Fix**: Added `settings:custom-locations-updated` IPC + `dataset.raw` tracking.
+4. **Full-screen alerts missing** — `alert.html` only handled status/zone. **Fix**: Added `HAZARD_FIRE`, `DEATH`, `VEHICLE_DESTRUCTION` alert configs.
+5. **Unknown log text unreadable** — `0.65rem`/dim color. **Fix**: `0.8rem`/`#bbb`.
 
 ### Fixed (2026-02-14)
 
@@ -250,3 +268,18 @@ node -c src/main/parsers/combat.js  # Syntax check any parser
 ```
 
 **Sample logs**: `src/Game.log` (latest), `src/Game (2).log` (Prowler session snapshot)
+
+---
+
+## 📦 Log Pattern Database (`known-patterns.json`)
+
+A JSON catalog of all known/verified SC log patterns. Managed via:
+
+- **Dashboard**: Log Database tab (search, filter, add/edit, inline regex tester)
+- **Agent**: Edit `known-patterns.json` directly
+- **Export**: Dashboard → 📤 Export → saves `.json` file
+- **Import**: Dashboard → 📥 Import → merges by pattern ID (no duplicates)
+
+Each pattern has: `id`, `category`, `name`, `status` (verified/research), `regex`, `example`, `event`, `notes`, `addedBy`, `addedDate`.
+
+IPC channels: `patterns:load`, `patterns:save`, `patterns:add`, `patterns:update`, `patterns:delete`, `patterns:export`, `patterns:import`.
