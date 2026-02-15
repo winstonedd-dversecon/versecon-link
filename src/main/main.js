@@ -562,9 +562,29 @@ LogWatcher.on('gamestate', (data) => {
         }
     }
 
-    // Ship events - tray notification
-    if (data.type === 'SHIP_ENTER') {
-        showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
+    // Ship events - tray notification + image fallback
+    if (data.type === 'SHIP_ENTER' || data.type === 'SHIP_CURRENT') {
+        // Fallback: if parser didn't attach image, resolve from config.shipMap
+        if (!data.image && data.value && config.shipMap) {
+            const shipName = data.value;
+            const lower = shipName.toLowerCase();
+            // Exact match first
+            if (config.shipMap[shipName]) {
+                data.image = config.shipMap[shipName];
+            } else {
+                // Fuzzy partial match
+                for (const [key, imgPath] of Object.entries(config.shipMap)) {
+                    const keyLower = key.toLowerCase();
+                    if (lower.includes(keyLower) || keyLower.includes(lower)) {
+                        data.image = imgPath;
+                        break;
+                    }
+                }
+            }
+        }
+        if (data.type === 'SHIP_ENTER') {
+            showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
+        }
         // Send to dashboard for debug
         if (dashboardWindow && !dashboardWindow.isDestroyed()) {
             dashboardWindow.webContents.send('settings:last-ship', data.value);

@@ -50,6 +50,26 @@ class VehicleParser extends BaseParser {
     }
 
     /**
+     * Find ship image from shipMap using fuzzy partial matching.
+     * Checks: exact match → key-in-name → name-in-key (case-insensitive).
+     * User can map "Prowler" and it matches "Esperia Prowler Utility".
+     */
+    findShipImage(shipName) {
+        if (!shipName || !this.shipMap) return null;
+        // 1. Exact match
+        if (this.shipMap[shipName]) return this.shipMap[shipName];
+        // 2. Partial match (case-insensitive)
+        const lower = shipName.toLowerCase();
+        for (const [key, path] of Object.entries(this.shipMap)) {
+            const keyLower = key.toLowerCase();
+            if (lower.includes(keyLower) || keyLower.includes(lower)) {
+                return path;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Clean internal ship code into a readable name.
      * "ESPR_Prowler_Utility_9448279551878" → "ESPR Prowler Utility"
      * "ORIG_300i_Fighter_1234567890" → "ORIG 300i Fighter"
@@ -87,7 +107,8 @@ class VehicleParser extends BaseParser {
                 this.currentShip = shipName;
                 this.lastEnterTime = now;
                 const payload = { type: 'SHIP_ENTER', value: shipName };
-                if (this.shipMap[shipName]) payload.image = this.shipMap[shipName];
+                const imagePath = this.findShipImage(shipName);
+                if (imagePath) payload.image = imagePath;
                 this.emit('gamestate', payload);
                 handled = true;
             }
