@@ -346,10 +346,10 @@
 
         .unknown-sample {
             font-family: 'Courier New', monospace;
-            font-size: 0.65rem;
-            color: var(--text-dim);
+            font-size: 0.8rem;
+            color: #bbb;
             background: rgba(0, 0, 0, 0.3);
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 4px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -548,6 +548,9 @@
         </div>
         <div class="menu-item no-drag" id="nav-players" onclick="switchTab('players')">
             <span>👥</span> Players
+        </div>
+        <div class="menu-item no-drag" id="nav-logdb" onclick="switchTab('logdb')">
+            <span>🗄️</span> Log Database
         </div>
         <div class="menu-item no-drag" onclick="toggleOverlay()">
             <span>📺</span> Toggle Overlay
@@ -1027,6 +1030,135 @@
             </div>
         </div>
     </div>
+
+    <!-- ═══════════ LOG DATABASE VIEW (v2.7) ═══════════ -->
+    <div id="view-logdb" class="view">
+        <!-- Toolbar -->
+        <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="logdb-search" placeholder="Search patterns..." class="modern-input"
+                style="flex:1; min-width:200px; margin:0;" oninput="filterPatternDB()">
+            <select id="logdb-category" class="modern-input" style="width:130px; margin:0;"
+                onchange="filterPatternDB()">
+                <option value="">All Categories</option>
+            </select>
+            <select id="logdb-status" class="modern-input" style="width:120px; margin:0;" onchange="filterPatternDB()">
+                <option value="">All Status</option>
+                <option value="verified">✅ Verified</option>
+                <option value="research">🔬 Research</option>
+            </select>
+            <button class="cyber-btn small" onclick="showAddPatternModal()" style="margin:0;">+ Add</button>
+            <button class="cyber-btn small" onclick="exportPatternDB()" style="margin:0;">📤 Export</button>
+            <button class="cyber-btn small" onclick="importPatternDB()" style="margin:0;">📥 Import</button>
+        </div>
+
+        <!-- Stats bar -->
+        <div style="display:flex; gap:15px; margin-bottom:15px; font-size:0.75rem; color:#888;">
+            <span>Total: <b id="logdb-total" style="color:var(--accent);">0</b></span>
+            <span>Verified: <b id="logdb-verified" style="color:#00ff88;">0</b></span>
+            <span>Research: <b id="logdb-research" style="color:#ffaa00;">0</b></span>
+            <span>Last Updated: <b id="logdb-updated" style="color:#aaa;">—</b></span>
+        </div>
+
+        <!-- Pattern List -->
+        <div id="logdb-list" class="feed-container"
+            style="max-height: calc(100vh - 240px); padding:0; overflow-y:auto;">
+            <div style="color:#555; font-style:italic; padding:30px; text-align:center;">
+                Loading pattern database...
+            </div>
+        </div>
+    </div>
+
+    <!-- Log DB Add/Edit Modal -->
+    <div id="logdb-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.8); z-index:9999; display:none; align-items:center; justify-content:center;">
+        <div
+            style="background:#1a1a2e; border:1px solid var(--accent); border-radius:8px; padding:20px; width:500px; max-height:80vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; color:var(--accent);" id="logdb-modal-title">Add Pattern</h3>
+                <button class="cyber-btn small danger" onclick="closePatternModal()" style="margin:0;">✕</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Name</label>
+                        <input type="text" id="pm-name" class="modern-input" placeholder="Ship Enter (VOIP)"
+                            style="margin:0;">
+                    </div>
+                    <div style="width:130px;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Category</label>
+                        <select id="pm-category" class="modern-input" style="margin:0;">
+                            <option>Vehicle</option>
+                            <option>Navigation</option>
+                            <option>Combat</option>
+                            <option>Mission</option>
+                            <option>Hazard</option>
+                            <option>Session</option>
+                            <option>Fire</option>
+                            <option>Inventory</option>
+                            <option>Social</option>
+                            <option>Industrial</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Event Type</label>
+                        <input type="text" id="pm-event" class="modern-input" placeholder="SHIP_ENTER"
+                            style="margin:0;">
+                    </div>
+                    <div style="width:130px;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Status</label>
+                        <select id="pm-status" class="modern-input" style="margin:0;">
+                            <option value="research">🔬 Research</option>
+                            <option value="verified">✅ Verified</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Regex Pattern</label>
+                    <input type="text" id="pm-regex" class="modern-input"
+                        style="margin:0; font-family:monospace; color:#aaffaa;"
+                        placeholder="SHUDEvent_OnNotification.*You have joined channel '(.+?)'">
+                </div>
+
+                <div>
+                    <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Example Log Line</label>
+                    <input type="text" id="pm-example" class="modern-input"
+                        style="margin:0; font-family:monospace; font-size:0.75rem;"
+                        placeholder="<SHUDEvent_OnNotification> You have joined channel 'Prowler : Player'">
+                </div>
+
+                <!-- Regex Tester -->
+                <div
+                    style="background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; border:1px solid rgba(255,255,255,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.7rem; color:#888; text-transform:uppercase;">Regex Test Result</span>
+                        <button class="cyber-btn small" onclick="testPatternRegex()"
+                            style="margin:0; font-size:0.7rem;">▶ Test</button>
+                    </div>
+                    <div id="pm-test-result"
+                        style="font-family:monospace; font-size:0.75rem; color:#666; margin-top:5px; word-break:break-all;">
+                        Click Test to verify regex against example
+                    </div>
+                </div>
+
+                <div>
+                    <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Notes</label>
+                    <textarea id="pm-notes" class="modern-input" rows="2" style="margin:0; resize:vertical;"
+                        placeholder="Additional context about this pattern..."></textarea>
+                </div>
+
+                <input type="hidden" id="pm-edit-id">
+                <button class="cyber-btn" onclick="savePatternFromModal()" style="margin-top:5px;">💾 Save
+                    Pattern</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Synthesizer -->
     <script src="audio-synth.js"></script>
 
@@ -1053,8 +1185,12 @@
                 'vcon': ['VerseCon Feed', 'Platform-wide contracts, beacons and trades'],
                 'command': ['Command Console', 'Battlefield C2 and quick orders'],
                 'config': ['Settings', 'Application configuration and log patterns'],
-                'players': ['Social Hub', 'Manage friends and shared telemetry']
+                'players': ['Social Hub', 'Manage friends and shared telemetry'],
+                'logdb': ['Log Database', 'Known Star Citizen log patterns — browse, edit, export']
             };
+
+            // Auto-load patterns when switching to logdb
+            if (tab === 'logdb') loadPatternDB();
 
             if (titles[tab]) {
                 document.getElementById('view-title').innerText = titles[tab][0];
@@ -1878,9 +2014,9 @@
 
         function grabRawLocation() {
             if (!lastRawLocation) return;
-            document.getElementById('new-loc-raw').value = lastRawLocation;
-            // Focus common name input for convenience
-            document.getElementById('new-loc-name').focus();
+            document.getElementById('new-loc-key').value = lastRawLocation;
+            // Focus friendly name input for convenience
+            document.getElementById('new-loc-val').focus();
         }
 
         // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
@@ -2249,6 +2385,251 @@
                 renderCustomLocationList();
             }
         };
+
+        // ═══ LOG PATTERN DATABASE (v2.7) ═══
+        let patternDB = { _meta: {}, patterns: [] };
+
+        async function loadPatternDB() {
+            try {
+                patternDB = await ipcRenderer.invoke('patterns:load');
+                renderPatternDB();
+            } catch (e) {
+                console.error('Failed to load pattern DB:', e);
+            }
+        }
+
+        function renderPatternDB(filtered) {
+            const patterns = filtered || patternDB.patterns;
+            const list = document.getElementById('logdb-list');
+
+            // Stats
+            document.getElementById('logdb-total').textContent = patternDB.patterns.length;
+            document.getElementById('logdb-verified').textContent = patternDB.patterns.filter(p => p.status === 'verified').length;
+            document.getElementById('logdb-research').textContent = patternDB.patterns.filter(p => p.status === 'research').length;
+            document.getElementById('logdb-updated').textContent = patternDB._meta.lastUpdated || '—';
+
+            // Populate category filter
+            const catSelect = document.getElementById('logdb-category');
+            const currentCat = catSelect.value;
+            const cats = [...new Set(patternDB.patterns.map(p => p.category))].sort();
+            catSelect.innerHTML = '<option value="">All Categories</option>' +
+                cats.map(c => `<option value="${c}" ${c === currentCat ? 'selected' : ''}>${c}</option>`).join('');
+
+            if (patterns.length === 0) {
+                list.innerHTML = '<div style="color:#555; font-style:italic; padding:30px; text-align:center;">No patterns found.</div>';
+                return;
+            }
+
+            const categoryColors = {
+                Vehicle: '#00c8ff', Navigation: '#00ff88', Combat: '#ff4444', Mission: '#ffa500',
+                Hazard: '#ff6600', Session: '#aa88ff', Fire: '#ff2222', Inventory: '#888',
+                Social: '#44aaff', Industrial: '#ffcc00', Other: '#666'
+            };
+
+            list.innerHTML = patterns.map(p => {
+                const catColor = categoryColors[p.category] || '#888';
+                const statusIcon = p.status === 'verified' ? '✅' : '🔬';
+                const statusColor = p.status === 'verified' ? '#00ff88' : '#ffaa00';
+                return `
+                    <div style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;"
+                         onmouseenter="this.style.background='rgba(255,165,0,0.05)'"
+                         onmouseleave="this.style.background='transparent'">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <span style="background:${catColor}22; color:${catColor}; padding:2px 6px; border-radius:3px;
+                                    font-size:0.65rem; font-weight:700; letter-spacing:0.5px;">${escapeHtml(p.category)}</span>
+                                <span style="font-weight:600; color:#eee; font-size:0.9rem;">${escapeHtml(p.name)}</span>
+                                <span style="color:${statusColor}; font-size:0.7rem;">${statusIcon} ${p.status}</span>
+                            </div>
+                            <div style="display:flex; gap:4px;">
+                                <button class="cyber-btn small" onclick="editPattern('${p.id}')" style="margin:0; font-size:0.65rem;">✏️</button>
+                                <button class="cyber-btn small" onclick="copyPatternRegex('${p.id}')" style="margin:0; font-size:0.65rem;">📋</button>
+                                <button class="cyber-btn small danger" onclick="deletePattern('${p.id}')" style="margin:0; font-size:0.65rem;">🗑️</button>
+                            </div>
+                        </div>
+                        <div style="font-family:monospace; font-size:0.75rem; color:#aaffaa; background:rgba(0,0,0,0.3);
+                            padding:4px 8px; border-radius:3px; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            ${escapeHtml(p.regex)}
+                        </div>
+                        <div style="font-family:monospace; font-size:0.7rem; color:#bbb; background:rgba(0,0,0,0.2);
+                            padding:3px 8px; border-radius:3px; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            📝 ${escapeHtml(p.example || 'No example')}
+                        </div>
+                        <div style="display:flex; gap:10px; font-size:0.7rem; color:#888;">
+                            <span>Event: <b style="color:var(--accent);">${escapeHtml(p.event)}</b></span>
+                            ${p.notes ? `<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">💬 ${escapeHtml(p.notes)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterPatternDB() {
+            const search = document.getElementById('logdb-search').value.toLowerCase();
+            const cat = document.getElementById('logdb-category').value;
+            const status = document.getElementById('logdb-status').value;
+
+            let filtered = patternDB.patterns;
+            if (search) {
+                filtered = filtered.filter(p =>
+                    p.name.toLowerCase().includes(search) ||
+                    p.regex.toLowerCase().includes(search) ||
+                    p.event.toLowerCase().includes(search) ||
+                    (p.notes && p.notes.toLowerCase().includes(search)) ||
+                    (p.example && p.example.toLowerCase().includes(search))
+                );
+            }
+            if (cat) filtered = filtered.filter(p => p.category === cat);
+            if (status) filtered = filtered.filter(p => p.status === status);
+
+            renderPatternDB(filtered);
+        }
+
+        function showAddPatternModal() {
+            document.getElementById('logdb-modal-title').textContent = 'Add Pattern';
+            document.getElementById('pm-name').value = '';
+            document.getElementById('pm-category').value = 'Other';
+            document.getElementById('pm-event').value = '';
+            document.getElementById('pm-status').value = 'research';
+            document.getElementById('pm-regex').value = '';
+            document.getElementById('pm-example').value = '';
+            document.getElementById('pm-notes').value = '';
+            document.getElementById('pm-edit-id').value = '';
+            document.getElementById('pm-test-result').textContent = 'Click Test to verify regex against example';
+            document.getElementById('pm-test-result').style.color = '#666';
+            document.getElementById('logdb-modal').style.display = 'flex';
+        }
+
+        function editPattern(id) {
+            const p = patternDB.patterns.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('logdb-modal-title').textContent = 'Edit Pattern';
+            document.getElementById('pm-name').value = p.name || '';
+            document.getElementById('pm-category').value = p.category || 'Other';
+            document.getElementById('pm-event').value = p.event || '';
+            document.getElementById('pm-status').value = p.status || 'research';
+            document.getElementById('pm-regex').value = p.regex || '';
+            document.getElementById('pm-example').value = p.example || '';
+            document.getElementById('pm-notes').value = p.notes || '';
+            document.getElementById('pm-edit-id').value = id;
+            document.getElementById('pm-test-result').textContent = 'Click Test to verify regex against example';
+            document.getElementById('pm-test-result').style.color = '#666';
+            document.getElementById('logdb-modal').style.display = 'flex';
+        }
+
+        function closePatternModal() {
+            document.getElementById('logdb-modal').style.display = 'none';
+        }
+
+        async function savePatternFromModal() {
+            const editId = document.getElementById('pm-edit-id').value;
+            const data = {
+                name: document.getElementById('pm-name').value.trim(),
+                category: document.getElementById('pm-category').value,
+                event: document.getElementById('pm-event').value.trim(),
+                status: document.getElementById('pm-status').value,
+                regex: document.getElementById('pm-regex').value.trim(),
+                example: document.getElementById('pm-example').value.trim(),
+                notes: document.getElementById('pm-notes').value.trim()
+            };
+
+            if (!data.name || !data.regex) {
+                alert('Name and Regex are required.');
+                return;
+            }
+
+            try {
+                if (editId) {
+                    patternDB = await ipcRenderer.invoke('patterns:update', editId, data);
+                } else {
+                    patternDB = await ipcRenderer.invoke('patterns:add', data);
+                }
+                closePatternModal();
+                renderPatternDB();
+                addDashItem('✅', `Pattern ${editId ? 'updated' : 'added'}: ${data.name}`);
+            } catch (e) {
+                console.error('Failed to save pattern:', e);
+            }
+        }
+
+        async function deletePattern(id) {
+            const p = patternDB.patterns.find(x => x.id === id);
+            if (!p) return;
+            if (!confirm(`Delete pattern "${p.name}"?`)) return;
+
+            try {
+                patternDB = await ipcRenderer.invoke('patterns:delete', id);
+                renderPatternDB();
+                addDashItem('🗑️', `Deleted pattern: ${p.name}`);
+            } catch (e) {
+                console.error('Failed to delete pattern:', e);
+            }
+        }
+
+        function copyPatternRegex(id) {
+            const p = patternDB.patterns.find(x => x.id === id);
+            if (!p) return;
+            navigator.clipboard.writeText(p.regex)
+                .then(() => addDashItem('📋', `Copied regex for: ${p.name}`))
+                .catch(() => addDashItem('❌', 'Copy failed'));
+        }
+
+        function testPatternRegex() {
+            const regex = document.getElementById('pm-regex').value;
+            const example = document.getElementById('pm-example').value;
+            const resultEl = document.getElementById('pm-test-result');
+
+            if (!regex || !example) {
+                resultEl.textContent = 'Enter both regex and example to test';
+                resultEl.style.color = '#ffaa00';
+                return;
+            }
+
+            try {
+                const re = new RegExp(regex, 'i');
+                const match = example.match(re);
+                if (match) {
+                    resultEl.style.color = '#00ff88';
+                    if (match.length > 1) {
+                        resultEl.textContent = `✅ MATCH! Groups: [${match.slice(1).join(', ')}]`;
+                    } else {
+                        resultEl.textContent = '✅ MATCH! (no capture groups)';
+                    }
+                } else {
+                    resultEl.style.color = '#ff4444';
+                    resultEl.textContent = '❌ NO MATCH — regex does not match the example';
+                }
+            } catch (e) {
+                resultEl.style.color = '#ff4444';
+                resultEl.textContent = `⚠️ Invalid regex: ${e.message}`;
+            }
+        }
+
+        async function exportPatternDB() {
+            try {
+                const path = await ipcRenderer.invoke('patterns:export');
+                if (path) {
+                    addDashItem('📤', `Exported to: ${path}`);
+                }
+            } catch (e) {
+                console.error('Export failed:', e);
+            }
+        }
+
+        async function importPatternDB() {
+            try {
+                const result = await ipcRenderer.invoke('patterns:import');
+                if (result && result.success) {
+                    patternDB = await ipcRenderer.invoke('patterns:load');
+                    renderPatternDB();
+                    addDashItem('📥', `Imported ${result.added} new patterns (${result.total} total)`);
+                } else if (result && !result.success) {
+                    addDashItem('❌', `Import failed: ${result.error}`);
+                }
+            } catch (e) {
+                console.error('Import failed:', e);
+            }
+        }
 
         // Init
         loadBuiltinPatterns();

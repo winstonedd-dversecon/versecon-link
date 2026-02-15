@@ -342,6 +342,46 @@
                 color: '#00ff88',
                 duration: 2500,
                 sound: 'notification'
+            },
+
+            // ═══ FIRE / HAZARD ALERTS ═══
+            fire: {
+                text: '🔥 FIRE DETECTED',
+                subtitle: 'CHECK ENGINEERING PANEL',
+                vignette: 'vignette-red',
+                border: 'border-flash-red',
+                color: '#ff6600',
+                duration: 4000,
+                sound: 'alert_status'
+            },
+
+            // ═══ DEATH / DESTRUCTION ALERTS ═══
+            killed: {
+                text: '☠️ KILLED',
+                subtitle: '',
+                vignette: 'vignette-red',
+                border: 'border-flash-red',
+                color: '#ff2222',
+                duration: 5000,
+                sound: 'alert_death'
+            },
+            vehicle_destroyed: {
+                text: '💥 SHIP DESTROYED',
+                subtitle: '',
+                vignette: 'vignette-red',
+                border: 'border-flash-red',
+                color: '#ff4444',
+                duration: 5000,
+                sound: 'alert_death'
+            },
+            vehicle_crippled: {
+                text: '⚠️ SHIP CRIPPLED',
+                subtitle: 'CRITICAL DAMAGE',
+                vignette: 'vignette-yellow',
+                border: 'border-flash-orange',
+                color: '#ffaa00',
+                duration: 4000,
+                sound: 'alert_status'
             }
         };
 
@@ -408,6 +448,26 @@
             } else if (data.type === 'ZONE') {
                 const config = ALERTS[data.value];
                 if (config) showAlert(config);
+            } else if (data.type === 'HAZARD_FIRE') {
+                const config = { ...ALERTS.fire };
+                if (data.value) config.subtitle = data.value;
+                showAlert(config);
+            } else if (data.type === 'DEATH') {
+                const config = { ...ALERTS.killed };
+                if (data.details && data.details.killer) {
+                    config.subtitle = `KILLED BY ${data.details.killer.toUpperCase()}`;
+                }
+                showAlert(config);
+            } else if (data.type === 'VEHICLE_DESTRUCTION') {
+                if (data.details && data.details.isTotalLoss) {
+                    const config = { ...ALERTS.vehicle_destroyed };
+                    config.subtitle = data.details.vehicle || 'SHIP LOST';
+                    showAlert(config);
+                } else {
+                    const config = { ...ALERTS.vehicle_crippled };
+                    config.subtitle = data.details?.vehicle || 'SYSTEMS FAILING';
+                    showAlert(config);
+                }
             } else if (data.type === 'COMMAND') {
                 showCommandAlert(data);
             }

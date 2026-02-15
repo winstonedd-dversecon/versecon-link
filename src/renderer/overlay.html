@@ -461,6 +461,18 @@
         startTime = new Date().toISOString();
         setTimeout(() => startTimer(), 0); // Deferred to ensure startTimer function is defined
 
+        // ═══ CUSTOM LOCATION SYNC ═══
+        // When custom locations are saved in dashboard, update overlay display instantly
+        let customLocations = {};
+        ipcRenderer.on('settings:custom-locations-updated', (e, locations) => {
+            customLocations = locations || {};
+            // If current location matches a newly-mapped raw code, update display
+            const locEl = document.getElementById('val-location');
+            if (locEl && locEl.dataset.raw && customLocations[locEl.dataset.raw]) {
+                locEl.textContent = customLocations[locEl.dataset.raw];
+            }
+        });
+
         function updateTimer() {
             // 1. Session Timer (always runs)
             if (startTime) {
@@ -583,7 +595,12 @@
             switch (data.type) {
                 case 'LOCATION':
                 case 'LOCATION_HINT':
-                    document.getElementById('val-location').textContent = data.value;
+                    const locDisplay = document.getElementById('val-location');
+                    // Store raw code for custom location sync
+                    if (data.raw) locDisplay.dataset.raw = data.raw;
+                    // Check if we have a custom name for this raw code
+                    const customName = data.raw && customLocations[data.raw];
+                    locDisplay.textContent = customName || data.value;
                     break;
 
                 case 'SESSION_START':

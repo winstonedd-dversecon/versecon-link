@@ -528,7 +528,7 @@ LogWatcher.on('gamestate', (data) => {
     }
 
     // Critical alerts → show alert window + tray notification
-    if (data.type === 'STATUS' || data.type === 'ZONE' || data.type === 'HAZARD_FIRE') {
+    if (['STATUS', 'ZONE', 'HAZARD_FIRE', 'DEATH', 'VEHICLE_DESTRUCTION'].includes(data.type)) {
         if (alertWindow && !alertWindow.isDestroyed()) {
             alertWindow.show();
             alertWindow.webContents.send('alert:trigger', data);
@@ -540,6 +540,11 @@ LogWatcher.on('gamestate', (data) => {
             } else if (data.value === 'suffocating') {
                 showTrayNotification('🌡️ SUFFOCATING', 'Check your helmet seal!');
             }
+        } else if (data.type === 'DEATH') {
+            const killer = data.details?.killer || 'Unknown';
+            showTrayNotification('☠️ KILLED', `Killed by ${killer}`);
+        } else if (data.type === 'HAZARD_FIRE') {
+            showTrayNotification('🔥 FIRE', data.value || 'Fire detected on ship');
         }
     }
 
@@ -909,6 +914,115 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     NavigationParser.setCustomLocations(locations);
     broadcast('settings:custom-locations-updated', locations);
     return true;
+});
+
+// ═══════════════════════════════════════════════════════
+// LOG PATTERN DATABASE (v2.7)
+// ═══════════════════════════════════════════════════════
+const PATTERNS_DB_PATH = path.join(app.getPath('userData'), 'known-patterns.json');
+const BUNDLED_PATTERNS_PATH = path.join(__dirname, '../../known-patterns.json');
+
+function loadPatternDB() {
+    try {
+        // Priority: user-data copy > bundled copy
+        const dbPath = fs.existsSync(PATTERNS_DB_PATH) ? PATTERNS_DB_PATH : BUNDLED_PATTERNS_PATH;
+        if (fs.existsSync(dbPath)) {
+            return JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+        }
+    } catch (e) {
+        console.error('[Main] Failed to load pattern DB:', e);
+    }
+    return { _meta: { version: '1.0.0', lastUpdated: new Date().toISOString().split('T')[0] }, patterns: [] };
+}
+
+function savePatternDB(db) {
+    try {
+        db._meta.lastUpdated = new Date().toISOString().split('T')[0];
+        fs.writeFileSync(PATTERNS_DB_PATH, JSON.stringify(db, null, 2));
+        console.log('[Main] Pattern DB saved:', db.patterns.length, 'patterns');
+    } catch (e) {
+        console.error('[Main] Failed to save pattern DB:', e);
+    }
+}
+
+ipcMain.handle('patterns:load', async () => {
+    return loadPatternDB();
+});
+
+ipcMain.handle('patterns:save', async (event, db) => {
+    savePatternDB(db);
+    return true;
+});
+
+ipcMain.handle('patterns:add', async (event, pattern) => {
+    const db = loadPatternDB();
+    pattern.id = pattern.id || `pattern_${Date.now()}`;
+    pattern.addedDate = pattern.addedDate || new Date().toISOString().split('T')[0];
+    pattern.addedBy = pattern.addedBy || 'user';
+    db.patterns.push(pattern);
+    savePatternDB(db);
+    return db;
+});
+
+ipcMain.handle('patterns:update', async (event, patternId, updates) => {
+    const db = loadPatternDB();
+    const idx = db.patterns.findIndex(p => p.id === patternId);
+    if (idx !== -1) {
+        db.patterns[idx] = { ...db.patterns[idx], ...updates };
+        savePatternDB(db);
+    }
+    return db;
+});
+
+ipcMain.handle('patterns:delete', async (event, patternId) => {
+    const db = loadPatternDB();
+    db.patterns = db.patterns.filter(p => p.id !== patternId);
+    savePatternDB(db);
+    return db;
+});
+
+ipcMain.handle('patterns:export', async () => {
+    const db = loadPatternDB();
+    const result = await dialog.showSaveDialog(dashboardWindow, {
+        title: 'Export Pattern Database',
+        defaultPath: `versecon-patterns-${db._meta.lastUpdated}.json`,
+        filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+    if (!result.canceled && result.filePath) {
+        fs.writeFileSync(result.filePath, JSON.stringify(db, null, 2));
+        return result.filePath;
+    }
+    return null;
+});
+
+ipcMain.handle('patterns:import', async () => {
+    const result = await dialog.showOpenDialog(dashboardWindow, {
+        title: 'Import Pattern Database',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+        properties: ['openFile']
+    });
+    if (!result.canceled && result.filePaths[0]) {
+        try {
+            const imported = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8'));
+            if (imported.patterns && Array.isArray(imported.patterns)) {
+                const db = loadPatternDB();
+                // Merge: add new patterns, skip duplicates by ID
+                const existingIds = new Set(db.patterns.map(p => p.id));
+                let added = 0;
+                for (const p of imported.patterns) {
+                    if (!existingIds.has(p.id)) {
+                        db.patterns.push(p);
+                        added++;
+                    }
+                }
+                savePatternDB(db);
+                return { success: true, added, total: db.patterns.length };
+            }
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
+    }
+    return null;
 });
 
 // ═══════════════════════════════════════════════════════
