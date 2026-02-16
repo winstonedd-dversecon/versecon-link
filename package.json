@@ -18,9 +18,11 @@
     "axios": "^1.6.5",
     "chokidar": "^3.5.3",
     "electron-updater": "^6.1.7",
+    "express": "^4.22.1",
     "obs-websocket-js": "^5.0.5",
     "socket.io-client": "^4.7.4",
-    "tail": "^2.2.6"
+    "tail": "^2.2.6",
+    "ws": "^8.19.0"
   },
   "build": {
     "appId": "com.versecon.link",
