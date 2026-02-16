@@ -1033,6 +1033,13 @@ async function triggerHueAlert(color) {
 }
 
 function handleHueSituation(data) {
+    // Priority: Use the color defined in the pattern match
+    if (data.hueColor) {
+        triggerHueAlert(data.hueColor);
+        return;
+    }
+
+    // Fallback: Hardcoded situational defaults
     if (['HAZARD_FIRE', 'VEHICLE_DESTRUCTION', 'DEATH'].includes(data.type)) {
         triggerHueAlert('red');
     } else if (data.type === 'STATUS' && ['suffocating', 'interdiction'].includes(data.value)) {
@@ -1280,6 +1287,10 @@ if (!gotTheLock) {
             console.error('[Hue] Link Error:', e.message);
             return { error: e.message };
         }
+    });
+
+    ipcMain.handle('hue:get-ip', async () => {
+        return getLocalIP();
     });
 
     ipcMain.handle('hue:control', async (event, { bridgeIp, username, lightId, state }) => {

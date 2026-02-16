@@ -136,6 +136,7 @@
             "alert": "none",
             "reaction": "",
             "warning": "",
+            "hueColor": "green",
             "notes": "Fires once when player loads into the universe. Guards prevent multiple emissions.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -196,6 +197,7 @@
             "alert": "both",
             "reaction": "TTS: Death detected",
             "warning": "Wasted",
+            "hueColor": "red",
             "notes": "From MASTER_GUIDE research. Extracts victim, killer, weapon, damage type, zone, direction vector.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -211,6 +213,7 @@
             "alert": "both",
             "reaction": "TTS: Vehicle destroyed",
             "warning": "Vehicle Critical",
+            "hueColor": "red",
             "notes": "Destroy levels: 0=intact, 1=crippled, 2=destroyed.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -241,6 +244,7 @@
             "alert": "none",
             "reaction": "",
             "warning": "",
+            "hueColor": "blue",
             "notes": "Notification-based detection. May need refinement.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -286,6 +290,7 @@
             "alert": "both",
             "reaction": "",
             "warning": "Suffocating",
+            "hueColor": "red",
             "notes": "Triggers full-screen blue vignette alert.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
