@@ -12,6 +12,8 @@ const TelemetryEngine = require('./telemetry/telemetry-engine'); // Phase 6 Tele
 let dashboardWindow;
 let overlayWindow;
 let alertWindow;
+let remoteApp = null;
+let remoteServer = null;
 let tray = null;
 let parkingUpdateManager = null;
 let telemetryEngine = null; // Telemetry Instance
@@ -1045,8 +1047,6 @@ function handleHueSituation(data) {
 // ═══════════════════════════════════════════════════════
 // REMOTE CONTROL SERVER (v2.9)
 // ═══════════════════════════════════════════════════════
-let remoteApp = null;
-let remoteServer = null;
 
 // ═══════════════════════════════════════════════════════
 // TACTICAL NETWORKING (v2.9)
