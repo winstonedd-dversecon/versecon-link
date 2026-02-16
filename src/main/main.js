@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain, screen, dialog, Tray, Menu, nativeImage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { WebSocketServer } = require('ws');
+const express = require('express');
+const http = require('http');
 const LogWatcher = require('./log-watcher');
 const APIClient = require('./api-client');
 const UpdateManager = require('./update-manager'); // Phase 6
@@ -21,6 +24,7 @@ console.log('[Main] Role:', IS_ADMIN ? 'ADMIN/DEV' : 'USER');
 
 
 let config = { shipMap: {}, customPatterns: [] };
+let patternDatabase = { patterns: [] };
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 
 // Helper to access static patterns from instance
@@ -46,6 +50,12 @@ function loadConfig() {
             config = JSON.parse(data);
             if (!config.shipMap) config.shipMap = {};
             if (!config.customPatterns) config.customPatterns = [];
+            if (!config.teamNames) config.teamNames = ["Alpha", "Bravo", "Charlie", "Delta"];
+            if (!config.userTeam) config.userTeam = "Alpha";
+            if (!config.hueBridge) config.hueBridge = "";
+            if (!config.hueUser) config.hueUser = "";
+            if (!config.hueLights) config.hueLights = ["1"];
+            if (config.hueEnabled === undefined) config.hueEnabled = false;
             if (!config.friendCode) {
                 config.friendCode = generateFriendCode();
                 saveConfig();
@@ -204,6 +214,9 @@ function createWindows() {
     alertWindow.hide(); // Hidden by default, shown on alerts
 }
 
+// ═══ START SERVICES ═══
+startRemoteServer();
+
 // ═══════════════════════════════════════════════════════
 // SYSTEM TRAY
 // ═══════════════════════════════════════════════════════
@@ -214,7 +227,7 @@ function createTray() {
     const icon = nativeImage.createEmpty();
 
     // Use a data URL for a simple orange circle icon
-    const canvas = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA0ElEQVQ4T2NkoBAwUqifYdAY8J+B4T8jI+N/BkZGJgZGxv8MDIz/GUBsJkYQm5GRiQHEBvGRxYDqGJHVwA1ghBvACHYBCzPLfwYmRqgBjP+ZGJkYQfxBYAAjyOv/wYGA2AgywDAwMIAMgHkB5AwUZ4DCgBEmBjUA5C1kcYpigJmJCRQFEDYoOFBDABYDDIwMYDaID/MCTB5kCCPYAAZkNSCbwM5AhoEFCCiGoGrAAUEhGECuZkQXYwIbAvIGVhv+w4MAuxgj2A0ENAFhLgAA4aVjEV2F5y4AAAAASUVORK5CYII=`;
+    const canvas = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA0ElEQVQ4T2NkoBAwUqifYdAY8J+B4T8jI+N/BkZGJgZGxv8MDIz/GUBsJkYQm5GRiQHEBvGRxYDqGJHVwA1ghBvACHYBCzPLfwYGA2AgywDAwMIAMgHkB5AwUZ4DCgBEmBjUA5C1kcYpigJmJCRQFEDYoOFBDABYDDIwMYDaID/MCTB5kCCPYAAZkNSCbwM5AhoEFCCiGoGrAAUEhGECuZkQXYwIbAvIGVhv+w4MAuxgj2A0ENAFhLgAA4aVjEV2F5y4AAAAASUVORK5CYII=`;
 
     tray = new Tray(nativeImage.createFromDataURL(canvas));
     tray.setToolTip('VerseCon Link — Connected');
@@ -284,7 +297,7 @@ function showTrayNotification(title, body, onClick = null) {
     const notif = new Notification({
         title,
         body,
-        icon: nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA0ElEQVQ4T2NkoBAwUqifYdAY8J+B4T8jI+N/BkZGJgZGxv8MDIz/GUBsJkYQm5GRiQHEBvGRxYDqGJHVwA1ghBvACHYBCzPLfwYmRqgBjP+ZGJkYQfxBYAAjyOv/wYGA2AgywDAwMIAMgHkB5AwUZ4DCgBEmBjUA5C1kcYpigJmJCRQFEDYoOFBDABYDDIwMYDaID/MCTB5kCCPYAAZkNSCbwM5AhoEFCCiGoGrAAUEhGECuZkQXYwIbAvIGVhv+w4MAuxgj2A0ENAFhLgAA4aVjEV2F5y4AAAAASUVORK5CYII='),
+        icon: nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA0ElEQVQ4T2NkoBAwUqifYdAY8J+B4T8jI+N/BkZGJgZGxv8MDIz/GUBsJkYQm5GRiQHEBvGRxYDqGJHVwA1ghBvACHYBCzPLfwYGA2AgywDAwMIAMgHkB5AwUZ4DCgBEmBjUA5C1kcYpigJmJCRQFEDYoOFBDABYDDIwMYDaID/MCTB5kCCPYAAZkNSCbwM5AhoEFCCiGoGrAAUEhGECuZkQXYwIbAvIGVhv+w4MAuxgj2A0ENAFhLgAA4aVjEV2F5y4AAAAASUVORK5CYII='),
         silent: false
     });
 
@@ -547,6 +560,12 @@ LogWatcher.on('gamestate', (data) => {
 
     broadcast('log:update', data);
 
+    // ═══ PATTERN REACTIONS (v2.8) ═══
+    handlePatternReactions(data);
+
+    // ═══ HUE REACTIONS (v2.9) ═══
+    handleHueSituation(data);
+
     // ═════ FRIEND SHARING (Phase 5) ═══
     if (data.type === 'LOCATION' && config.shareLocation) {
         APIClient.updateLocation(data);
@@ -595,6 +614,58 @@ LogWatcher.on('gamestate', (data) => {
         }
     } else if (data.type === 'SHIP_EXIT') {
         showTrayNotification('🚀 Ship Exited', `Left: ${data.value}`);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // REACTION LOGIC (v2.8)
+    // ═══════════════════════════════════════════════════════
+
+    function handlePatternReactions(data) {
+        if (!patternDatabase.patterns) return;
+
+        // Find first pattern that matches this event type and possibly regex (for custom)
+        // For built-in events, we match by data.type
+        // For custom events, we match by data.patternId if we add it to the payload
+        const p = patternDatabase.patterns.find(x => x.event === data.type);
+        if (!p) return;
+
+        // 1. Alert (Full Screen)
+        if (p.alert && p.alert !== 'none') {
+            if (alertWindow && !alertWindow.isDestroyed()) {
+                alertWindow.show();
+                alertWindow.webContents.send('alert:trigger', {
+                    type: p.alert === 'audio' ? 'STATUS' : data.type, // Map to alert UI types
+                    value: p.warning || data.value,
+                    pattern: p
+                });
+            }
+        }
+
+        // 2. HUD Warning
+        if (p.warning) {
+            if (overlayWindow && !overlayWindow.isDestroyed()) {
+                overlayWindow.webContents.send('log:update', {
+                    type: 'HUD_WARNING',
+                    value: p.warning,
+                    level: 'WARNING'
+                });
+            }
+        }
+
+        // 3. Reaction (TTS or Command)
+        if (p.reaction) {
+            if (p.reaction.startsWith('TTS:')) {
+                const text = p.reaction.replace('TTS:', '').trim();
+                // We can send this to dashboard to play synthesized speech or use tray notification
+                showTrayNotification('📢 Voice Reaction', text);
+                if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+                    dashboardWindow.webContents.send('app:tts', text);
+                }
+            } else if (p.reaction.startsWith('/')) {
+                // Future: Execute in-game command? For now, log it.
+                console.log(`[Main] Reaction Command: ${p.reaction}`);
+            }
+        }
     }
 
     // ═══ SOCIAL (Phase 5) ═══
@@ -652,8 +723,6 @@ LogWatcher.on('gamestate', (data) => {
                 // User wants to see history?
                 // For now, keep it in list but mark status, maybe renderer filters it or shows it dimmed.
                 // Or just delete it if success?
-                // Let's keep it for history until cleared.
-                // Actually, let's delete if 'completed' to prevent clutter?
                 // User said "currect contracts in a neat way". Completed are not current.
                 if (data.value === 'completed' || data.value === 'ended') {
                     delete config.activeMissions[id];
@@ -940,6 +1009,102 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     return true;
 });
 
+async function triggerHueAlert(color) {
+    if (!config.hueEnabled || !config.hueBridge || !config.hueUser) return;
+    const states = {
+        red: { on: true, hue: 0, sat: 254, bri: 254, alert: 'lselect' },
+        orange: { on: true, hue: 10000, sat: 254, bri: 200, alert: 'select' },
+        blue: { on: true, hue: 45000, sat: 254, bri: 150 },
+        green: { on: true, hue: 25000, sat: 254, bri: 150 },
+        white: { on: true, hue: 0, sat: 0, bri: 254 },
+        off: { on: false }
+    };
+    const state = states[color] || states.white;
+    try {
+        await Promise.all(config.hueLights.map(id =>
+            fetch(`http://${config.hueBridge}/api/${config.hueUser}/lights/${id}/state`, {
+                method: 'PUT',
+                body: JSON.stringify(state)
+            })
+        ));
+    } catch (e) { console.error('[Hue] Trigger Failed:', e.message); }
+}
+
+function handleHueSituation(data) {
+    if (['HAZARD_FIRE', 'VEHICLE_DESTRUCTION', 'DEATH'].includes(data.type)) {
+        triggerHueAlert('red');
+    } else if (data.type === 'STATUS' && ['suffocating', 'interdiction'].includes(data.value)) {
+        triggerHueAlert('red');
+    } else if (data.type === 'INTERDICTION') {
+        triggerHueAlert('orange');
+    } else if (data.type === 'MISSION' && data.value === 'accepted') {
+        triggerHueAlert('blue');
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// REMOTE CONTROL SERVER (v2.9)
+// ═══════════════════════════════════════════════════════
+let remoteApp = null;
+let remoteServer = null;
+
+// ═══════════════════════════════════════════════════════
+// TACTICAL NETWORKING (v2.9)
+// ═══════════════════════════════════════════════════════
+const os = require('os');
+
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return '127.0.0.1';
+}
+
+ipcMain.on('p2p:signal', (event, { toHandle, signal }) => {
+    APIClient.sendSignal(toHandle, signal);
+});
+
+function startRemoteServer() {
+    remoteApp = express();
+    remoteApp.use(express.json());
+    remoteApp.use(express.static(path.join(__dirname, '../renderer')));
+
+    remoteApp.get('/api/remote/status', (req, res) => {
+        res.json({ online: true, app: 'VerseCon Link', version: '2.9' });
+    });
+
+    remoteApp.post('/api/control/command', (req, res) => {
+        const { preset, target, text, broadcast: shouldBroadcast } = req.body;
+        const data = {
+            preset,
+            text,
+            target: target || 'ALL',
+            fromTeam: config.userTeam || 'Alpha',
+            broadcast: !!shouldBroadcast,
+            timestamp: Date.now()
+        };
+        ipcMain.emit('command:send', null, data); // Internally trigger
+        if (dashboardWindow) dashboardWindow.webContents.send('command:external', data);
+        res.json({ success: true });
+    });
+
+    remoteApp.post('/api/control/vfx', (req, res) => {
+        const { type } = req.body;
+        broadcast('alert:trigger', { type: 'STATUS', value: type });
+        res.json({ success: true });
+    });
+
+    remoteServer = http.createServer(remoteApp);
+    remoteServer.listen(4400, '0.0.0.0', () => {
+        console.log('[Remote] Server active on port 4400');
+    });
+}
+
 // ═══════════════════════════════════════════════════════
 // LOG PATTERN DATABASE (v2.7)
 // ═══════════════════════════════════════════════════════
@@ -957,6 +1122,17 @@ function loadPatternDB() {
         console.error('[Main] Failed to load pattern DB:', e);
     }
     return { _meta: { version: '1.0.0', lastUpdated: new Date().toISOString().split('T')[0] }, patterns: [] };
+}
+
+function updateUnifiedPatterns() {
+    const db = loadPatternDB();
+    patternDatabase = db; // Sync global state
+    const unifiedPatterns = [
+        ...(config.customPatterns || []),
+        ...(db.patterns || [])
+    ];
+    LogWatcher.setCustomPatterns(unifiedPatterns);
+    console.log('[Main] Unified patterns updated:', unifiedPatterns.length);
 }
 
 function savePatternDB(db) {
@@ -985,6 +1161,7 @@ ipcMain.handle('patterns:add', async (event, pattern) => {
     pattern.addedBy = pattern.addedBy || 'user';
     db.patterns.push(pattern);
     savePatternDB(db);
+    updateUnifiedPatterns();
     return db;
 });
 
@@ -994,14 +1171,26 @@ ipcMain.handle('patterns:update', async (event, patternId, updates) => {
     if (idx !== -1) {
         db.patterns[idx] = { ...db.patterns[idx], ...updates };
         savePatternDB(db);
+        updateUnifiedPatterns();
     }
     return db;
+});
+
+ipcMain.handle('overlay:save-positions', (event, positions) => {
+    config.overlayPositions = { ...config.overlayPositions, ...positions };
+    saveConfig();
+    return true;
+});
+
+ipcMain.handle('overlay:get-positions', () => {
+    return config.overlayPositions || {};
 });
 
 ipcMain.handle('patterns:delete', async (event, patternId) => {
     const db = loadPatternDB();
     db.patterns = db.patterns.filter(p => p.id !== patternId);
     savePatternDB(db);
+    updateUnifiedPatterns();
     return db;
 });
 
@@ -1069,14 +1258,88 @@ if (!gotTheLock) {
         if (url) handleDeepLink(url);
     });
 
+    ipcMain.handle('hue:discover', async () => {
+        try {
+            const resp = await fetch('https://discovery.meethue.com');
+            return await resp.json();
+        } catch (e) {
+            console.error('[Hue] Discovery Error:', e.message);
+            return [];
+        }
+    });
+
+    ipcMain.handle('hue:link', async (event, bridgeIp) => {
+        try {
+            const resp = await fetch(`http://${bridgeIp}/api`, {
+                method: 'POST',
+                body: JSON.stringify({ devicetype: 'versecon_link#pc' })
+            });
+            const data = await resp.json();
+            return data; // Expected: [{ success: { username: "..." } }]
+        } catch (e) {
+            console.error('[Hue] Link Error:', e.message);
+            return { error: e.message };
+        }
+    });
+
+    ipcMain.handle('hue:control', async (event, { bridgeIp, username, lightId, state }) => {
+        const lightIds = Array.isArray(lightId) ? lightId : [lightId];
+        try {
+            const results = await Promise.all(lightIds.map(async (id) => {
+                const resp = await fetch(`http://${bridgeIp}/api/${username}/lights/${id}/state`, {
+                    method: 'PUT',
+                    body: JSON.stringify(state)
+                });
+                return await resp.json();
+            }));
+            return results;
+        } catch (e) {
+            console.error('[Hue] Control Error:', e.message);
+            return { error: e.message };
+        }
+    });
+
+    ipcMain.on('overlay:unlock', (event, unlock) => {
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.webContents.send('overlay:unlock', unlock);
+        }
+    });
+
     app.whenReady().then(() => {
         loadConfig(); // Load saved config
+        patternDatabase = loadPatternDB(); // Load pattern DB
+
         LogWatcher.setShipMap(config.shipMap); // Apply saved map
-        LogWatcher.setCustomPatterns(config.customPatterns); // Apply custom patterns
+
+        // Unify custom patterns and pattern DB
+        const unifiedPatterns = [
+            ...(config.customPatterns || []),
+            ...(patternDatabase.patterns || [])
+        ];
+        LogWatcher.setCustomPatterns(unifiedPatterns);
+
         createWindows();
         createTray();
 
+        // ════ SQUAD HUD TELEMETRY (v2.8) ═══
+        setInterval(async () => {
+            if (apiConnected) {
+                try {
+                    const friends = await APIClient.fetchFriendList();
+                    broadcast('api:friends', friends);
+                } catch (e) {
+                    console.error('[Main] Squad Telemetry Error:', e.message);
+                }
+            }
+        }, 30000); // Pulse every 30s
+
         // Fix: Auto-load saved log path if available
+        // v2.9 - Send Local IP for Remote pairing
+        setTimeout(() => {
+            const ip = getLocalIP();
+            if (dashboardWindow) dashboardWindow.webContents.send('hue:ip', ip);
+        }, 3000);
+
         LogWatcher.start(config.logPath);
 
 

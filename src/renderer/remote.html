@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VCON Link — Mobile Remote</title>
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --accent: #ffa500;
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #ffffff;
+            --card: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+        }
+
+        .status {
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px 15px;
+            color: #fff;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .btn:active {
+            background: var(--accent);
+            color: #000;
+            transform: scale(0.95);
+        }
+
+        .btn i {
+            font-size: 1.5rem;
+        }
+
+        .btn.emergency {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .btn.emergency:active {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        .section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin: 20px 0 10px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>VCON REMOTE</h1>
+        <div class="status" id="remote-status">DISCONNECTED</div>
+    </div>
+
+    <div class="section-title">Tactical Controls</div>
+    <div class="grid">
+        <div class="btn" onclick="sendCommand('SITREP', 'ALL')">📡 SITREP</div>
+        <div class="btn" onclick="sendCommand('READY', 'ALL')">✅ READY</div>
+        <div class="btn" onclick="sendCommand('DEPLOY', 'ALL')">🚀 DEPLOY</div>
+        <div class="btn" onclick="sendCommand('COMPLETE', 'ALL')">🏁 COMPLETE</div>
+        <div class="btn emergency" onclick="sendCommand('EMERGENCY', 'ALL')" style="grid-column: span 2;">🆘 EMERGENCY
+            SIGNAL</div>
+    </div>
+
+    <div class="section-title">HUD Visuals</div>
+    <div class="grid">
+        <div class="btn" onclick="sendVfx('interdiction')">🧲 INTERDICT</div>
+        <div class="btn" onclick="sendVfx('soft_death')">💥 DAMAGE</div>
+        <div class="btn" onclick="sendVfx('hazard_fire')">🔥 FIRE</div>
+        <div class="btn" onclick="sendVfx('suffocating')">🌬️ OXYGEN</div>
+    </div>
+
+    <div id="toast" class="toast">Command Sent</div>
+
+    <script>
+        const statusEl = document.getElementById('remote-status');
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2000);
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/remote/status');
+                const data = await res.json();
+                if (data.online) {
+                    statusEl.textContent = 'CONNECTED';
+                    statusEl.style.color = '#00ff00';
+                }
+            } catch (e) {
+                statusEl.textContent = 'OFFLINE';
+                statusEl.style.color = '#ff4444';
+            }
+        }
+
+        async function sendCommand(preset, target) {
+            try {
+                const res = await fetch('/api/control/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ preset, target })
+                });
+                if (res.ok) showToast(`SENT: ${preset}`);
+            } catch (e) { showToast('FAILED'); }
+        }
+
+        async function sendVfx(type) {
+            try {
+                const res = await fetch('/api/control/vfx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type })
+                });
+                if (res.ok) showToast(`TRIGGERED: ${type.toUpperCase()}`);
+            } catch (e) { showToast('FAILED'); }
+        }
+
+        setInterval(checkStatus, 5000);
+        checkStatus();
+    </script>
+</body>
+
+</html>

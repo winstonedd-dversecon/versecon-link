@@ -1,6 +1,6 @@
 {
     "_meta": {
-        "version": "1.0.0",
+        "version": "1.1.0",
         "lastUpdated": "2026-02-15",
         "description": "VerseCon Link — Known Star Citizen Log Pattern Database. Edit in app or export for agent review."
     },
@@ -13,6 +13,9 @@
             "regex": "SHUDEvent_OnNotification.*You have joined channel '(.+?)\\s*:\\s*[^']+'",
             "example": "<SHUDEvent_OnNotification> You have joined channel 'Esperia Prowler Utility : TypicallyBrit_ish'",
             "event": "SHIP_ENTER",
+            "alert": "audio",
+            "reaction": "",
+            "warning": "",
             "notes": "Works for ALL 200+ ships. Only match SHUDEvent lines to avoid 3x duplicates.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -25,6 +28,9 @@
             "regex": "ClearDriver.*releasing control token for '([^']+)'",
             "example": "<Vehicle Control Flow> CVehicleMovementBase::ClearDriver: ...releasing control token for 'ESPR_Prowler_Utility_9448279551878'",
             "event": "SHIP_EXIT",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Fires when leaving pilot seat, NOT the ship. Player may still be aboard.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -37,6 +43,9 @@
             "regex": "<RequestLocationInventory>.*Location\\[([^\\]]+)\\]",
             "example": "<RequestLocationInventory> Player[TypicallyBrit_ish] requested inventory for Location[RR_HUR_LEO]",
             "event": "LOCATION",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Primary location tracking method. Raw code needs custom mapping for friendly names.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -49,6 +58,9 @@
             "regex": "RoomName:\\s*(.+?)\\s*$",
             "example": "RoomName: OOC_Stanton_1b_Aberdeen_HEX_Cave_001",
             "event": "LOCATION",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Secondary location source. Fallback when inventory request not available.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -61,6 +73,9 @@
             "regex": "<Join PU>.*address\\[([^\\]]+)\\].*port\\[([^\\]]+)\\].*shard\\[([^\\]]+)\\]",
             "example": "<Join PU> address[34.11.90.244] port[64307] shard[pub_use1b_11218823_110]",
             "event": "SERVER_CONNECTED",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Shard parsed as USE1B-110 (region + instance). Only fires once per session.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -73,6 +88,9 @@
             "regex": "Added notification.*Entering Armistice Zone",
             "example": "Added notification \"Entering Armistice Zone - Combat Prohibited: \"",
             "event": "ZONE",
+            "alert": "visual",
+            "reaction": "",
+            "warning": "Entering Armistice Zone",
             "notes": "Triggers safe zone indicator on overlay.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -85,6 +103,9 @@
             "regex": "Added notification.*Leaving Armistice Zone",
             "example": "Added notification \"Leaving Armistice Zone - Caution Advised: \"",
             "event": "ZONE",
+            "alert": "visual",
+            "reaction": "",
+            "warning": "Leaving Armistice Zone",
             "notes": "Triggers weapons-hot warning.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -97,6 +118,9 @@
             "regex": "Added notification.*Entered Monitored Space",
             "example": "Added notification \"Entered Monitored Space: \"",
             "event": "ZONE",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Comm array coverage detection.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -109,6 +133,9 @@
             "regex": "<Context Establishment Done>",
             "example": "<Context Establishment Done> ...",
             "event": "SESSION_START",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Fires once when player loads into the universe. Guards prevent multiple emissions.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -121,6 +148,9 @@
             "regex": "<PlatformManager>.*Changed state to (\\w+)",
             "example": "<PlatformManager> Changed state to MovingPlatformToCallPosition",
             "event": "HANGAR_STATE",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "States mapped: MovingPlatform*=TRANSIT, Idle*=READY, Closed*=CLOSED.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -133,6 +163,9 @@
             "regex": "SetSpawnLocation.*'([^']+)'",
             "example": "<SetSpawnLocation> Player set spawn to 'ESPR_Prowler_Utility_9448279551878'",
             "event": "SPAWN_SET",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Bed logout / respawn point detection.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -145,6 +178,9 @@
             "regex": "<Fire Client - Background Simulation Skipped>",
             "example": "<Fire Client - Background Simulation Skipped> Fire Area 'mrai_guardian_int_cockpit_room_RN' received a snapshot...",
             "event": "NONE",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "⚠️ NOISE — 1000+ lines per session. Fires for ALL ships in area. EXCLUDED from detection.",
             "addedBy": "agent",
             "addedDate": "2026-02-15"
@@ -157,6 +193,9 @@
             "regex": "<Actor Death>.*CActor::Kill:\\s*'([^']+)'\\s*\\[\\d+\\].*killed by\\s*'([^']+)'\\s*\\[\\d+\\].*using\\s*'([^']+)'",
             "example": "<Actor Death> CActor::Kill: 'PlayerName' [id] in zone 'location' killed by 'KillerName' [id] using 'WeaponName' [Class X] with damage type 'DamageType'",
             "event": "DEATH",
+            "alert": "both",
+            "reaction": "TTS: Death detected",
+            "warning": "Wasted",
             "notes": "From MASTER_GUIDE research. Extracts victim, killer, weapon, damage type, zone, direction vector.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -169,6 +208,9 @@
             "regex": "<Vehicle Destruction>.*Vehicle\\s+'([^']+)'.*driven by\\s+'([^']+)'.*from destroy level\\s+(\\d+)\\s+to\\s+(\\d+).*caused by\\s+'([^']+)'",
             "example": "<Vehicle Destruction> CVehicle::OnAdvanceDestroyLevel: Vehicle 'ANVL_Paladin_123' [id] in zone 'zone' driven by 'Driver' [id] advanced from destroy level 0 to 1 caused by 'Attacker' [id]",
             "event": "VEHICLE_DESTRUCTION",
+            "alert": "both",
+            "reaction": "TTS: Vehicle destroyed",
+            "warning": "Vehicle Critical",
             "notes": "Destroy levels: 0=intact, 1=crippled, 2=destroyed.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -181,6 +223,9 @@
             "regex": "<MissionEnded>\\s*mission_id\\s*\\[([^\\]]+)\\]\\s*-\\s*mission_state\\s*\\[([^\\]]+)\\]",
             "example": "<MissionEnded> mission_id [UUID] - mission_state [MISSION_STATE_SUCCEEDED]",
             "event": "MISSION_STATUS",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Structured end format. States: SUCCEEDED, FAILED, ABANDONED, EXPIRED.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -193,6 +238,9 @@
             "regex": "Added notification.*Mission Accepted",
             "example": "Added notification \"Mission Accepted: Bounty Hunt - High Priority\"",
             "event": "MISSION_ACCEPTED",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Notification-based detection. May need refinement.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -205,6 +253,9 @@
             "regex": "Added notification.*Mission Updated",
             "example": "Added notification \"Mission Updated: Objective Changed\"",
             "event": "MISSION_OBJECTIVE",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Notification-based. Captures objective changes.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -217,6 +268,9 @@
             "regex": "<Quantum>|QuantumDrive",
             "example": "<Quantum> Player entered quantum travel",
             "event": "QUANTUM",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Speculative. Needs verification against real QT log lines.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -229,6 +283,9 @@
             "regex": "Player.*started suffocating",
             "example": "Player [PlayerName] started suffocating",
             "event": "STATUS",
+            "alert": "both",
+            "reaction": "",
+            "warning": "Suffocating",
             "notes": "Triggers full-screen blue vignette alert.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -241,6 +298,9 @@
             "regex": "Player.*started depressurization",
             "example": "Player [PlayerName] started depressurization",
             "event": "STATUS",
+            "alert": "both",
+            "reaction": "",
+            "warning": "Depressurizing",
             "notes": "Hull breach detection. Triggers full-screen alert.",
             "addedBy": "agent",
             "addedDate": "2026-02-14"
@@ -253,6 +313,9 @@
             "regex": "kegr_fire_extinguisher",
             "example": "<AttachmentReceived> Player[Name] Attachment[kegr_fire_extinguisher_01_9433658186907...]",
             "event": "NONE",
+            "alert": "none",
+            "reaction": "",
+            "warning": "",
             "notes": "Inventory noise. Explicitly excluded from fire detection.",
             "addedBy": "agent",
             "addedDate": "2026-02-15"

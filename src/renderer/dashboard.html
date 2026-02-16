@@ -511,9 +511,6 @@
         }
 
         /* Mission List Styles */
-        .mission-entry {
-            /* No border for single items, but nice spacing */
-        }
 
         .mission-entry:not(:last-child) {
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -599,6 +596,14 @@
             <div class="status-row">
                 <div class="status-label"><span class="dot off" id="status-api-dot"></span> API Link</div>
                 <span id="status-api-text" style="font-size:0.75rem;">Disconnected</span>
+            </div>
+            <div class="status-row">
+                <div class="status-label"><span class="dot off" id="status-twitch-dot"></span> Twitch Link</div>
+                <span id="status-twitch-text" style="font-size:0.75rem;">Disconnected</span>
+            </div>
+            <div class="status-row">
+                <div class="status-label"><span class="dot off" id="status-youtube-dot"></span> YouTube Link</div>
+                <span id="status-youtube-text" style="font-size:0.75rem;">Disconnected</span>
             </div>
         </div>
     </div>
@@ -931,6 +936,82 @@
                 </div>
             </div>
 
+            <!-- Remote Access (v2.9) -->
+            <div
+                style="background: rgba(170,100,255,0.1); padding: 15px; border-radius: 8px; border: 1px solid #aa64ff; margin-bottom: 15px;">
+                <div style="font-weight:bold; color:#aa64ff; margin-bottom:5px;">Remote Control Access</div>
+                <div style="font-size:0.75rem; color:#888; margin-bottom:10px;">
+                    Control your cockpit from a phone or tablet. Connect to this URL on your local network:
+                </div>
+                <div
+                    style="background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; font-family:monospace; font-size:0.85rem; color:#fff; text-align:center;">
+                    http://<span id="local-ip">SEARCHING...</span>:4400/remote.html
+                </div>
+                <div style="font-size:0.65rem; color:#666; margin-top:10px; text-align:center;">
+                    * Stream Deck can also POST to this IP on port 4400
+                </div>
+            </div>
+
+            <!-- HUD Customization (v2.8) -->
+            <div
+                style="background: rgba(0,100,255,0.1); padding: 15px; border-radius: 8px; border: 1px solid var(--cyan); margin-bottom: 15px;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div>
+                        <div style="font-weight:bold; color:#00c8ff;">Unlock HUD Layout</div>
+                        <div style="font-size:0.8rem; color:#888;">Enable dragging of overlay elements (Flight Deck,
+                            Feed)
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="config-unlock-hud" onchange="toggleHUDLock(this.checked)">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Smart Home — Philips Hue (v2.9) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0; display:flex; justify-content:space-between;">
+                    <span>Smart Home — Philips Hue</span>
+                    <label class="switch" style="transform: scale(0.7); margin-top: -5px;">
+                        <input type="checkbox" id="config-hue-enabled" onchange="saveConfig()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <div style="flex:1;">
+                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">BRIDGE IP</div>
+                        <div style="display:flex; gap:5px;">
+                            <input type="text" id="config-hue-bridge" class="modern-input" style="margin:0;"
+                                placeholder="192.168.1.x">
+                            <button class="cyber-btn small" onclick="discoverHueBridge()"
+                                style="margin:0; width:auto;">Discover</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">API USERNAME</div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="config-hue-user" class="modern-input" style="margin:0;"
+                            placeholder="Hue API Token">
+                        <button class="cyber-btn small" onclick="linkHueBridge()" style="margin:0; width:auto;"
+                            title="Press physical button on Bridge first!">Link</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">LIGHT IDS (Comma Separated)
+                    </div>
+                    <input type="text" id="config-hue-lights" class="modern-input" style="margin:0;"
+                        placeholder="1, 2, 5">
+                </div>
+
+                <button class="cyber-btn small" onclick="testHueLights()">Test Connection</button>
+            </div>
+
             <!-- Location Sharing (Phase 5) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -944,6 +1025,53 @@
                         <input type="checkbox" id="config-share-location" onchange="saveConfig()">
                         <span class="slider round"></span>
                     </label>
+                </div>
+            </div>
+
+            <!-- Team Designations (v2.8) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Team Designations</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
+                    Rename your squadron's callsigns and assign yourself to a team.
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div>
+                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 1</div>
+                        <input type="text" id="team-name-0" class="modern-input" style="margin:0;"
+                            onchange="saveTeamNames()">
+                    </div>
+                    <div>
+                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 2</div>
+                        <input type="text" id="team-name-1" class="modern-input" style="margin:0;"
+                            onchange="saveTeamNames()">
+                    </div>
+                    <div>
+                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 3</div>
+                        <input type="text" id="team-name-2" class="modern-input" style="margin:0;"
+                            onchange="saveTeamNames()">
+                    </div>
+                    <div>
+                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 4</div>
+                        <input type="text" id="team-name-3" class="modern-input" style="margin:0;"
+                            onchange="saveTeamNames()">
+                    </div>
+                </div>
+
+                <div
+                    style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <div>
+                        <div style="font-weight:bold; color:#fff;">Your Assigned Team</div>
+                        <div style="font-size:0.8rem; color:#888;">Identify yourself in command transmissions</div>
+                    </div>
+                    <select id="config-user-team" class="modern-input" style="width:120px; margin:0;"
+                        onchange="saveConfig()">
+                        <option value="Alpha">Alpha</option>
+                        <option value="Bravo">Bravo</option>
+                        <option value="Charlie">Charlie</option>
+                        <option value="Delta">Delta</option>
+                    </select>
                 </div>
             </div>
 
@@ -1146,6 +1274,33 @@
                     </div>
                 </div>
 
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Alert Type</label>
+                        <select id="pm-alert" class="modern-input" style="margin:0;">
+                            <option value="none">None</option>
+                            <option value="audio">🔊 Audio Only</option>
+                            <option value="visual">📺 Visual Only</option>
+                            <option value="both">🔥 Both (Critical)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">HUD Warning
+                            Message</label>
+                        <input type="text" id="pm-warning" class="modern-input" placeholder="Wasted / Hull Breach / etc"
+                            style="margin:0;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Reaction (TTS or
+                            Cmd)</label>
+                        <input type="text" id="pm-reaction" class="modern-input"
+                            placeholder="TTS: Fire detected / /emergency" style="margin:0;">
+                    </div>
+                </div>
+
                 <div>
                     <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Notes</label>
                     <textarea id="pm-notes" class="modern-input" rows="2" style="margin:0; resize:vertical;"
@@ -1312,7 +1467,12 @@
         // ═══ COMMAND MODULE ═══
         function sendPresetCommand(preset) {
             const target = document.getElementById('cmd-target').value;
-            const data = { preset, target, timestamp: Date.now() };
+            const data = {
+                preset,
+                target,
+                fromTeam: config.userTeam || 'Alpha',
+                timestamp: Date.now()
+            };
             ipcRenderer.send('command:send', data);
             addCommandLog(preset, target, 'YOU');
             playSound(preset === 'EMERGENCY' ? 'sos' : 'command');
@@ -1323,7 +1483,13 @@
             if (!text) return;
             const target = document.getElementById('cmd-target').value;
             const broadcast = document.getElementById('cmd-broadcast').checked;
-            const data = { text, target, broadcast, timestamp: Date.now() };
+            const data = {
+                text,
+                target,
+                fromTeam: config.userTeam || 'Alpha',
+                broadcast,
+                timestamp: Date.now()
+            };
             ipcRenderer.send('command:send', data);
             addCommandLog(text, target, 'YOU');
             document.getElementById('cmd-custom-text').value = '';
@@ -1971,6 +2137,15 @@
             addDashItem('🔕', data.enabled ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF');
         });
 
+        // TTS Reaction (v2.8)
+        ipcRenderer.on('app:tts', (e, text) => {
+            if (dndMode) return;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        });
+
         // Keyboard shortcut for sending commands
         document.getElementById('cmd-custom-text').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendCustomCommand();
@@ -2455,10 +2630,13 @@
                             padding:3px 8px; border-radius:3px; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             📝 ${escapeHtml(p.example || 'No example')}
                         </div>
-                        <div style="display:flex; gap:10px; font-size:0.7rem; color:#888;">
+                        <div style="display:flex; gap:10px; font-size:0.7rem; color:#888; margin-bottom:4px;">
                             <span>Event: <b style="color:var(--accent);">${escapeHtml(p.event)}</b></span>
-                            ${p.notes ? `<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">💬 ${escapeHtml(p.notes)}</span>` : ''}
+                            ${p.alert && p.alert !== 'none' ? `<span>Alert: <b style="color:#ff4444;">${p.alert.toUpperCase()}</b></span>` : ''}
+                            ${p.warning ? `<span>Warning: <b style="color:#00c8ff;">"${escapeHtml(p.warning)}"</b></span>` : ''}
+                            ${p.reaction ? `<span>Reaction: <b style="color:#aa88ff;">${escapeHtml(p.reaction)}</b></span>` : ''}
                         </div>
+                        ${p.notes ? `<div style="font-size:0.7rem; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">💬 ${escapeHtml(p.notes)}</div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -2476,7 +2654,9 @@
                     p.regex.toLowerCase().includes(search) ||
                     p.event.toLowerCase().includes(search) ||
                     (p.notes && p.notes.toLowerCase().includes(search)) ||
-                    (p.example && p.example.toLowerCase().includes(search))
+                    (p.example && p.example.toLowerCase().includes(search)) ||
+                    (p.warning && p.warning.toLowerCase().includes(search)) ||
+                    (p.reaction && p.reaction.toLowerCase().includes(search))
                 );
             }
             if (cat) filtered = filtered.filter(p => p.category === cat);
@@ -2493,6 +2673,9 @@
             document.getElementById('pm-status').value = 'research';
             document.getElementById('pm-regex').value = '';
             document.getElementById('pm-example').value = '';
+            document.getElementById('pm-alert').value = 'none';
+            document.getElementById('pm-warning').value = '';
+            document.getElementById('pm-reaction').value = '';
             document.getElementById('pm-notes').value = '';
             document.getElementById('pm-edit-id').value = '';
             document.getElementById('pm-test-result').textContent = 'Click Test to verify regex against example';
@@ -2510,6 +2693,9 @@
             document.getElementById('pm-status').value = p.status || 'research';
             document.getElementById('pm-regex').value = p.regex || '';
             document.getElementById('pm-example').value = p.example || '';
+            document.getElementById('pm-alert').value = p.alert || 'none';
+            document.getElementById('pm-warning').value = p.warning || '';
+            document.getElementById('pm-reaction').value = p.reaction || '';
             document.getElementById('pm-notes').value = p.notes || '';
             document.getElementById('pm-edit-id').value = id;
             document.getElementById('pm-test-result').textContent = 'Click Test to verify regex against example';
@@ -2530,6 +2716,9 @@
                 status: document.getElementById('pm-status').value,
                 regex: document.getElementById('pm-regex').value.trim(),
                 example: document.getElementById('pm-example').value.trim(),
+                alert: document.getElementById('pm-alert').value,
+                warning: document.getElementById('pm-warning').value.trim(),
+                reaction: document.getElementById('pm-reaction').value.trim(),
                 notes: document.getElementById('pm-notes').value.trim()
             };
 
@@ -2631,9 +2820,136 @@
             }
         }
 
+        function toggleHUDLock(unlock) {
+            ipcRenderer.send('overlay:unlock', unlock);
+            if (unlock) {
+                addDashItem('🔧', 'HUD Unlocked — Drag elements on overlay to move them');
+            } else {
+                addDashItem('🔒', 'HUD Locked — Positions saved');
+            }
+        }
+
+        function saveTeamNames() {
+            const names = [
+                document.getElementById('team-name-0').value || 'Alpha',
+                document.getElementById('team-name-1').value || 'Bravo',
+                document.getElementById('team-name-2').value || 'Charlie',
+                document.getElementById('team-name-3').value || 'Delta'
+            ];
+            config.teamNames = names;
+            saveConfig();
+            updateTeamUIs();
+        }
+
+        function updateTeamUIs() {
+            const names = config.teamNames || ['Alpha', 'Bravo', 'Charlie', 'Delta'];
+
+            // Update Settings Inputs
+            for (let i = 0; i < 4; i++) {
+                const el = document.getElementById(`team-name-${i}`);
+                if (el) el.value = names[i];
+            }
+
+            // Update Target Dropdown
+            const targetSelect = document.getElementById('cmd-target');
+            if (targetSelect) {
+                targetSelect.options[1].textContent = `🏷️ ${names[0]}`; targetSelect.options[1].value = names[0].toUpperCase();
+                targetSelect.options[2].textContent = `🏷️ ${names[1]}`; targetSelect.options[2].value = names[1].toUpperCase();
+                targetSelect.options[3].textContent = `🏷️ ${names[2]}`; targetSelect.options[3].value = names[2].toUpperCase();
+                targetSelect.options[4].textContent = `🏷️ ${names[3]}`; targetSelect.options[4].value = names[3].toUpperCase();
+            }
+
+            // Update Your Team Dropdown
+            const userTeamSelect = document.getElementById('config-user-team');
+            if (userTeamSelect) {
+                for (let i = 0; i < 4; i++) {
+                    userTeamSelect.options[i].textContent = names[i];
+                    userTeamSelect.options[i].value = names[i];
+                }
+            }
+        }
+
+        async function discoverHueBridge() {
+            addDashItem('🔍', 'Searching for Hue Bridge...');
+            const results = await ipcRenderer.invoke('hue:discover');
+            if (results && results.length > 0) {
+                const ip = results[0].internalipaddress;
+                document.getElementById('config-hue-bridge').value = ip;
+                addDashItem('💡', `Bridge found at ${ip}`);
+                saveConfig();
+            } else {
+                addDashItem('❌', 'No Hue Bridge found on network');
+            }
+        }
+
+        async function testHueLights() {
+            const bridgeIp = document.getElementById('config-hue-bridge').value;
+            const username = document.getElementById('config-hue-user').value;
+            const lights = document.getElementById('config-hue-lights').value.split(',').map(l => l.trim());
+
+            addDashItem('🧪', 'Testing Hue connection...');
+            const res = await ipcRenderer.invoke('hue:control', {
+                bridgeIp,
+                username,
+                lightId: lights,
+                state: { on: true, alert: 'select' }
+            });
+            console.log('Hue Test Res:', res);
+        }
+
+        async function linkHueBridge() {
+            const ip = document.getElementById('config-hue-bridge').value;
+            if (!ip) return alert('Discover or enter Bridge IP first.');
+            addDashItem('🔗', 'Attempting to link Bridge... (Press the physical button on Hue Bridge NOW!)');
+            const res = await ipcRenderer.invoke('hue:link', ip);
+            if (res && res[0] && res[0].success) {
+                document.getElementById('config-hue-user').value = res[0].success.username;
+                addDashItem('✅', 'Bridge Linked successfully!');
+                saveConfig();
+            } else if (res && res[0] && res[0].error) {
+                addDashItem('⚠️', 'Link failed: ' + res[0].error.description);
+            }
+        }
+
+        function checkPlatformStatus() {
+            // Pulse check broadcast-kit (running on 3000)
+            fetch('http://localhost:3000/api/control/status')
+                .then(r => r.json())
+                .then(data => {
+                    // Twitch
+                    const tDot = document.getElementById('status-twitch-dot');
+                    const tText = document.getElementById('status-twitch-text');
+                    if (tDot) tDot.className = data.online ? 'dot on' : 'dot off';
+                    if (tText) tText.textContent = data.online ? 'Connected' : 'Service Offline';
+
+                    // YouTube (Added v2.9)
+                    const yDot = document.getElementById('status-youtube-dot');
+                    const yText = document.getElementById('status-youtube-text');
+                    if (yDot) yDot.className = data.online ? 'dot on' : 'dot off';
+                    if (yText) yText.textContent = data.online ? 'Connected' : 'Service Offline';
+                })
+                .catch(() => {
+                    ['twitch', 'youtube'].forEach(p => {
+                        const dot = document.getElementById('status-' + p + '-dot');
+                        const text = document.getElementById('status-' + p + '-text');
+                        if (dot) dot.className = 'dot off';
+                        if (text) text.textContent = 'Service Offline';
+                    });
+                });
+        }
+
+        setInterval(checkPlatformStatus, 15000);
+        checkPlatformStatus();
+
+        ipcRenderer.on('hue:ip', (event, ip) => {
+            document.getElementById('local-ip').textContent = ip;
+        });
+
         // Init
         loadBuiltinPatterns();
         loadCustomLocationList();
+        loadPatternDB();
+        updateTeamUIs();
     </script>
 </body>
 

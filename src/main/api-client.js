@@ -163,6 +163,11 @@ class APIClient extends EventEmitter {
             }
         }
     }
+
+    async sendSignal(toHandle, signal) {
+        if (!this.socket || !this.socket.connected) return;
+        this.socket.emit('p2p:signal', { toHandle, signal });
+    }
 }
 
 module.exports = new APIClient();

@@ -39,6 +39,12 @@
             /* Let clicks pass through empty space */
         }
 
+        body.edit-mode {
+            pointer-events: auto;
+            background: rgba(0, 100, 255, 0.05);
+            /* Subtle blue tint in edit mode */
+        }
+
         /* ═══ INTERACTIVE ELEMENTS ═══ */
         .interactive {
             pointer-events: auto;
@@ -46,27 +52,39 @@
 
         /* ═══ TOP CENTER HUD (Dynamic Island / Flight Deck) ═══ */
         .hud-top-center {
-            grid-column: 2;
-            grid-row: 1;
-            margin-top: 10px;
+            position: absolute;
+            left: 50%;
+            top: 10px;
+            transform: translateX(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 800px;
+            z-index: 1000;
+        }
+
+        body.edit-mode .hud-top-center,
+        body.edit-mode .hud-right-panel {
+            outline: 2px dashed var(--accent);
+            pointer-events: auto;
         }
 
         /* Drag Handle incorporated into design */
         .drag-handle {
             width: 100%;
-            height: 12px;
-            background: linear-gradient(90deg, transparent, rgba(255, 165, 0, 0.2), transparent);
+            height: 16px;
+            background: linear-gradient(90deg, transparent, rgba(255, 165, 0, 0.4), transparent);
             cursor: grab;
-            display: flex;
+            display: none;
+            /* Only show in edit mode */
             justify-content: center;
             align-items: center;
             margin-bottom: 2px;
-            -webkit-app-region: no-drag;
-            /* We handle drag manually if needed, or rely on this element */
+            pointer-events: auto;
+        }
+
+        body.edit-mode .drag-handle {
+            display: flex;
         }
 
         .drag-handle:active {
@@ -232,15 +250,53 @@
             animation: slideInRight 0.3s ease-out;
         }
 
-        @keyframes slideInRight {
+        /* ═══ SQUAD HUD (v2.8) ═══ */
+        .squad-hud {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .squad-card {
+            background: var(--bg-glass);
+            border-bottom: 2px solid var(--accent);
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            min-width: 150px;
+            animation: fadeIn 0.5s;
+        }
+
+        .squad-card .friend-name {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .squad-card .friend-loc {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .squad-card .friend-ship {
+            font-size: 0.7rem;
+            color: var(--cyan);
+        }
+
+        @keyframes fadeIn {
             from {
-                transform: translateX(20px);
                 opacity: 0;
+                transform: translateY(-5px);
             }
 
             to {
-                transform: translateX(0);
                 opacity: 1;
+                transform: translateY(0);
             }
         }
 
@@ -352,21 +408,21 @@
 </head>
 
 <body>
-
-    <!-- ═══ TOP CENTER: FLIGHT DECK ═══ -->
-    <div class="hud-top-center interactive" id="hudContainer">
+    <!-- Top Center HUD (Flight Deck + Squad HUD) -->
+    <div id="hud-top-center" class="hud-top-center">
         <!-- Drag Handle -->
-        <div class="drag-handle" id="dragHandle">
+        <div class="drag-handle">
             <div class="drag-handle-bar"></div>
         </div>
 
-        <!-- Main PCB -->
-        <div class="flight-deck">
+        <!-- Main Flight Deck -->
+        <div class="flight-deck interactive">
             <!-- Location -->
             <div class="fd-col">
                 <div class="fd-label">Location</div>
                 <div class="fd-value large" id="val-location">Unknown</div>
             </div>
+
 
             <!-- Ship -->
             <div class="fd-col">
@@ -398,6 +454,11 @@
                 <div class="fd-value" id="val-timer">00:00:00</div>
             </div>
         </div>
+
+        <!-- Squad HUD Row (v2.8) -->
+        <div id="squad-hud" class="squad-hud">
+            <!-- Friend cards injected here -->
+        </div>
     </div>
 
     <!-- ═══ SHIP IMAGE (below flight deck) ═══ -->
@@ -425,7 +486,10 @@
     </div>
 
     <!-- ═══ RIGHT: LISTS ═══ -->
-    <div class="hud-right-panel interactive">
+    <div id="hud-right-panel" class="hud-right-panel interactive">
+        <div class="drag-handle">
+            <div class="drag-handle-bar" style="width:40px;"></div>
+        </div>
 
         <!-- Party Module -->
         <div class="panel-module" id="mod-party">
@@ -443,7 +507,6 @@
                 <!-- Items injected here -->
             </div>
         </div>
-
     </div>
 
     <script>
@@ -505,48 +568,90 @@
             updateTimer();
         }
 
-        // ═══ LOCAL DRAG LOGIC ═══
-        // Move the HUD element itself, not the window
-        const hudContainer = document.getElementById('hudContainer');
-        const dragHandle = document.getElementById('dragHandle');
+        // ═══ DRAG & DROP LOGIC (v2.8) ═══
+        let isDraggingLocal = false;
+        let activeEl = null;
+        let sX, sY, sLeft, sTop;
 
-        let isDragging = false;
-        let startX = 0;
-        let startY = 0;
-        // Store current translations
-        let transX = 0;
-        let transY = 0;
+        document.addEventListener('mousedown', (e) => {
+            if (!document.body.classList.contains('edit-mode')) return;
+            const handle = e.target.closest('.drag-handle');
+            if (handle) {
+                isDraggingLocal = true;
+                activeEl = handle.parentElement;
+                sX = e.clientX;
+                sY = e.clientY;
 
-        dragHandle.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            // Tell main process we are interacting (block clicks)
-            ipcRenderer.send('overlay:details-interaction', { active: true });
+                const rect = activeEl.getBoundingClientRect();
+                sLeft = rect.left;
+                sTop = rect.top;
+
+                activeEl.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
+            if (!isDraggingLocal || !activeEl) return;
 
-            // Calculate new position
-            const newX = transX + dx;
-            const newY = transY + dy;
+            const dx = e.clientX - sX;
+            const dy = e.clientY - sY;
 
-            hudContainer.style.transform = `translate(${newX}px, ${newY}px)`;
+            activeEl.style.left = (sLeft + dx) + 'px';
+            activeEl.style.top = (sTop + dy) + 'px';
+            activeEl.style.transform = 'none'; // Disable centering transform when moved
+            activeEl.style.right = 'auto'; // Disable right anchoring
+            activeEl.style.bottom = 'auto';
         });
 
-        document.addEventListener('mouseup', (e) => {
-            if (isDragging) {
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                transX += dx;
-                transY += dy;
-                isDragging = false;
-                ipcRenderer.send('overlay:details-interaction', { active: false });
+        document.addEventListener('mouseup', async () => {
+            if (isDraggingLocal && activeEl) {
+                isDraggingLocal = false;
+                activeEl.style.cursor = 'auto';
+
+                // Save positions
+                const id = activeEl.id;
+                if (id) {
+                    const rect = activeEl.getBoundingClientRect();
+                    const pos = { [id]: { left: rect.left, top: rect.top } };
+                    await ipcRenderer.invoke('overlay:save-positions', pos);
+                }
+
+                activeEl = null;
             }
         });
+
+        // Toggle Edit Mode
+        ipcRenderer.on('overlay:unlock', (e, unlock) => {
+            if (unlock) {
+                document.body.classList.add('edit-mode');
+            } else {
+                document.body.classList.remove('edit-mode');
+            }
+        });
+
+        // Load Positions
+        async function loadPositions() {
+            const positions = await ipcRenderer.invoke('overlay:get-positions');
+            if (positions['hud-top-center']) {
+                const el = document.getElementById('hud-top-center');
+                if (el) {
+                    el.style.left = positions['hud-top-center'].left + 'px';
+                    el.style.top = positions['hud-top-center'].top + 'px';
+                    el.style.transform = 'none';
+                }
+            }
+            if (positions['hud-right-panel']) {
+                const el = document.getElementById('hud-right-panel');
+                if (el) {
+                    el.style.left = positions['hud-right-panel'].left + 'px';
+                    el.style.top = positions['hud-right-panel'].top + 'px';
+                    el.style.right = 'auto';
+                }
+            }
+        }
+
+        loadPositions();
 
         // ═══ MOUSE INTERACTION PASS-THROUGH ═══
         const interactiveEls = document.querySelectorAll('.interactive');
@@ -815,6 +920,34 @@
                     </div>
                 `}).join('');
             }
+        });
+
+        // Friend Telemetry (Squad HUD - v2.8)
+        ipcRenderer.on('api:friends', (e, friends) => {
+            const squadHud = document.getElementById('squad-hud');
+            if (!squadHud) return;
+
+            // Only show online friends who are sharing location
+            const onlineFriends = friends.filter(f => f.online);
+
+            if (onlineFriends.length === 0) {
+                squadHud.style.display = 'none';
+                return;
+            }
+
+            squadHud.style.display = 'flex';
+            squadHud.innerHTML = onlineFriends.map(f => `
+                <div class="squad-card">
+                    <div style="flex:1">
+                        <div class="friend-name">${f.name}</div>
+                        <div class="friend-loc">${f.location || 'Deep Space'}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="friend-ship">${f.ship || 'On Foot'}</div>
+                        <div style="font-size:0.6rem; color:${f.status === 'combat' ? 'var(--danger)' : 'var(--success)'}">${(f.status || 'Active').toUpperCase()}</div>
+                    </div>
+                </div>
+            `).join('');
         });
 
         // VerseCon Events
