@@ -186,7 +186,7 @@ class LogWatcher extends EventEmitter {
                 path.join(home, 'Games/StarCitizen/Game.log'),
                 path.join(home, '.star-citizen/Game.log'),
                 path.join(home, '.starclient/Game.log'),
-                '/opt/starcitizen/Game.log')
+                '/opt/starcitizen/Game.log'
             );
         }
 
