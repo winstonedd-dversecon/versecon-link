@@ -959,13 +959,26 @@
                 </div>
             </div>
 
-            <!-- Stream Deck API (v2.9.1) -->
+            <!-- Stream Deck API (v2.10) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
                 <div class="section-title" style="margin-top: 0;">Stream Deck & External API</div>
                 <div style="font-size: 0.7rem; color: #888; margin-bottom: 10px;">
                     For manual control via Stream Deck or custom hardware.
                 </div>
+                
+                <div style="font-size: 0.65rem; color: var(--text-dim); margin-bottom: 5px;">STREAM DECK BUTTONS</div>
+                <div style="background:rgba(0,0,0,0.2); padding:5px; border-radius:4px; font-family:monospace; font-size:0.7rem; margin-bottom:10px; line-height:1.4;">
+                    POST /api/streamdeck/send-command<br>
+                    { "preset": "RTB", "target": "ALL" }<br>
+                    <br>
+                    POST /api/streamdeck/tts<br>
+                    { "text": "Message here" }<br>
+                    <br>
+                    GET /api/streamdeck/buttons<br>
+                    (Returns all available Stream Deck commands)
+                </div>
+                
                 <div style="font-size: 0.65rem; color: var(--text-dim); margin-bottom: 5px;">TACTICAL COMMANDS (POST)
                 </div>
                 <div
@@ -1896,11 +1909,25 @@
             const dot = document.getElementById('status-log-dot');
             const txt = document.getElementById('status-log-text');
             if (data.connected) {
-                dot.className = 'dot on'; txt.innerText = 'Active';
-                document.getElementById('config-log-path').value = data.path || 'Auto-detected';
-                if (data.path) addDashItem('📂', `Game.log: <span class="feed-highlight">${data.path}</span>`);
+                dot.className = 'dot on'; 
+                txt.innerText = 'Active';
+                if (data.path) {
+                    document.getElementById('config-log-path').value = data.path;
+                    addDashItem('📂', `Game.log: <span class="feed-highlight">${data.path}</span>`);
+                }
             } else {
-                dot.className = 'dot off'; txt.innerText = 'Searching';
+                dot.className = 'dot off'; 
+                txt.innerText = data.message || 'Searching';
+                if (data.message) {
+                    addDashItem('⚠️', `Log issue: ${data.message}`);
+                }
+            }
+        });
+
+        // FIX 3: Handle log errors from main process
+        ipcRenderer.on('log:error', (e, data) => {
+            if (data && data.message) {
+                addDashItem('❌', `Log Error: ${data.message}`);
             }
         });
 
@@ -2638,7 +2665,7 @@
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
             customLocations[key] = val;
-            ipcRenderer.send('settings:save-custom-locations', customLocations);
+            ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
             // Feedback
             addDashItem('✅', `Mapped <span style="color:#ffaa00; font-family:monospace;">${escapeHtml(key)}</span> → <span style="color:#00ff88;">${escapeHtml(val)}</span>`);
@@ -2656,7 +2683,7 @@
         window.deleteCustomLocation = function (key) {
             if (confirm(`Remove location mapping for "${key}"?`)) {
                 delete customLocations[key];
-                ipcRenderer.send('settings:save-custom-locations', customLocations);
+                ipcRenderer.invoke('settings:save-custom-locations', customLocations);
                 renderCustomLocationList();
                 // Close modal if it was the edited one
                 if (document.getElementById('location-edit-original-key').value === key) {
@@ -2754,7 +2781,7 @@
 
             // Update with new value
             customLocations[selectedLocationKey] = newVal;
-            ipcRenderer.send('settings:save-custom-locations', customLocations);
+            ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
             // Update both modal and main location list
             addDashItem('✅', `Updated: ${selectedLocationKey} → ${escapeHtml(newVal)}`);

@@ -180,6 +180,14 @@ class LogWatcher extends EventEmitter {
                 path.join(home, 'Games/star-citizen/drive_c/Program Files/Roberts Space Industries/Star Citizen/LIVE/Game.log'),
                 path.join(home, '.local/share/lutris/runners/wine/star-citizen/Game.log')
             );
+            // FIX 6: Additional Linux paths for native installs or common alternate locations
+            candidates.push(
+                path.join(home, 'Games/Star Citizen/Game.log'),
+                path.join(home, 'Games/StarCitizen/Game.log'),
+                path.join(home, '.star-citizen/Game.log'),
+                path.join(home, '.starclient/Game.log'),
+                '/opt/starcitizen/Game.log')
+            );
         }
 
         // Dev Fallback
@@ -204,12 +212,16 @@ class LogWatcher extends EventEmitter {
     }
 
     start(customPath = null) {
+        console.log('[LogWatcher] START called with customPath:', customPath);
+        console.log('[LogWatcher] Current isWatching:', this.isWatching);
+        
         if (this.isWatching) {
             console.log(`[LogWatcher] Already watching: ${this.filePath}`);
             return;
         }
 
         this.filePath = customPath || this.findLogFile();
+        console.log('[LogWatcher] Resolved filePath:', this.filePath);
 
         if (!this.filePath) {
             console.error('[LogWatcher] No Game.log found.');
@@ -220,6 +232,7 @@ class LogWatcher extends EventEmitter {
         // Validate file existence and permissions
         try {
             fs.accessSync(this.filePath, fs.constants.R_OK);
+            console.log(`[LogWatcher] File validated: ${this.filePath} (readable)`);
         } catch (e) {
             console.error(`[LogWatcher] Permission denied or file missing: ${this.filePath}`, e);
             this.emit('error', `Cannot read Log: ${e.message}`);
@@ -243,9 +256,12 @@ class LogWatcher extends EventEmitter {
         try {
             let stat = fs.statSync(this.filePath);
             this.lastSize = stat.size;
+            console.log(`[LogWatcher] Initial file size: ${this.lastSize} bytes`);
 
             fs.watchFile(this.filePath, { interval: 100 }, (curr, prev) => {
+                console.log(`[LogWatcher] File changed: prev=${prev.size}, curr=${curr.size}`);
                 if (curr.size > this.lastSize) {
+                    console.log(`[LogWatcher] File grew: reading from ${this.lastSize} to ${curr.size - 1}`);
                     const stream = fs.createReadStream(this.filePath, {
                         start: this.lastSize,
                         end: curr.size - 1,
@@ -254,18 +270,21 @@ class LogWatcher extends EventEmitter {
                     let buffer = '';
                     stream.on('data', (chunk) => { buffer += chunk; });
                     stream.on('end', () => {
-                        buffer.split('\n').forEach(line => {
-                            if (line.trim()) this.processLine(line, false);
-                        });
+                        const lines = buffer.split('\n').filter(l => l.trim());
+                        console.log(`[LogWatcher] Processing ${lines.length} new lines`);
+                        lines.forEach(line => this.processLine(line, false));
                     });
                     this.lastSize = curr.size;
                 } else if (curr.size < this.lastSize) {
+                    console.log(`[LogWatcher] File size decreased - game restarted`);
                     this.lastSize = curr.size;
                     this.emit('gamestate', { type: 'GAME_RESTART', value: 'restarted' });
                 }
             });
             this.isWatching = true;
+            console.log('[LogWatcher] File watcher initialized successfully');
         } catch (e) {
+            console.error('[LogWatcher] Failed to initialize file watcher:', e);
             this.emit('error', `Failed to watch file: ${e.message}`);
         }
     }
@@ -380,4 +399,10 @@ class LogWatcher extends EventEmitter {
     }
 }
 
-module.exports = new LogWatcher();
+const instance = new LogWatcher();
+
+// FIX 2: Export findLogFile as a static method so it can be called on the module
+instance.findLogFile = instance.findLogFile.bind(instance);
+
+module.exports = instance;
+module.exports.findLogFile = instance.findLogFile;

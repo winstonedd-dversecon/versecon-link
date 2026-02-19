@@ -53,12 +53,14 @@ function loadConfig() {
             if (!config.shipMap) config.shipMap = {};
             if (!config.customPatterns) config.customPatterns = [];
             if (!config.customLocations) config.customLocations = {};
+            if (!config.overlayPositions) config.overlayPositions = {};
             if (!config.teamNames) config.teamNames = ["Alpha", "Bravo", "Charlie", "Delta"];
             if (!config.userTeam) config.userTeam = "Alpha";
             if (!config.hueBridge) config.hueBridge = "";
             if (!config.hueUser) config.hueUser = "";
             if (!config.hueLights) config.hueLights = ["1"];
             if (config.hueEnabled === undefined) config.hueEnabled = false;
+            if (!config.logPath) config.logPath = null; // Initialize logPath (will be auto-detected if null)
             if (!config.friendCode) {
                 config.friendCode = generateFriendCode();
                 saveConfig();
@@ -348,21 +350,30 @@ ipcMain.handle('app:select-log', async () => {
     });
 
     if (!result.canceled && result.filePaths.length > 0) {
-        const selectedPath = result.filePaths[0];
+        const filePath = result.filePaths[0];
 
-        // Update Config
-        config.logPath = selectedPath;
-        saveConfig();
-
-        // Update Telemetry Engine
-        if (telemetryEngine) {
-            telemetryEngine.setLogPath(selectedPath);
-        } else {
-            // Fallback to legacy if engine failed init
-            LogWatcher.setPath(selectedPath); // Legacy
+        // FIX 5: Properly restart LogWatcher on path change
+        if (filePath && filePath !== config.logPath) {
+            config.logPath = filePath;
+            saveConfig();
+            console.log('[Main] Log path changed to:', filePath);
+            
+            // Stop old watcher and start new one
+            LogWatcher.stop();
+            setTimeout(() => {
+                LogWatcher.start(filePath);
+                broadcast('log:status', { connected: true, path: filePath });
+                console.log('[Main] LogWatcher restarted with new path:', filePath);
+            }, 500);
+            
+            // Update Telemetry Engine if available
+            if (telemetryEngine) {
+                telemetryEngine.setLogPath(filePath);
+            }
+            
+            return filePath;
         }
-
-        return selectedPath;
+        return config.logPath;
     }
     return null;
 });
@@ -448,6 +459,23 @@ ipcMain.on('command:ack', (event, data) => {
     }
 });
 
+// Window minimize handler
+ipcMain.on('window:minimize', () => {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+        dashboardWindow.minimize();
+    }
+});
+
+// Mission rename handler
+ipcMain.on('mission:rename', (event, { id, name }) => {
+    if (!config.activeMissions) config.activeMissions = {};
+    if (config.activeMissions[id]) {
+        config.activeMissions[id].title = name;
+        saveConfig();
+        broadcast('mission:list', Object.values(config.activeMissions));
+    }
+});
+
 // Unknown log management
 ipcMain.on('log:ignore-unknown', (event, key) => {
     LogWatcher.ignoreUnknownPattern(key);
@@ -463,10 +491,7 @@ ipcMain.on('log:request-unknowns', () => {
 
 // Custom Locations
 const NavigationParser = require('./parsers/navigation');
-// Initialize with config
-if (config.customLocations) {
-    NavigationParser.setCustomLocations(config.customLocations);
-}
+// Initialize with config - NOW MOVED INTO app.whenReady() for proper timing
 
 // Custom location save handled by ipcMain.handle('settings:save-custom-locations') below
 // (removed duplicate ipcMain.on handler)
@@ -480,6 +505,8 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.overlayEnabled !== undefined) config.overlayEnabled = newConfig.overlayEnabled;
     if (newConfig.autoCleanMissions !== undefined) config.autoCleanMissions = newConfig.autoCleanMissions;
     if (newConfig.shareLocation !== undefined) config.shareLocation = newConfig.shareLocation; // Phase 5
+    if (newConfig.teamNames !== undefined) config.teamNames = newConfig.teamNames;
+    if (newConfig.overlayPositions !== undefined) config.overlayPositions = newConfig.overlayPositions;
 
     saveConfig();
 
@@ -1107,6 +1134,89 @@ function startRemoteServer() {
         res.json({ success: true });
     });
 
+    // ═══ STREAM DECK API ENDPOINTS (v2.10) ═══
+    app.post('/api/streamdeck/send-command', express.json(), (req, res) => {
+        const { preset, target } = req.body;
+        if (!preset || !target) {
+            return res.status(400).json({ error: 'Missing preset or target' });
+        }
+        // Broadcast command to overlay/dashboard
+        broadcast('command:receive', { preset, target, from: 'STREAM_DECK' });
+        if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+            dashboardWindow.webContents.send('command:receive', { preset, target, from: 'STREAM_DECK' });
+        }
+        res.json({ success: true, command: preset, target });
+    });
+
+    app.post('/api/streamdeck/tts', express.json(), (req, res) => {
+        const { text } = req.body;
+        if (!text) return res.status(400).json({ error: 'Missing text' });
+        // Send TTS to dashboard
+        if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+            dashboardWindow.webContents.send('app:tts', text);
+        }
+        res.json({ success: true, text });
+    });
+
+    app.post('/api/streamdeck/visual-alert', express.json(), (req, res) => {
+        const { type, duration } = req.body;
+        if (!type) return res.status(400).json({ error: 'Missing type' });
+        // Send visual alert
+        broadcast('vfx:alert', { type: type, duration: duration || 3000 });
+        res.json({ success: true, alert: type });
+    });
+
+    app.get('/api/streamdeck/status', (req, res) => {
+        res.json({
+            connected: dashboardWindow && !dashboardWindow.isDestroyed(),
+            version: '2.10',
+            mode: 'production'
+        });
+    });
+
+    app.get('/api/streamdeck/buttons', (req, res) => {
+        res.json({
+            buttons: [
+                {
+                    name: "RTB",
+                    endpoint: "POST /api/streamdeck/send-command",
+                    body: { "preset": "RTB", "target": "ALL" }
+                },
+                {
+                    name: "Defend",
+                    endpoint: "POST /api/streamdeck/send-command",
+                    body: { "preset": "DEFEND", "target": "ALL" }
+                },
+                {
+                    name: "Engage",
+                    endpoint: "POST /api/streamdeck/send-command",
+                    body: { "preset": "ENGAGE", "target": "ALL" }
+                },
+                {
+                    name: "EMERGENCY SOS",
+                    endpoint: "POST /api/streamdeck/send-command",
+                    body: { "preset": "EMERGENCY", "target": "ALL" }
+                },
+                {
+                    name: "Text To Speech",
+                    endpoint: "POST /api/streamdeck/tts",
+                    body: { "text": "custom message here" }
+                },
+                {
+                    name: "Visual Alert",
+                    endpoint: "POST /api/streamdeck/visual-alert",
+                    body: { "type": "interdiction", "duration": 3000 }
+                },
+                {
+                    name: "Status Check",
+                    endpoint: "GET /api/streamdeck/status",
+                    body: null
+                }
+            ],
+            baseUrl: "http://[your-machine-ip]:4400"
+        });
+    });
+
     remoteServer = http.createServer(remoteApp);
     remoteServer.listen(4400, '0.0.0.0', () => {
         console.log('[Remote] Server active on port 4400');
@@ -1321,6 +1431,11 @@ if (!gotTheLock) {
         loadConfig(); // Load saved config
         patternDatabase = loadPatternDB(); // Load pattern DB
 
+        // Initialize NavigationParser with custom locations AFTER config is loaded
+        if (config.customLocations) {
+            NavigationParser.setCustomLocations(config.customLocations);
+        }
+
         LogWatcher.setShipMap(config.shipMap); // Apply saved map
 
         // Unify custom patterns and pattern DB
@@ -1352,8 +1467,65 @@ if (!gotTheLock) {
             if (dashboardWindow) dashboardWindow.webContents.send('hue:ip', ip);
         }, 3000);
 
-        LogWatcher.start(config.logPath);
+        // FIX 1: Ensure log path is set and valid
+        if (!config.logPath) {
+            console.warn('[Main] No logPath in config, attempting auto-detection');
+            // Try to auto-detect
+            const autoPath = LogWatcher.findLogFile();
+            if (autoPath) {
+                console.log('[Main] Auto-detected log path:', autoPath);
+                config.logPath = autoPath;
+                saveConfig();
+            } else {
+                console.error('[Main] Failed to auto-detect Game.log');
+            }
+        }
 
+        if (config.logPath) {
+            console.log('[Main] Starting LogWatcher with path:', config.logPath);
+            if (!fs.existsSync(config.logPath)) {
+                console.error('[Main] LogPath does not exist:', config.logPath);
+                console.log('[Main] Attempting to find alternate location...');
+                const altPath = LogWatcher.findLogFile();
+                if (altPath) {
+                    config.logPath = altPath;
+                    saveConfig();
+                    console.log('[Main] Using alternate path:', altPath);
+                }
+            }
+            LogWatcher.start(config.logPath);
+        } else {
+            console.error('[Main] No Game.log path available. User must manually select via Settings.');
+            broadcast('log:error', { message: 'Game.log not found. Please select manually in Settings.' });
+        }
+        
+        // Ensure status is broadcast to dashboard after start
+        setTimeout(() => {
+            const logStatus = { connected: LogWatcher.isWatching, path: LogWatcher.filePath };
+            console.log('[Main] Broadcasting initial log status:', logStatus);
+            broadcast('log:status', logStatus);
+        }, 500);
+
+        // FIX 4: Periodic check that log file still exists (every 30 seconds)
+        setInterval(() => {
+            if (config.logPath && !fs.existsSync(config.logPath)) {
+                console.warn('[Main] Log file no longer exists at:', config.logPath);
+                LogWatcher.stop();
+                
+                // Try to find new location
+                const newPath = LogWatcher.findLogFile();
+                if (newPath && newPath !== config.logPath) {
+                    console.log('[Main] Found log file at new location:', newPath);
+                    config.logPath = newPath;
+                    saveConfig();
+                    LogWatcher.start(newPath);
+                    broadcast('log:status', { connected: true, path: newPath });
+                } else if (!fs.existsSync(config.logPath)) {
+                    broadcast('log:status', { connected: false, message: 'Game.log path no longer valid. Please re-select in Settings.' });
+                    broadcast('log:error', { message: 'Game.log not found. Please re-select in Settings.' });
+                }
+            }
+        }, 30000); // Check every 30 seconds
 
         // v2.2 - "Zero-Touch" Local Auth Check
         try {
