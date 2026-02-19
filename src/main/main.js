@@ -25,7 +25,7 @@ const IS_ADMIN = process.env.VCON_ROLE === 'admin' || process.env.VCON_DEV === '
 console.log('[Main] Role:', IS_ADMIN ? 'ADMIN/DEV' : 'USER');
 
 
-let config = { shipMap: {}, customPatterns: [] };
+let config = { shipMap: {}, customPatterns: [], customLocations: {} };
 let patternDatabase = { patterns: [] };
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 
@@ -52,6 +52,7 @@ function loadConfig() {
             config = JSON.parse(data);
             if (!config.shipMap) config.shipMap = {};
             if (!config.customPatterns) config.customPatterns = [];
+            if (!config.customLocations) config.customLocations = {};
             if (!config.teamNames) config.teamNames = ["Alpha", "Bravo", "Charlie", "Delta"];
             if (!config.userTeam) config.userTeam = "Alpha";
             if (!config.hueBridge) config.hueBridge = "";
