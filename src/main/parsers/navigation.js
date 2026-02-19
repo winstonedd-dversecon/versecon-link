@@ -239,7 +239,9 @@ class NavigationParser extends BaseParser {
         if (!key) return '';
         return key
             .toLowerCase()
-            .replace(/[+_\s]/g, '')  // Remove +, _, and spaces
+            .replace(/[+]/g, '')
+            .replace(/[_]/g, '')
+            .replace(/\s+/g, '')
             .trim();
     }
 
@@ -248,12 +250,12 @@ class NavigationParser extends BaseParser {
      */
     getCustomLocation(rawVal) {
         if (!this.customLocations || !rawVal) return null;
-        
+
         // First try exact match
         if (this.customLocations[rawVal]) {
             return this.customLocations[rawVal];
         }
-        
+
         // Then try normalized match
         const normalized = this.normalizeLocationKey(rawVal);
         for (const [storedKey, friendlyName] of Object.entries(this.customLocations)) {
@@ -261,7 +263,7 @@ class NavigationParser extends BaseParser {
                 return friendlyName;
             }
         }
-        
+
         return null;
     }
 
