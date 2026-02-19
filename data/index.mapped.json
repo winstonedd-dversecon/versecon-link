@@ -1,0 +1,802 @@
+{
+  "itemsByNumericId": {
+    "9480450742602": {
+      "id": "laser_cannon_m",
+      "name": "Laser Cannon (Medium)",
+      "type": "weapon",
+      "damage": 12.4,
+      "rpm": 1200
+    },
+    "200000000235": {
+      "id": "klwe_pistol_energy_01",
+      "name": "KLWE Pistol (Energy)",
+      "type": "weapon",
+      "archetype": "klwe_pistol_energy_01",
+      "numericId": 200000000235,
+      "damage": 6.5,
+      "rpm": 600
+    },
+    "9477893104153": {
+      "id": "klwe_sniper_energy_01_mag",
+      "name": "KLWE Sniper Magazine",
+      "type": "magazine",
+      "archetype": "klwe_sniper_energy_01_mag",
+      "numericId": 9477893104153,
+      "capacity": 10
+    },
+    "9477893104164": {
+      "id": "grin_multitool_01",
+      "name": "GRIN Multi-Tool",
+      "type": "tool",
+      "archetype": "grin_multitool_01",
+      "numericId": 9477893104164,
+      "utility": "salvage"
+    },
+    "9477893104171": {
+      "id": "crlf_medgun_01",
+      "name": "CRLF Medgun",
+      "type": "consumable",
+      "archetype": "crlf_medgun_01_msn_rwd02",
+      "numericId": 9477893104171,
+      "healing": 50
+    },
+    "9477893104155": {
+      "id": "behr_rifle_ballistic_02",
+      "name": "Behring Rifle (Ballistic)",
+      "type": "weapon",
+      "archetype": "behr_rifle_ballistic_02_civilian",
+      "numericId": 9477893104155,
+      "damage": 9.8,
+      "rpm": 450
+    },
+    "9477893104156": {
+      "id": "behr_rifle_ballistic_02_mag",
+      "name": "Behring Rifle Magazine",
+      "type": "magazine",
+      "archetype": "behr_rifle_ballistic_02_mag_civilian",
+      "numericId": 9477893104156,
+      "capacity": 30
+    },
+    "9477893104160": {
+      "id": "none_lmg_ballistic_01",
+      "name": "Generic LMG (Ballistic)",
+      "type": "weapon",
+      "archetype": "none_lmg_ballistic_01",
+      "numericId": 9477893104160,
+      "damage": 8.2,
+      "rpm": 700
+    },
+    "9477893104152": {
+      "id": "ksar_sniper_ballistic_01_mag",
+      "name": "KSAR Sniper Magazine",
+      "type": "magazine",
+      "archetype": "ksar_sniper_ballistic_01_mag",
+      "numericId": 9477893104152,
+      "capacity": 5
+    },
+    "9477893104151": {
+      "id": "gmni_lmg_ballistic_01_mag",
+      "name": "GMNI LMG Magazine",
+      "type": "magazine",
+      "archetype": "gmni_lmg_ballistic_01_mag",
+      "numericId": 9477893104151,
+      "capacity": 60
+    }
+  },
+  "itemsByArchetype": {
+    "klwe_ubarrel_lasr_s1_02": {
+      "id": "laser_cannon_m",
+      "name": "Laser Cannon (Medium)",
+      "type": "weapon",
+      "damage": 12.4,
+      "rpm": 1200
+    },
+    "klwe_pistol_energy_01": {
+      "id": "laser_cannon_m",
+      "name": "Laser Cannon (Medium)",
+      "type": "weapon",
+      "damage": 12.4,
+      "rpm": 1200
+    },
+    "klwe_sniper_energy_01_mag": {
+      "id": "laser_cannon_m",
+      "name": "Laser Cannon (Medium)",
+      "type": "weapon",
+      "damage": 12.4,
+      "rpm": 1200
+    },
+    "grin_multitool_01": {
+      "id": "grin_multitool_01",
+      "name": "GRIN Multi-Tool",
+      "type": "tool",
+      "archetype": "grin_multitool_01",
+      "numericId": 9477893104164,
+      "utility": "salvage"
+    },
+    "crlf_medgun_01_msn_rwd02": {
+      "id": "crlf_medgun_01",
+      "name": "CRLF Medgun",
+      "type": "consumable",
+      "archetype": "crlf_medgun_01_msn_rwd02",
+      "numericId": 9477893104171,
+      "healing": 50
+    },
+    "behr_rifle_ballistic_02_civilian": {
+      "id": "behr_rifle_ballistic_02",
+      "name": "Behring Rifle (Ballistic)",
+      "type": "weapon",
+      "archetype": "behr_rifle_ballistic_02_civilian",
+      "numericId": 9477893104155,
+      "damage": 9.8,
+      "rpm": 450
+    },
+    "behr_rifle_ballistic_02_mag_civilian": {
+      "id": "behr_rifle_ballistic_02_mag",
+      "name": "Behring Rifle Magazine",
+      "type": "magazine",
+      "archetype": "behr_rifle_ballistic_02_mag_civilian",
+      "numericId": 9477893104156,
+      "capacity": 30
+    },
+    "none_lmg_ballistic_01": {
+      "id": "none_lmg_ballistic_01",
+      "name": "Generic LMG (Ballistic)",
+      "type": "weapon",
+      "archetype": "none_lmg_ballistic_01",
+      "numericId": 9477893104160,
+      "damage": 8.2,
+      "rpm": 700
+    },
+    "ksar_sniper_ballistic_01_mag": {
+      "id": "ksar_sniper_ballistic_01_mag",
+      "name": "KSAR Sniper Magazine",
+      "type": "magazine",
+      "archetype": "ksar_sniper_ballistic_01_mag",
+      "numericId": 9477893104152,
+      "capacity": 5
+    },
+    "gmni_lmg_ballistic_01_mag": {
+      "id": "gmni_lmg_ballistic_01_mag",
+      "name": "GMNI LMG Magazine",
+      "type": "magazine",
+      "archetype": "gmni_lmg_ballistic_01_mag",
+      "numericId": 9477893104151,
+      "capacity": 60
+    }
+  },
+  "itemsById": {
+    "laser_cannon_m": {
+      "id": "laser_cannon_m",
+      "name": "Laser Cannon (Medium)",
+      "type": "weapon",
+      "damage": 12.4,
+      "rpm": 1200,
+      "matchedArchetypes": [
+        "klwe_pistol_energy_01",
+        "klwe_ubarrel_lasr_s1_02",
+        "klwe_sniper_energy_01_mag"
+      ],
+      "matchedNumericIds": [
+        "9480450742602"
+      ]
+    },
+    "klwe_pistol_energy_01": {
+      "id": "klwe_pistol_energy_01",
+      "name": "KLWE Pistol (Energy)",
+      "type": "weapon",
+      "archetype": "klwe_pistol_energy_01",
+      "numericId": 200000000235,
+      "damage": 6.5,
+      "rpm": 600,
+      "matchedArchetypes": [
+        "klwe_pistol_energy_01_mag",
+        "grin_multitool_energy_01_mag"
+      ],
+      "matchedNumericIds": [
+        "200000000235"
+      ]
+    },
+    "klwe_sniper_energy_01_mag": {
+      "id": "klwe_sniper_energy_01_mag",
+      "name": "KLWE Sniper Magazine",
+      "type": "magazine",
+      "archetype": "klwe_sniper_energy_01_mag",
+      "numericId": 9477893104153,
+      "capacity": 10,
+      "matchedArchetypes": [
+        "klwe_pistol_energy_01_mag",
+        "grin_multitool_energy_01_mag",
+        "none_lmg_ballistic_01_mag"
+      ],
+      "matchedNumericIds": [
+        "9477893104153"
+      ]
+    },
+    "grin_multitool_01": {
+      "id": "grin_multitool_01",
+      "name": "GRIN Multi-Tool",
+      "type": "tool",
+      "archetype": "grin_multitool_01",
+      "numericId": 9477893104164,
+      "utility": "salvage",
+      "matchedArchetypes": [
+        "grin_multitool_01",
+        "grin_multitool_01_tractorbeam",
+        "grin_multitool_energy_01_mag",
+        "grin_multitool_resource_salvage_repair_01_filled",
+        "grin_multitool_01_salvage_repair"
+      ],
+      "matchedNumericIds": [
+        "9477893104164"
+      ]
+    },
+    "crlf_medgun_01": {
+      "id": "crlf_medgun_01",
+      "name": "CRLF Medgun",
+      "type": "consumable",
+      "archetype": "crlf_medgun_01_msn_rwd02",
+      "numericId": 9477893104171,
+      "healing": 50,
+      "matchedArchetypes": [
+        "crlf_consumable_healing_01",
+        "crlf_medgun_01_msn_rwd02",
+        "crlf_medgun_vial_01"
+      ],
+      "matchedNumericIds": [
+        "9477893104171"
+      ]
+    },
+    "behr_rifle_ballistic_02": {
+      "id": "behr_rifle_ballistic_02",
+      "name": "Behring Rifle (Ballistic)",
+      "type": "weapon",
+      "archetype": "behr_rifle_ballistic_02_civilian",
+      "numericId": 9477893104155,
+      "damage": 9.8,
+      "rpm": 450,
+      "matchedArchetypes": [
+        "behr_rifle_ballistic_02_civilian"
+      ],
+      "matchedNumericIds": [
+        "9477893104155"
+      ]
+    },
+    "behr_rifle_ballistic_02_mag": {
+      "id": "behr_rifle_ballistic_02_mag",
+      "name": "Behring Rifle Magazine",
+      "type": "magazine",
+      "archetype": "behr_rifle_ballistic_02_mag_civilian",
+      "numericId": 9477893104156,
+      "capacity": 30,
+      "matchedArchetypes": [
+        "behr_rifle_ballistic_02_mag_civilian",
+        "none_lmg_ballistic_01_mag"
+      ],
+      "matchedNumericIds": [
+        "9477893104156"
+      ]
+    },
+    "none_lmg_ballistic_01": {
+      "id": "none_lmg_ballistic_01",
+      "name": "Generic LMG (Ballistic)",
+      "type": "weapon",
+      "archetype": "none_lmg_ballistic_01",
+      "numericId": 9477893104160,
+      "damage": 8.2,
+      "rpm": 700,
+      "matchedArchetypes": [
+        "none_special_ballistic_01",
+        "none_special_ballistic_01_rocket",
+        "none_lmg_ballistic_01_mag"
+      ],
+      "matchedNumericIds": [
+        "9477893104160"
+      ]
+    },
+    "ksar_sniper_ballistic_01_mag": {
+      "id": "ksar_sniper_ballistic_01_mag",
+      "name": "KSAR Sniper Magazine",
+      "type": "magazine",
+      "archetype": "ksar_sniper_ballistic_01_mag",
+      "numericId": 9477893104152,
+      "capacity": 5,
+      "matchedArchetypes": [
+        "klwe_pistol_energy_01_mag",
+        "grin_multitool_energy_01_mag",
+        "none_special_ballistic_01",
+        "none_special_ballistic_01_rocket",
+        "none_lmg_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag"
+      ],
+      "matchedNumericIds": [
+        "9477893104152"
+      ]
+    },
+    "gmni_lmg_ballistic_01_mag": {
+      "id": "gmni_lmg_ballistic_01_mag",
+      "name": "GMNI LMG Magazine",
+      "type": "magazine",
+      "archetype": "gmni_lmg_ballistic_01_mag",
+      "numericId": 9477893104151,
+      "capacity": 60,
+      "matchedArchetypes": [
+        "klwe_pistol_energy_01_mag",
+        "grin_multitool_energy_01_mag",
+        "none_special_ballistic_01",
+        "none_special_ballistic_01_rocket",
+        "none_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ],
+      "matchedNumericIds": [
+        "9477893104151"
+      ]
+    }
+  },
+  "shipsByNumericId": {},
+  "shipsByArchetype": {},
+  "shipsById": {
+    "hornet_f7c": {
+      "id": "hornet_f7c",
+      "name": "Anvil Hornet F7C",
+      "mass": 24000,
+      "crew": 1,
+      "hardpoints": 2
+    }
+  },
+  "_matches": {
+    "archetypeToIds": {
+      "crlf_consumable_healing_01": [
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01"
+      ],
+      "klwe_pistol_energy_01_mag": [
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ],
+      "klwe_pistol_energy_01": [
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m"
+      ],
+      "crlf_medgun_01_msn_rwd02": [
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01"
+      ],
+      "crlf_medgun_vial_01": [
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01"
+      ],
+      "grin_multitool_01": [
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01"
+      ],
+      "grin_multitool_01_tractorbeam": [
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01"
+      ],
+      "grin_multitool_energy_01_mag": [
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_pistol_energy_01",
+        "klwe_sniper_energy_01_mag",
+        "grin_multitool_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ],
+      "grin_multitool_resource_salvage_repair_01_filled": [
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01"
+      ],
+      "grin_multitool_01_salvage_repair": [
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01"
+      ],
+      "none_special_ballistic_01": [
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ],
+      "none_special_ballistic_01_rocket": [
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ],
+      "behr_rifle_ballistic_02_civilian": [
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02"
+      ],
+      "klwe_ubarrel_lasr_s1_02": [
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m"
+      ],
+      "behr_rifle_ballistic_02_mag_civilian": [
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag"
+      ],
+      "klwe_sniper_energy_01_mag": [
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m",
+        "laser_cannon_m"
+      ],
+      "none_lmg_ballistic_01_mag": [
+        "klwe_sniper_energy_01_mag",
+        "behr_rifle_ballistic_02_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_sniper_energy_01_mag",
+        "behr_rifle_ballistic_02_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_sniper_energy_01_mag",
+        "behr_rifle_ballistic_02_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_sniper_energy_01_mag",
+        "behr_rifle_ballistic_02_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_sniper_energy_01_mag",
+        "behr_rifle_ballistic_02_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "klwe_sniper_energy_01_mag",
+        "behr_rifle_ballistic_02_mag",
+        "none_lmg_ballistic_01",
+        "ksar_sniper_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ],
+      "ksar_sniper_ballistic_01_mag": [
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag"
+      ],
+      "gmni_lmg_ballistic_01_mag": [
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ]
+    },
+    "numericToIds": {
+      "200000000235": [
+        "klwe_pistol_energy_01"
+      ],
+      "9477893104171": [
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01",
+        "crlf_medgun_01"
+      ],
+      "9477893104164": [
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01",
+        "grin_multitool_01"
+      ],
+      "9477893104160": [
+        "none_lmg_ballistic_01",
+        "none_lmg_ballistic_01",
+        "none_lmg_ballistic_01",
+        "none_lmg_ballistic_01"
+      ],
+      "9477893104155": [
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02",
+        "behr_rifle_ballistic_02"
+      ],
+      "9477893104156": [
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag",
+        "behr_rifle_ballistic_02_mag"
+      ],
+      "9477893104153": [
+        "klwe_sniper_energy_01_mag",
+        "klwe_sniper_energy_01_mag"
+      ],
+      "9477893104152": [
+        "ksar_sniper_ballistic_01_mag",
+        "ksar_sniper_ballistic_01_mag"
+      ],
+      "9477893104151": [
+        "gmni_lmg_ballistic_01_mag",
+        "gmni_lmg_ballistic_01_mag"
+      ],
+      "9480450742602": [
+        "laser_cannon_m",
+        "laser_cannon_m"
+      ]
+    }
+  }
+}

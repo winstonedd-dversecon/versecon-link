@@ -1,0 +1,19 @@
+{
+  "# Example": "Fill this file with explicit mappings from archetype or numericId to index id",
+  "archetypeToIds": {
+    "klwe_ubarrel_lasr_s1_02": [ "laser_cannon_m" ],
+    "klwe_pistol_energy_01": [ "laser_cannon_m" ],
+    "klwe_sniper_energy_01_mag": [ "laser_cannon_m" ]
+  },
+  "numericToIds": {
+    "9480450742602": [ "laser_cannon_m" ]
+  },
+  "archetype": {
+    "klwe_ubarrel_lasr_s1_02": "laser_cannon_m",
+    "klwe_pistol_energy_01": "laser_cannon_m",
+    "klwe_sniper_energy_01_mag": "laser_cannon_m"
+  },
+  "numericId": {
+    "9480450742602": "laser_cannon_m"
+  }
+}

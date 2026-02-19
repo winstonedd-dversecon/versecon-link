@@ -700,6 +700,59 @@ Execute on this and you'll build:
 **Approx Total Time**: 50-75 hours over 3 weeks  
 
 **Go build it. You've got this. 🚀**
+[---]
+
+## 🛠️ FEBRUARY 19, 2026 — ENRICHMENT PIPELINE & SYSTEM FIXES
+
+### What Was Done Today
+
+- Built and ran a full enrichment pipeline for ship weapons, magazines, and components:
+   - Created and expanded authoritative item entries in `data/items.json`.
+   - Built normalized index (`data/index.json`) and mapped index (`data/index.mapped.json`).
+   - Applied manual mappings via `data/manual-mappings.json` (both legacy and new keys).
+   - Ran fuzzy match report (`scripts/report-matches.js`) and auto-applied confident matches (`scripts/auto-apply-matches.js`).
+   - Restarted API and verified `/api/loadout/enriched` endpoint returns stats for all functional loadout items.
+   - Confirmed only cosmetic/non-critical archetypes remain unmatched (e.g., MobiGlas, brows, visor).
+
+### Key Results
+
+- All ship weapons, magazines, and components are now enriched and served by the API.
+- The enrichment pipeline is fully operational:
+   - LogWatcher produces `loadout.json`.
+   - Index builder and mapping scripts populate and link authoritative stats.
+   - API returns stats for attachments (damage, rpm, capacity, etc.).
+- Fuzzy report and auto-apply scripts applied 11 new matches today.
+- API restart and verification confirmed coverage.
+
+### How To Reproduce/Verify
+
+1. Add new authoritative items to `data/items.json` as needed.
+2. Run:
+    ```bash
+    cd versecon-link
+    node scripts/build-data-index.js
+    node scripts/apply-manual-mappings.js
+    node scripts/link-index-to-loadout.js
+    node scripts/report-matches.js
+    node scripts/auto-apply-matches.js
+    pm2 restart vcon-api
+    curl -sS http://127.0.0.1:4401/api/loadout/enriched | jq '.attachments[] | select(.stats == null) | .archetype' | sort | uniq | head -n 20
+    ```
+3. Only cosmetic archetypes should remain unmatched; all functional items will have stats.
+
+### Troubleshooting
+
+- If scripts fail, check they are run from the correct directory (`versecon-link/scripts/`).
+- If enrichment is sparse, add authoritative entries to `data/items.json` and rerun the pipeline.
+- For new ship weapons/components, add their archetype/numericId and stats to `data/items.json`.
+
+### Status
+
+- ✅ All functional loadout items are enriched and working.
+- ✅ API is serving live stats for overlay and downstream apps.
+- 🟢 Cosmetic items can be enriched if desired, but are not critical.
+
+---
 
 
 

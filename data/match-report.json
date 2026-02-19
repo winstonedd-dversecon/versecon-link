@@ -1,0 +1,2702 @@
+{
+  "generatedAt": "2026-02-19T21:50:33.262Z",
+  "unmatched": {
+    "body_01_noMagicPocket": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 25,
+          "tOverlap": 2,
+          "lcs": 5
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "rsi_odyssey_undersuit_01_01_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "rsi_odyssey_undersuit_helmet_01_01_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "universal_necksock_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "FP_Visor": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "universal_necksock_undersuit_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "PU_Protos_Head": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "Head_Teeth": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "Shared_Scalp_Unified": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "brows_001": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "Head_Eyelashes": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "Head_Eyedetail": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "Head_Eyes_Brown_03": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "Default_LensDisplay_PU": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "FPS_DefaultRadar_Lens": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "hair_02": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "MobiGlas": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "PersonalMobiGlas_PU": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "LegacyMobiGlas": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "srvl_armor_heavy_arms_02_01_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "rsi_odyssey_undersuit_helmet_02_02_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "srvl_armor_heavy_legs_02_01_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "srvl_armor_heavy_core_02_01_01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "rrs_combat_heavy_backpack_01_01_10": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 24,
+          "tOverlap": 2,
+          "lcs": 4
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 23,
+          "tOverlap": 2,
+          "lcs": 3
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "arma_barrel_comp_s2_firerats01": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        }
+      ]
+    },
+    "nvtc_optics_tsco_x4_s2": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "facial_hair_001": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "brows_002": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    },
+    "PU_Head_Eyes_White_CharacterCustomizer": {
+      "countCandidates": 11,
+      "candidates": [
+        {
+          "id": "klwe_pistol_energy_01",
+          "name": "KLWE Pistol (Energy)",
+          "archetype": "klwe_pistol_energy_01",
+          "score": 3,
+          "tOverlap": 0,
+          "lcs": 3
+        },
+        {
+          "id": "laser_cannon_m",
+          "name": "Laser Cannon (Medium)",
+          "archetype": "",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "klwe_sniper_energy_01_mag",
+          "name": "KLWE Sniper Magazine",
+          "archetype": "klwe_sniper_energy_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "grin_multitool_01",
+          "name": "GRIN Multi-Tool",
+          "archetype": "grin_multitool_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02",
+          "name": "Behring Rifle (Ballistic)",
+          "archetype": "behr_rifle_ballistic_02_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "behr_rifle_ballistic_02_mag",
+          "name": "Behring Rifle Magazine",
+          "archetype": "behr_rifle_ballistic_02_mag_civilian",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "none_lmg_ballistic_01",
+          "name": "Generic LMG (Ballistic)",
+          "archetype": "none_lmg_ballistic_01",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "ksar_sniper_ballistic_01_mag",
+          "name": "KSAR Sniper Magazine",
+          "archetype": "ksar_sniper_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "gmni_lmg_ballistic_01_mag",
+          "name": "GMNI LMG Magazine",
+          "archetype": "gmni_lmg_ballistic_01_mag",
+          "score": 2,
+          "tOverlap": 0,
+          "lcs": 2
+        },
+        {
+          "id": "crlf_medgun_01",
+          "name": "CRLF Medgun",
+          "archetype": "crlf_medgun_01_msn_rwd02",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        },
+        {
+          "id": "hornet_f7c",
+          "name": "Anvil Hornet F7C",
+          "archetype": "",
+          "score": 1,
+          "tOverlap": 0,
+          "lcs": 1
+        }
+      ]
+    }
+  }
+}

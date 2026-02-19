@@ -1,0 +1,24 @@
+{
+  "itemsByNumericId": {},
+  "itemsByArchetype": {},
+  "itemsById": {
+    "laser_cannon_m": {
+      "id": "laser_cannon_m",
+      "name": "Laser Cannon (Medium)",
+      "type": "weapon",
+      "damage": 12.4,
+      "rpm": 1200
+    }
+  },
+  "shipsByNumericId": {},
+  "shipsByArchetype": {},
+  "shipsById": {
+    "hornet_f7c": {
+      "id": "hornet_f7c",
+      "name": "Anvil Hornet F7C",
+      "mass": 24000,
+      "crew": 1,
+      "hardpoints": 2
+    }
+  }
+}

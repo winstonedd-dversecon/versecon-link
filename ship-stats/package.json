@@ -1,0 +1,16 @@
+{
+  "name": "versecon-ship-stats",
+  "version": "0.1.0",
+  "description": "Static JSON server for Star Citizen ship/component stats and a Game.log watcher",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "watch": "node watcher.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

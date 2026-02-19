@@ -21,10 +21,20 @@ class LogWatcher extends EventEmitter {
     constructor() {
 
         super();
+        // Default error listener to avoid unhandled 'error' events when no external
+        // consumer has attached an error handler. It will log so callers can still
+        // be informed via stdout/stderr.
+        this.on('error', (err) => {
+            console.error('[LogWatcher] error event:', err);
+        });
         this.watcher = null;
         this.filePath = null;
         this.isWatching = false;
         this.lastSize = 0;
+
+        // Attachment tracking for live overlays
+        this.attachments = []; // array of { timestamp, attachmentId, archetype, numericId, port, raw }
+        this.attachmentsByPort = new Map();
 
         // Alert cooldowns
         this.alertCooldowns = {};
@@ -77,6 +87,14 @@ class LogWatcher extends EventEmitter {
             if (data.type === 'SESSION_START') this.cachedState.startTime = data.value;
             if (data.type === 'BUILD_INFO') this.cachedState.build = data.value;
             if (data.type === 'LOCATION') this.cachedState.location = data.value;
+            // Attachment events (from inventory parser)
+            if (data.type === 'ATTACHMENT_RECEIVED' && data.value) {
+                try {
+                    this.updateAttachment(data.value);
+                } catch (e) {
+                    console.error('[LogWatcher] Failed to update attachment state:', e.message);
+                }
+            }
             if (data.type === 'JURISDICTION') this.cachedState.jurisdiction = data.value;
             if (data.type === 'ZONE') this.cachedState.zone = data.value;
 
@@ -139,6 +157,9 @@ class LogWatcher extends EventEmitter {
 
     findLogFile() {
         const candidates = [];
+        // Allow explicit override from environment for automation/testing
+        const envPath = process.env.GAME_LOG_PATH || process.env.LOG_PATH || null;
+        if (envPath) candidates.push(envPath);
         // Windows paths
         const drivers = ['C:', 'D:', 'E:', 'F:'];
         const winPaths = [
@@ -163,6 +184,8 @@ class LogWatcher extends EventEmitter {
 
         // Dev Fallback
         candidates.push(path.join(__dirname, '..', 'Game.log'));
+        // Also check workspace root (cwd) for convenience
+        candidates.push(path.join(process.cwd(), 'Game.log'));
 
         for (const fullPath of candidates) {
             if (fs.existsSync(fullPath)) return fullPath;
@@ -190,8 +213,7 @@ class LogWatcher extends EventEmitter {
 
         if (!this.filePath) {
             console.error('[LogWatcher] No Game.log found.');
-            this.emit('error', 'Game.log not found. Please locate it manually via Settings.');
-            this.emit('status', { connected: false });
+            this.emit('status', { connected: false, message: 'Game.log not found. Set GAME_LOG_PATH or call setPath()' });
             return;
         }
 
@@ -323,6 +345,38 @@ class LogWatcher extends EventEmitter {
     clearUnknowns() {
         this.unknownGroups.clear();
         this.emitUnknowns();
+    }
+
+    // --- Attachment State Helpers ---
+
+    updateAttachment(att) {
+        if (!att || !att.port) return;
+        const item = {
+            timestamp: att.timestamp || new Date().toISOString(),
+            attachmentId: att.attachmentId || `${att.archetype}_${att.numericId || ''}`,
+            archetype: att.archetype || null,
+            numericId: att.numericId || null,
+            port: att.port,
+            raw: att.raw || ''
+        };
+
+        // Update by port (latest wins)
+        this.attachmentsByPort.set(item.port, item);
+
+        // Rebuild attachments array sorted by port name for determinism
+        this.attachments = Array.from(this.attachmentsByPort.values()).sort((a, b) => (a.port || '').localeCompare(b.port || ''));
+
+        // Write atomic loadout file in repo root
+        try {
+            const out = { player: att.player || null, attachments: this.attachments };
+            const outPath = path.join(__dirname, '..', 'loadout.json');
+            const tmpPath = outPath + '.tmp';
+            fs.writeFileSync(tmpPath, JSON.stringify(out, null, 2), 'utf8');
+            fs.renameSync(tmpPath, outPath);
+            this.emit('gamestate', { type: 'LOADOUT_UPDATED', value: out });
+        } catch (e) {
+            console.error('[LogWatcher] Failed to write loadout.json:', e.message);
+        }
     }
 }
 

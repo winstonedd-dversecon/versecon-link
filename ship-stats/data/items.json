@@ -1,0 +1,9 @@
+[
+  {
+    "id": "laser_cannon_m",
+    "name": "Laser Cannon (Medium)",
+    "type": "weapon",
+    "damage": 12.4,
+    "rpm": 1200
+  }
+]

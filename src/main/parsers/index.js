@@ -45,6 +45,7 @@ engine.register(require('./navigation'));
 engine.register(require('./session'));
 engine.register(require('./hangar'));
 engine.register(require('./vehicle'));
+engine.register(require('./inventory'));
 engine.register(require('./combat'));
 engine.register(require('./mission'));
 engine.register(require('./mining')); // Phase 2

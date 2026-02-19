@@ -1,0 +1,88 @@
+[
+  {
+    "id": "laser_cannon_m",
+    "name": "Laser Cannon (Medium)",
+    "type": "weapon",
+    "archetype": "klwe_ubarrel_lasr_s1_02",
+    "numericId": 9480450742602,
+    "damage": 12.4,
+    "rpm": 1200
+  }
+  ,
+  {
+    "id": "klwe_pistol_energy_01",
+    "name": "KLWE Pistol (Energy)",
+    "type": "weapon",
+    "archetype": "klwe_pistol_energy_01",
+    "numericId": 200000000235,
+    "damage": 6.5,
+    "rpm": 600
+  },
+  {
+    "id": "klwe_sniper_energy_01_mag",
+    "name": "KLWE Sniper Magazine",
+    "type": "magazine",
+    "archetype": "klwe_sniper_energy_01_mag",
+    "numericId": 9477893104153,
+    "capacity": 10
+  },
+  {
+    "id": "grin_multitool_01",
+    "name": "GRIN Multi-Tool",
+    "type": "tool",
+    "archetype": "grin_multitool_01",
+    "numericId": 9477893104164,
+    "utility": "salvage"
+  },
+  {
+    "id": "crlf_medgun_01",
+    "name": "CRLF Medgun",
+    "type": "consumable",
+    "archetype": "crlf_medgun_01_msn_rwd02",
+    "numericId": 9477893104171,
+    "healing": 50
+  }
+  ,
+  {
+    "id": "behr_rifle_ballistic_02",
+    "name": "Behring Rifle (Ballistic)",
+    "type": "weapon",
+    "archetype": "behr_rifle_ballistic_02_civilian",
+    "numericId": 9477893104155,
+    "damage": 9.8,
+    "rpm": 450
+  },
+  {
+    "id": "behr_rifle_ballistic_02_mag",
+    "name": "Behring Rifle Magazine",
+    "type": "magazine",
+    "archetype": "behr_rifle_ballistic_02_mag_civilian",
+    "numericId": 9477893104156,
+    "capacity": 30
+  },
+  {
+    "id": "none_lmg_ballistic_01",
+    "name": "Generic LMG (Ballistic)",
+    "type": "weapon",
+    "archetype": "none_lmg_ballistic_01",
+    "numericId": 9477893104160,
+    "damage": 8.2,
+    "rpm": 700
+  },
+  {
+    "id": "ksar_sniper_ballistic_01_mag",
+    "name": "KSAR Sniper Magazine",
+    "type": "magazine",
+    "archetype": "ksar_sniper_ballistic_01_mag",
+    "numericId": 9477893104152,
+    "capacity": 5
+  },
+  {
+    "id": "gmni_lmg_ballistic_01_mag",
+    "name": "GMNI LMG Magazine",
+    "type": "magazine",
+    "archetype": "gmni_lmg_ballistic_01_mag",
+    "numericId": 9477893104151,
+    "capacity": 60
+  }
+]
