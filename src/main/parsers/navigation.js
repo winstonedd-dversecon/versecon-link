@@ -128,7 +128,20 @@ class NavigationParser extends BaseParser {
                 // Filter out noise (numeric IDs, inventory refs, etc.)
                 if (!rawVal.match(/^\d+$/) && !rawVal.includes(':') && rawVal.length > 3) {
                     const cleaned = this.cleanLocationName(rawVal);
-                    const customVal = this.getCustomLocation(rawVal);
+                    // Try exact match first
+                    let customVal = null;
+                    if (this.customLocations && this.customLocations[rawVal]) {
+                        customVal = this.customLocations[rawVal];
+                    } else if (this.customLocations) {
+                        // Try normalized match
+                        const normalized = rawVal.toLowerCase().replace(/[+_\s]/g, '');
+                        for (const [key, val] of Object.entries(this.customLocations)) {
+                            if (key.toLowerCase().replace(/[+_\s]/g, '') === normalized) {
+                                customVal = val;
+                                break;
+                            }
+                        }
+                    }
                     if (customVal) {
                         this.emit('gamestate', { type: 'LOCATION', value: customVal, raw: rawVal });
                         handled = true;
@@ -229,42 +242,6 @@ class NavigationParser extends BaseParser {
         }
 
         return raw.replace(/^OOC_/, '').replace(/_/g, ' ');
-    }
-
-    /**
-     * Normalize location keys for matching (handles +, _, and spaces)
-     * Examples: "RR_P3_LEO", "RR+P3+LEO", "RR P3 LEO" all become "rrp3leo"
-     */
-    normalizeLocationKey(key) {
-        if (!key) return '';
-        return key
-            .toLowerCase()
-            .replace(/[+]/g, '')
-            .replace(/[_]/g, '')
-            .replace(/\s+/g, '')
-            .trim();
-    }
-
-    /**
-     * Find custom location by normalized key matching
-     */
-    getCustomLocation(rawVal) {
-        if (!this.customLocations || !rawVal) return null;
-
-        // First try exact match
-        if (this.customLocations[rawVal]) {
-            return this.customLocations[rawVal];
-        }
-
-        // Then try normalized match
-        const normalized = this.normalizeLocationKey(rawVal);
-        for (const [storedKey, friendlyName] of Object.entries(this.customLocations)) {
-            if (this.normalizeLocationKey(storedKey) === normalized) {
-                return friendlyName;
-            }
-        }
-
-        return null;
     }
 
     cleanLocationHint(rawPath) {
