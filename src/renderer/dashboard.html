@@ -895,6 +895,7 @@
                     <span>📍 Custom Locations</span>
                     <button class="cyber-btn small" onclick="addCustomLocationPrompt()" style="font-size: 0.7rem;">+ Add
                         New</button>
+                    <button class="cyber-btn small" onclick="openLocationSearch()" style="font-size: 0.7rem; margin-left: 5px;">🔍 Search</button>
                     <!-- Help tooltip -->
                     <span style="font-size:0.7rem; color:#666; margin-left:10px; cursor:help;"
                         onclick="alert('Map raw log values (e.g. OOC_Stanton_1b_Aberdeen) to friendly names (e.g. Vivere PAF-1).\nWorks with Location[...] and RoomName: logs.')">ℹ️
@@ -1346,6 +1347,65 @@
                 <button class="cyber-btn" onclick="savePatternFromModal()" style="margin-top:5px;">💾 Save
                     Pattern</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Custom Location Search & Edit Modal (NEW) -->
+    <div id="location-search-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center;">
+        <div
+            style="background:#1a1a2e; border:1px solid var(--accent); border-radius:8px; padding:20px; width:600px; max-height:80vh; overflow-y:auto; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; color:var(--accent);">Search & Edit Stations</h3>
+                <button class="cyber-btn small danger" onclick="closeLocationSearchModal()" style="margin:0;">✕</button>
+            </div>
+
+            <!-- Search Bar -->
+            <div style="display:flex; gap:8px; margin-bottom:15px;">
+                <input type="text" id="location-search-input" class="modern-input"
+                    placeholder="Search by raw code or friendly name..." style="flex:1; margin:0;"
+                    oninput="filterLocationSearch()">
+                <button class="cyber-btn small" onclick="clearLocationSearch()" style="margin:0;">Clear</button>
+            </div>
+
+            <!-- Results Count -->
+            <div style="font-size:0.7rem; color:var(--text-dim); margin-bottom:10px;">
+                <span id="location-search-count">0</span> locations found
+            </div>
+
+            <!-- Location List -->
+            <div id="location-search-results"
+                style="flex:1; overflow-y:auto; background:rgba(0,0,0,0.3); border-radius:4px; border:1px solid rgba(255,255,255,0.05); padding:10px; margin-bottom:15px;">
+                <div style="color:#666; font-style:italic; text-align:center; padding:20px;">No locations yet. Add one
+                    using the form above.</div>
+            </div>
+
+            <!-- Selected Location Edit Panel -->
+            <div id="location-edit-panel"
+                style="display:none; background:rgba(255,165,0,0.1); border:1px solid var(--accent); border-radius:4px; padding:12px; margin-bottom:10px;">
+                <div style="font-size:0.7rem; color:var(--accent); text-transform:uppercase; margin-bottom:8px;">
+                    ✏️ Edit Selected Location
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <input type="text" id="location-edit-key" class="modern-input" readonly
+                        placeholder="Raw Code" style="flex:1; margin:0; opacity:0.7;">
+                    <span style="color:#666; align-self:center;">➔</span>
+                    <input type="text" id="location-edit-val" class="modern-input" placeholder="Friendly Name"
+                        style="flex:1; margin:0;">
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="cyber-btn small success" onclick="saveLocationEdit()" style="flex:1; margin:0;">
+                        💾 Update
+                    </button>
+                    <button class="cyber-btn small danger" onclick="deleteSelectedLocation()" style="flex:1; margin:0;">
+                        🗑️ Delete
+                    </button>
+                    <button class="cyber-btn small" onclick="cancelLocationEdit()"
+                        style="flex:1; margin:0;">Cancel</button>
+                </div>
+            </div>
+
+            <input type="hidden" id="location-edit-original-key">
         </div>
     </div>
 
@@ -2202,7 +2262,7 @@
         }
 
         function renderCustomLocationList() {
-            const list = document.getElementById('custom-loc-list');
+            const list = document.getElementById('custom-location-list');
             if (!list) return;
 
             if (Object.keys(customLocations).length === 0) {
@@ -2211,12 +2271,13 @@
             }
 
             list.innerHTML = Object.entries(customLocations).map(([key, val]) => `
-                        <div class="map-item" style="padding:4px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
-                            <div style="overflow:hidden;">
-                                <div style="font-family:monospace; color:var(--accent); font-size:0.8rem;">${escapeHtml(key)}</div>
-                                <div style="color:#888; font-size:0.75rem;">➔ ${escapeHtml(val)}</div>
+                        <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; border-radius:4px; transition:background 0.2s; background:rgba(0,0,0,0.1);" onmouseenter="this.style.background='rgba(255,165,0,0.1)'" onmouseleave="this.style.background='rgba(0,0,0,0.1)'">
+                            <div style="overflow:hidden; flex:1;">
+                                <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
+                                <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(val)}</div>
                             </div>
-                            <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:10px;">×</button>
+                            <button class="cyber-btn small" onclick="event.stopPropagation(); openLocationSearch(); selectLocationForEdit('${encodeURIComponent(key)}', '${encodeURIComponent(val)}')" style="margin-left:10px; margin:0 0 0 8px;">✏️</button>
+                            <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:5px; margin:0;">×</button>
                         </div>
                     `).join('');
         }
@@ -2579,6 +2640,9 @@
             customLocations[key] = val;
             ipcRenderer.send('settings:save-custom-locations', customLocations);
 
+            // Feedback
+            addDashItem('✅', `Mapped <span style="color:#ffaa00; font-family:monospace;">${escapeHtml(key)}</span> → <span style="color:#00ff88;">${escapeHtml(val)}</span>`);
+
             // Clear inputs
             document.getElementById('new-loc-key').value = '';
             document.getElementById('new-loc-val').value = '';
@@ -2594,8 +2658,122 @@
                 delete customLocations[key];
                 ipcRenderer.send('settings:save-custom-locations', customLocations);
                 renderCustomLocationList();
+                // Close modal if it was the edited one
+                if (document.getElementById('location-edit-original-key').value === key) {
+                    closeLocationSearchModal();
+                }
             }
         };
+
+        // ═══ CUSTOM LOCATION SEARCH & EDIT (New Feature) ═══
+        let locationSearchCache = {};
+        let selectedLocationKey = null;
+
+        function openLocationSearch() {
+            locationSearchCache = { ...customLocations };
+            selectedLocationKey = null;
+            document.getElementById('location-search-input').value = '';
+            document.getElementById('location-edit-panel').style.display = 'none';
+            renderLocationSearchResults();
+            document.getElementById('location-search-modal').style.display = 'flex';
+        }
+
+        function closeLocationSearchModal() {
+            document.getElementById('location-search-modal').style.display = 'none';
+            selectedLocationKey = null;
+            document.getElementById('location-edit-panel').style.display = 'none';
+        }
+
+        function filterLocationSearch() {
+            renderLocationSearchResults();
+        }
+
+        function clearLocationSearch() {
+            document.getElementById('location-search-input').value = '';
+            renderLocationSearchResults();
+        }
+
+        function renderLocationSearchResults() {
+            const search = document.getElementById('location-search-input').value.toLowerCase();
+            const resultsList = document.getElementById('location-search-results');
+
+            // Filter locations
+            let filtered = Object.entries(locationSearchCache).filter(([key, val]) =>
+                key.toLowerCase().includes(search) || val.toLowerCase().includes(search)
+            );
+
+            document.getElementById('location-search-count').textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                resultsList.innerHTML = '<div style="color:#666; font-style:italic; text-align:center; padding:20px;">No locations match your search.</div>';
+                return;
+            }
+
+            resultsList.innerHTML = filtered.map(([key, val]) => `
+                <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); 
+                    cursor:pointer; border-radius:4px; transition:background 0.2s; background:${selectedLocationKey === key ? 'rgba(255,165,0,0.15)' : 'transparent'};"
+                    onclick="selectLocationForEdit('${encodeURIComponent(key)}', '${encodeURIComponent(val)}')">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="overflow:hidden; flex:1;">
+                            <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
+                            <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(val)}</div>
+                        </div>
+                        <button class="cyber-btn small" style="margin:0; margin-left:8px;" onclick="event.stopPropagation(); selectLocationForEdit('${encodeURIComponent(key)}', '${encodeURIComponent(val)}')">
+                            ✏️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectLocationForEdit(encodedKey, encodedVal) {
+            const key = decodeURIComponent(encodedKey);
+            const val = decodeURIComponent(encodedVal);
+            selectedLocationKey = key;
+
+            document.getElementById('location-edit-original-key').value = key;
+            document.getElementById('location-edit-key').value = key;
+            document.getElementById('location-edit-val').value = val;
+            document.getElementById('location-edit-panel').style.display = 'block';
+            renderLocationSearchResults(); // Re-render to show selection highlighting
+        }
+
+        function saveLocationEdit() {
+            const originalKey = document.getElementById('location-edit-original-key').value;
+            const newVal = document.getElementById('location-edit-val').value.trim();
+
+            if (!newVal) {
+                alert('Please enter a friendly name.');
+                return;
+            }
+
+            // Delete old key if it was renamed
+            if (selectedLocationKey !== originalKey) {
+                delete customLocations[originalKey];
+            }
+
+            // Update with new value
+            customLocations[selectedLocationKey] = newVal;
+            ipcRenderer.send('settings:save-custom-locations', customLocations);
+
+            // Update both modal and main location list
+            addDashItem('✅', `Updated: ${selectedLocationKey} → ${escapeHtml(newVal)}`);
+            renderCustomLocationList();
+            closeLocationSearchModal();
+        }
+
+        function deleteSelectedLocation() {
+            const key = document.getElementById('location-edit-original-key').value;
+            if (confirm(`Delete location mapping "${key}"?`)) {
+                window.deleteCustomLocation(key);
+            }
+        }
+
+        function cancelLocationEdit() {
+            document.getElementById('location-edit-panel').style.display = 'none';
+            selectedLocationKey = null;
+            renderLocationSearchResults();
+        }
 
         // ═══ LOG PATTERN DATABASE (v2.7) ═══
         let patternDB = { _meta: {}, patterns: [] };
