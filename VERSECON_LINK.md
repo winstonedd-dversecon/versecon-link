@@ -214,6 +214,15 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 
 ## 🐛 Known Issues & Gotchas
 
+### Fixed (2026-02-20 — v2.7.1)
+
+1. **Hue Settings Persistence wiped**: Initial load of the dashboard saved blank config items over existing Philips Hue config. **Fix**: `config.json` is broadcasted immediately on `did-finish-load` via `settings:updated` IPC, populating the UI before any settings can be overridden.
+2. **Log Stream scrolling disrupted**: **Fix**: Changed from `.prepend` to `.appendChild` and introduced an auto-scroll anchor that respects active scrolling.
+3. **Unknown Log batching delay**: **Fix**: Switched to emit unknown logs immediately on the first occurrence instead of batching them.
+4. **Fast Log Drops (Gun Triggers failing)**: Rapidly written logs were split midpoint by `fs.watchFile` streams, invalidating regex sequences mid-line. **Fix**: Added a persistent `this.tailBuffer` in `log-watcher.js` to hold incomplete line fragments between polling intervals.
+5. **Outpost & Bunker detection failing**: Outposts didn't map cleanly via the `Location[]` variables. **Fix**: Hooked the `LoadingPlatformManager` regex to grab location hints, and overhauled `cleanLocationName()` to nicely format strings like `Pyro4_Outpost_col_m_trdpst_indy_001` to "Pyro Trading Post Outpost".
+6. **Custom Patterns not editable**: Users had to delete and recreate rules. **Fix**: Added inline "✏️ Edit" button to `dashboard.html` that repopulates the input form and executes an inline array update rather than appending.
+
 ### Fixed (2026-02-15 — v2.7)
 
 1. **Ship image not loading** — `broadcast()` was called BEFORE ship image resolution, so overlay never received `data.image`. **Fix**: Moved image lookup before broadcast + fuzzy matching + `file:///` protocol conversion.
