@@ -62,11 +62,9 @@ class NavigationParser extends BaseParser {
         const roomMatch = line.match(this.patterns.room_name);
         if (roomMatch) {
             const rawRoom = roomMatch[1];
-            if (this.customLocations && this.customLocations[rawRoom]) {
-                const customName = this.customLocations[rawRoom];
-                this.emit('gamestate', { type: 'LOCATION', value: customName, raw: rawRoom });
-                return true;
-            }
+            // Wait, roomName regex [^\s]+ won't match "RR P5 L2".
+            // If the user's string has spaces, it might not be a RoomName.
+            // But we can still emit LOCATION_RAW so smart capture sees it.
             this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
         }
 
@@ -75,10 +73,7 @@ class NavigationParser extends BaseParser {
         if (invMatch) {
             const rawVal = invMatch[1];  // e.g. "Stanton1_Lorville"
             const cleaned = this.cleanLocationName(rawVal);
-            if (cleaned !== this.lastLocation) {
-                this.lastLocation = cleaned;
-                this.emit('gamestate', { type: 'LOCATION', value: cleaned, raw: rawVal });
-            }
+            this.emitLocation(cleaned, rawVal);
             return true;
         }
 
@@ -87,9 +82,8 @@ class NavigationParser extends BaseParser {
         if (oocMatch) {
             const rawVal = oocMatch[1];  // e.g. "OOC_Stanton_1_Hurston"
             const cleaned = this.cleanOOCName(rawVal);
-            if (cleaned && cleaned !== this.lastLocation) {
-                this.lastLocation = cleaned;
-                this.emit('gamestate', { type: 'LOCATION', value: cleaned, raw: rawVal });
+            if (cleaned) {
+                this.emitLocation(cleaned, rawVal);
             }
             return true;
         }
@@ -128,28 +122,8 @@ class NavigationParser extends BaseParser {
                 // Filter out noise (numeric IDs, inventory refs, etc.)
                 if (!rawVal.match(/^\d+$/) && !rawVal.includes(':') && rawVal.length > 3) {
                     const cleaned = this.cleanLocationName(rawVal);
-                    // Try exact match first
-                    let customVal = null;
-                    if (this.customLocations && this.customLocations[rawVal]) {
-                        customVal = this.customLocations[rawVal];
-                    } else if (this.customLocations) {
-                        // Try normalized match
-                        const normalized = rawVal.toLowerCase().replace(/[+_\s]/g, '');
-                        for (const [key, val] of Object.entries(this.customLocations)) {
-                            if (key.toLowerCase().replace(/[+_\s]/g, '') === normalized) {
-                                customVal = val;
-                                break;
-                            }
-                        }
-                    }
-                    if (customVal) {
-                        this.emit('gamestate', { type: 'LOCATION', value: customVal, raw: rawVal });
-                        handled = true;
-                    } else if (cleaned !== this.lastLocation) {
-                        this.lastLocation = cleaned;
-                        this.emit('gamestate', { type: 'LOCATION', value: cleaned, raw: rawVal });
-                        handled = true;
-                    }
+                    this.emitLocation(cleaned, rawVal);
+                    handled = true;
                 }
             }
         }
@@ -184,14 +158,57 @@ class NavigationParser extends BaseParser {
         return handled;
     }
 
-    /**
-     * Clean raw location names like "Stanton1_Lorville" -> "Lorville"
-     */
-    cleanLocationName(raw) {
-        if (!raw) return '';
+    emitLocation(cleanedName, rawName) {
+        if (!cleanedName && !rawName) return;
 
-        // Known location name mappings
-        const locationMap = {
+        let finalName = cleanedName || rawName;
+        let isCustomMapped = false;
+
+        if (this.customLocations) {
+            // 1. Try exact match on raw
+            if (this.customLocations[rawName]) {
+                finalName = this.customLocations[rawName];
+                isCustomMapped = true;
+            }
+            // 2. Try exact match on cleaned
+            else if (this.customLocations[cleanedName]) {
+                finalName = this.customLocations[cleanedName];
+                isCustomMapped = true;
+            }
+            // 3. Try normalized match
+            else {
+                const normalizedRaw = rawName ? rawName.toLowerCase().replace(/[+_\s-]/g, '') : '';
+                const normalizedCleaned = cleanedName ? cleanedName.toLowerCase().replace(/[+_\s-]/g, '') : '';
+
+                for (const [key, val] of Object.entries(this.customLocations)) {
+                    const normKey = key.toLowerCase().replace(/[+_\s-]/g, '');
+                    if (normKey === normalizedRaw || (normalizedCleaned && normKey === normalizedCleaned)) {
+                        finalName = val;
+                        isCustomMapped = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (finalName !== this.lastLocation) {
+            this.lastLocation = finalName;
+            this.emit('gamestate', { type: 'LOCATION', value: finalName, raw: rawName });
+
+            // Check if this is a completely new/unmapped location
+            if (!isCustomMapped && finalName === (cleanedName || rawName)) {
+                // It's not custom mapped. Check if it's in the built-in clean map
+                const builtInMap = this.getBuiltInLocationMap();
+                if (!builtInMap[rawName]) {
+                    // Not custom mapped and not a known built-in location -> Prompt user
+                    this.emit('gamestate', { type: 'NEW_LOCATION', value: finalName, raw: rawName });
+                }
+            }
+        }
+    }
+
+    getBuiltInLocationMap() {
+        return {
             'Stanton1_Lorville': 'Lorville',
             'Stanton1_Hurston': 'Hurston',
             'Stanton2_Crusader': 'Crusader',
@@ -206,6 +223,16 @@ class NavigationParser extends BaseParser {
             'Stanton_BaijiniPoint': 'Baijini Point',
             'Stanton_SeraphimStation': 'Seraphim Station',
         };
+    }
+
+    /**
+     * Clean raw location names like "Stanton1_Lorville" -> "Lorville"
+     */
+    cleanLocationName(raw) {
+        if (!raw) return '';
+
+        // Known location name mappings
+        const locationMap = this.getBuiltInLocationMap();
 
         if (locationMap[raw]) return locationMap[raw];
 

@@ -814,6 +814,12 @@ LogWatcher.on('gamestate', (data) => {
     if (data.type === 'SHIP_ENTER') {
         LogWatcher.cachedState.ship = data.value;
     }
+
+    // New Location Alert (Unmapped)
+    if (data.type === 'NEW_LOCATION') {
+        showTrayNotification('📍 New Location Detected', `${data.value || data.raw}\nClick to name it in the app.`);
+    }
+
     // Custom Alerts (User Defined)
     if (data.type === 'CUSTOM') {
         showTrayNotification(data.message || 'Custom Alert', data.value);
