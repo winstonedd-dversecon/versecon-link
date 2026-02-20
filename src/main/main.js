@@ -357,7 +357,7 @@ ipcMain.handle('app:select-log', async () => {
             config.logPath = filePath;
             saveConfig();
             console.log('[Main] Log path changed to:', filePath);
-            
+
             // Stop old watcher and start new one
             LogWatcher.stop();
             setTimeout(() => {
@@ -365,12 +365,12 @@ ipcMain.handle('app:select-log', async () => {
                 broadcast('log:status', { connected: true, path: filePath });
                 console.log('[Main] LogWatcher restarted with new path:', filePath);
             }, 500);
-            
+
             // Update Telemetry Engine if available
             if (telemetryEngine) {
                 telemetryEngine.setLogPath(filePath);
             }
-            
+
             return filePath;
         }
         return config.logPath;
@@ -1135,7 +1135,7 @@ function startRemoteServer() {
     });
 
     // ═══ STREAM DECK API ENDPOINTS (v2.10) ═══
-    app.post('/api/streamdeck/send-command', express.json(), (req, res) => {
+    remoteApp.post('/api/streamdeck/send-command', express.json(), (req, res) => {
         const { preset, target } = req.body;
         if (!preset || !target) {
             return res.status(400).json({ error: 'Missing preset or target' });
@@ -1148,7 +1148,7 @@ function startRemoteServer() {
         res.json({ success: true, command: preset, target });
     });
 
-    app.post('/api/streamdeck/tts', express.json(), (req, res) => {
+    remoteApp.post('/api/streamdeck/tts', express.json(), (req, res) => {
         const { text } = req.body;
         if (!text) return res.status(400).json({ error: 'Missing text' });
         // Send TTS to dashboard
@@ -1158,7 +1158,7 @@ function startRemoteServer() {
         res.json({ success: true, text });
     });
 
-    app.post('/api/streamdeck/visual-alert', express.json(), (req, res) => {
+    remoteApp.post('/api/streamdeck/visual-alert', express.json(), (req, res) => {
         const { type, duration } = req.body;
         if (!type) return res.status(400).json({ error: 'Missing type' });
         // Send visual alert
@@ -1166,7 +1166,7 @@ function startRemoteServer() {
         res.json({ success: true, alert: type });
     });
 
-    app.get('/api/streamdeck/status', (req, res) => {
+    remoteApp.get('/api/streamdeck/status', (req, res) => {
         res.json({
             connected: dashboardWindow && !dashboardWindow.isDestroyed(),
             version: '2.10',
@@ -1174,7 +1174,7 @@ function startRemoteServer() {
         });
     });
 
-    app.get('/api/streamdeck/buttons', (req, res) => {
+    remoteApp.get('/api/streamdeck/buttons', (req, res) => {
         res.json({
             buttons: [
                 {
@@ -1498,7 +1498,7 @@ if (!gotTheLock) {
             console.error('[Main] No Game.log path available. User must manually select via Settings.');
             broadcast('log:error', { message: 'Game.log not found. Please select manually in Settings.' });
         }
-        
+
         // Ensure status is broadcast to dashboard after start
         setTimeout(() => {
             const logStatus = { connected: LogWatcher.isWatching, path: LogWatcher.filePath };
@@ -1511,7 +1511,7 @@ if (!gotTheLock) {
             if (config.logPath && !fs.existsSync(config.logPath)) {
                 console.warn('[Main] Log file no longer exists at:', config.logPath);
                 LogWatcher.stop();
-                
+
                 // Try to find new location
                 const newPath = LogWatcher.findLogFile();
                 if (newPath && newPath !== config.logPath) {
