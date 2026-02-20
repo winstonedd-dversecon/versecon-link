@@ -33,7 +33,8 @@ class CustomParser extends BaseParser {
                     type: 'CUSTOM',
                     level: p.level || 'INFO',
                     message: p.message ? p.message.replace('$1', match[1] || '').replace('$2', match[2] || '') : 'Custom Match',
-                    value: match[1] || line
+                    value: match[1] || line,
+                    hueColor: p.hueColor
                 });
                 handled = true;
             }

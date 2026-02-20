@@ -461,8 +461,11 @@
         </div>
     </div>
 
-    <!-- ═══ SHIP IMAGE (below flight deck) ═══ -->
-    <div class="ship-image-panel" id="ship-image-panel">
+    <!-- ═══ SHIP IMAGE (draggable) ═══ -->
+    <div class="ship-image-panel interactive" id="ship-image-panel" style="pointer-events: auto;">
+        <div class="drag-handle" style="position: absolute; top:0; left:0; width: 100%; height: 20px; z-index: 10;">
+            <div class="drag-handle-bar"></div>
+        </div>
         <img id="ship-image-img" src="" alt="">
         <div class="ship-image-label" id="ship-image-label"></div>
     </div>
@@ -647,6 +650,14 @@
                     el.style.left = positions['hud-right-panel'].left + 'px';
                     el.style.top = positions['hud-right-panel'].top + 'px';
                     el.style.right = 'auto';
+                }
+            }
+            if (positions['ship-image-panel']) {
+                const el = document.getElementById('ship-image-panel');
+                if (el) {
+                    el.style.left = positions['ship-image-panel'].left + 'px';
+                    el.style.top = positions['ship-image-panel'].top + 'px';
+                    el.style.transform = 'none';
                 }
             }
         }

@@ -1501,7 +1501,11 @@
                 volume: document.getElementById('sound-volume').value,
                 soundEnabled: document.getElementById('sound-enabled').checked,
                 // overlayEnabled if exists
-                shareLocation: document.getElementById('config-share-location').checked
+                shareLocation: document.getElementById('config-share-location').checked,
+                hueEnabled: document.getElementById('config-hue-enabled')?.checked,
+                hueBridge: document.getElementById('config-hue-bridge')?.value,
+                hueUser: document.getElementById('config-hue-user')?.value,
+                hueLights: document.getElementById('config-hue-lights')?.value ? document.getElementById('config-hue-lights').value.split(',').map(l => l.trim()) : undefined
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
@@ -1518,6 +1522,24 @@
             if (config.volume) document.getElementById('sound-volume').value = config.volume;
             if (config.soundEnabled !== undefined) document.getElementById('sound-enabled').checked = config.soundEnabled;
             if (config.shareLocation !== undefined) document.getElementById('config-share-location').checked = config.shareLocation;
+
+            // Hue Settings
+            if (config.hueEnabled !== undefined) {
+                const hueEnabledEl = document.getElementById('config-hue-enabled');
+                if (hueEnabledEl) hueEnabledEl.checked = config.hueEnabled;
+            }
+            if (config.hueBridge !== undefined) {
+                const hueBridgeEl = document.getElementById('config-hue-bridge');
+                if (hueBridgeEl) hueBridgeEl.value = config.hueBridge;
+            }
+            if (config.hueUser !== undefined) {
+                const hueUserEl = document.getElementById('config-hue-user');
+                if (hueUserEl) hueUserEl.value = config.hueUser;
+            }
+            if (config.hueLights !== undefined && Array.isArray(config.hueLights)) {
+                const hueLightsEl = document.getElementById('config-hue-lights');
+                if (hueLightsEl) hueLightsEl.value = config.hueLights.join(', ');
+            }
 
             // Update local state
             soundVolume = (config.volume || 70) / 100;

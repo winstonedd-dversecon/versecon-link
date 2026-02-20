@@ -508,6 +508,12 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.teamNames !== undefined) config.teamNames = newConfig.teamNames;
     if (newConfig.overlayPositions !== undefined) config.overlayPositions = newConfig.overlayPositions;
 
+    // Philips Hue Settings
+    if (newConfig.hueEnabled !== undefined) config.hueEnabled = newConfig.hueEnabled;
+    if (newConfig.hueBridge !== undefined) config.hueBridge = newConfig.hueBridge;
+    if (newConfig.hueUser !== undefined) config.hueUser = newConfig.hueUser;
+    if (newConfig.hueLights !== undefined) config.hueLights = newConfig.hueLights;
+
     saveConfig();
 
     // Broadcast updates if needed
@@ -1008,7 +1014,7 @@ ipcMain.handle('settings:save-pattern-overrides', async (event, overrides) => {
 ipcMain.handle('settings:save-custom-patterns', async (event, patterns) => {
     config.customPatterns = patterns;
     saveConfig();
-    LogWatcher.setCustomPatterns(patterns);
+    updateUnifiedPatterns();
     return true;
 });
 
