@@ -243,14 +243,25 @@ class LogWatcher extends EventEmitter {
         console.log(`[LogWatcher] Starting watch on: ${this.filePath}`);
         this.emit('status', { connected: true, path: this.filePath });
 
-        // Initial Scan (Safe Read)
-        try {
-            const lines = this.readLastLines(this.filePath, 5000);
-            console.log(`[LogWatcher] Initial scan read ${lines.length} lines.`);
-            lines.forEach(line => this.processLine(line, true));
-        } catch (e) {
-            console.error('[LogWatcher] Initial scan failed:', e);
-        }
+        // Initial Scan (Async non-blocking)
+        setTimeout(async () => {
+            try {
+                const content = await fs.promises.readFile(this.filePath, 'utf-8');
+                const lines = content.split('\n').slice(-5000);
+                console.log(`[LogWatcher] Initial scan processing ${lines.length} lines asynchronously.`);
+
+                // Process in batches of 500 to yield event loop
+                const BATCH_SIZE = 500;
+                for (let i = 0; i < lines.length; i += BATCH_SIZE) {
+                    const batch = lines.slice(i, i + BATCH_SIZE);
+                    batch.forEach(line => this.processLine(line, true));
+                    await new Promise(resolve => setTimeout(resolve, 5)); // Yield to unblock UI
+                }
+                console.log(`[LogWatcher] Initial scan complete.`);
+            } catch (e) {
+                console.error('[LogWatcher] Initial scan failed:', e);
+            }
+        }, 100);
 
         // Watch for updates
         try {
