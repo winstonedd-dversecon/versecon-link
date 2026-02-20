@@ -656,6 +656,7 @@ LogWatcher.on('gamestate', (data) => {
         }
 
         if (data.type === 'STATUS') {
+            console.log(`[Main] STATUS Event: "${data.value}" source:${data.source || 'unknown'}`);
             if (data.value === 'death') {
                 showTrayNotification('☠️ DEATH DETECTED', 'Your character has died.');
             } else if (data.value === 'suffocating') {
@@ -1424,12 +1425,27 @@ function getBuiltinPatterns() {
 function updateUnifiedPatterns() {
     const db = loadPatternDB();
     patternDatabase = db; // Sync global state
+
+    // Filter out built-in patterns from the matching set to prevent double-processing.
+    // Dedicated parsers (Combat, Vehicle, etc.) already handle these.
+    // CustomParser should only handle TRUE custom patterns and unique DB entries.
+    const builtins = getBuiltinPatterns().map(b => b.regex.toString());
+
+    const dbPatterns = (db.patterns || []).filter(p => {
+        // Skip if explicitly marked "NONE" as per our recent custom.js update
+        if (p.event === 'NONE') return false;
+        // Skip if this regex is already covered by a hardcoded builtin parser
+        const reStr = new RegExp(p.regex, 'i').toString();
+        return !builtins.includes(reStr);
+    });
+
     const unifiedPatterns = [
         ...(config.customPatterns || []),
-        ...(db.patterns || [])
+        ...dbPatterns
     ];
+
     LogWatcher.setCustomPatterns(unifiedPatterns);
-    console.log('[Main] Unified patterns updated:', unifiedPatterns.length);
+    console.log('[Main] Unified matching patterns updated:', unifiedPatterns.length);
 }
 
 function savePatternDB(db) {

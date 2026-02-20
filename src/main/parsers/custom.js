@@ -29,12 +29,28 @@ class CustomParser extends BaseParser {
         for (const p of this.patterns) {
             const match = line.match(p.compiled);
             if (match) {
+                // Determine message: message > name > "Custom Match"
+                let message = p.message;
+                if (!message && p.name) message = p.name;
+                if (!message) message = 'Custom Match';
+
+                // Skip if message is explicitly "none" or "NONE" OR if event is explicitly "NONE"
+                if (message.toUpperCase() === 'NONE' || (p.event && p.event.toUpperCase() === 'NONE')) {
+                    handled = true;
+                    continue;
+                }
+
+                // Substitution
+                message = message.replace('$1', match[1] || '').replace('$2', match[2] || '');
+
                 this.emit('gamestate', {
                     type: 'CUSTOM',
+                    id: p.id,
                     level: p.level || 'INFO',
-                    message: p.message ? p.message.replace('$1', match[1] || '').replace('$2', match[2] || '') : 'Custom Match',
+                    message: message,
                     value: match[1] || line,
-                    hueColor: p.hueColor
+                    hueColor: p.hueColor,
+                    source: p.source || 'user'
                 });
                 handled = true;
             }
