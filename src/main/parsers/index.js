@@ -48,9 +48,9 @@ engine.register(require('./vehicle'));
 engine.register(require('./inventory'));
 engine.register(require('./combat'));
 engine.register(require('./mission'));
-engine.register(require('./mining')); // Phase 2
-engine.register(require('./salvage')); // Phase 2
-engine.register(require('./engineering')); // Phase 2
+// engine.register(require('./mining')); // Phase 2 (Unverified)
+// engine.register(require('./salvage')); // Phase 2 (Unverified)
+// engine.register(require('./engineering')); // Phase 2 (Unverified)
 engine.register(require('./economy'));
 // engine.register(require('./zone')); // DISABLED: navigation.js now handles zones with verified patterns
 engine.register(require('./custom'));

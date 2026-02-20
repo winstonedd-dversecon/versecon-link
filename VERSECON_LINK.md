@@ -241,13 +241,26 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 5. **Shard display** — Wrong numeric ID. **Fix**: `USE1B-110` format.
 6. **IP not shown** — Wrong element ID. **Fixed**.
 7. **Missing overlay events** — Added: `DEATH`, `VEHICLE_DESTRUCTION`, `MISSION_*`.
-8. **Fire false positives** — Matched 1,000+ Background Simulation lines. **Fix**: 3-layer filter + ship prefix matching.
+
+### Fixed (2026-02-20 — v2.7.2)
+
+1. **Fire false positives (CRITICAL)** — Matched 1,000+ Background Simulation lines and ambient fires going on anywhere in the remote server. **Fix**: Explicitly look for `<Fire Client - Snapshot Request>.*Similarity: [\d.]+ dB`. The `Similarity` and `Minimum` values appended to the snapshot request specifically delineate fires burning on the local player's authority.
+2. **Missing Terminal & Interaction Tracking** — Added new `gamestate` tracking for:
+   - **ASOP Terminal**: `[Notice] <CEntityComponentShipListProvider::FetchShipData... [ASOP]` -> Emits `STATUS` `FLEET TERMINAL ACCESSED`
+   - **Medical Respawn**: `DropoffLocation_BP[Destination]` -> Emits `STATUS` `RESPAWN SET`
+   - **CrimeStat**: `CrimeStat Rating (Increased|Decreased)` -> Emits `CRIME_UPDATE`
+   - **UEC Fines**: `Fined [amount] UEC` -> Emits `STATUS` warning
+
+### Scheduled for Next Agent / Sprint
+
+1. **Log Exporter Tool**: The UI currently shows a "Log Database", but it lacks the ability to explicitly export a list of "Known Working Triggers" versus "Unknown" logs that need to be tested. The user wants the application to be able to output or export a clean list of supported features (across all ships, locations, events) as well as any raw logs that hit the `unknown` fallback wrapper. Implement an export feature, perhaps as a `DOWNLOAD LIST` button on the Log Database tab.
 
 ### Persistent Issues
 
 1. **No `SetDriver` in SC 4.6** — Ship entry uses VOIP, exit uses ClearDriver
 2. **Mining/Salvage/Engineering** — 100% speculative, never found in real logs
 3. **Zone parser disabled** — `zone.js` commented out, `navigation.js` handles zones
+
 4. **Discover Groups button** — Links to non-existent `versecon.space/groups`
 5. **Log extraction** — Only extracts locations from log clicks, not other events
 6. **NetworkWatcher** — TCP polling only works on Windows

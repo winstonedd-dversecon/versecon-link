@@ -39,6 +39,9 @@ class VehicleParser extends BaseParser {
             // Spawn Flow
             spawn_flow: /<Spawn Flow>/,
             spawn_reservation: /lost\s+reservation\s+for\s+spawnpoint\s+([^\s]+)\s+\[(\d+)\]/,
+
+            // ASOP Terminal
+            asop_access: /Fetching ship list for local client\s+\[Team_GameServices\]\[ASOP\]/i,
         };
         this.currentShip = null;
         this.shipMap = {};
@@ -142,6 +145,17 @@ class VehicleParser extends BaseParser {
                 this.emit('gamestate', { type: 'SPAWN_SET', value: loc });
                 handled = true;
             }
+        }
+
+        // ── 5. ASOP Terminal Access ──
+        if (this.patterns.asop_access.test(line)) {
+            // Emitting this as a status alert so it pops up in the HUD's danger/notify zone
+            this.emit('gamestate', {
+                type: 'STATUS',
+                value: 'FLEET TERMINAL ACCESSED',
+                level: 'INFO'
+            });
+            handled = true;
         }
 
         return handled;

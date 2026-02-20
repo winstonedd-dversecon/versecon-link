@@ -40,6 +40,14 @@ class CombatParser extends BaseParser {
             // Direction vector (for kill direction analysis)
             death_direction: /from direction\s+x:\s*([-\d.]+),?\s*y:\s*([-\d.]+),?\s*z:\s*([-\d.]+)/i,
 
+            // CrimeStat Detection
+            crimestat: /CrimeStat Rating (Increased|Decreased)/i,
+
+            // Medical Dropoff Generation
+            medical_dropoff: /DropoffLocation_BP\[Destination\],\s+locations:\s+\(([^\]]+)\s+\[([^\]]+)\]\)/i,
+
+
+
             // Vehicle Destruction (destroy levels 0→1=crippled, 1→2=destroyed)
             vehicle_destruction: /<Vehicle Destruction>/,
             vehicle_destruction_detail: /<Vehicle Destruction>.*?Vehicle\s+'([^']+)'\s*\[\d+\].*?driven by\s+'([^']+)'\s*\[\d+\].*?from destroy level\s+(\d+)\s+to\s+(\d+).*?caused by\s+'([^']+)'/i,
@@ -48,13 +56,10 @@ class CombatParser extends BaseParser {
             // Hazards
             suffocating: /Player.*started suffocating/i,
             depressurizing: /Player.*started depressurization/i,
+            // Fire: Track actual fire snapshots (active fires the local client cares about)
+            // Local fires uniquely send a "Snapshot Request" with Similarity data
+            fire_actual: /<Fire Client - Snapshot Request> Fire Area '([^']+)' requested an up-to-date fire grid snapshot.*Similarity: [\d.]+ dB/i,
 
-            // Fire: IGNORE "Background Simulation Skipped" (1000+ lines of init noise)
-            // Only match actual fire events: spread, ignition, cell burning, damage
-            fire_actual: /<Fire.*(?:Spread|Ignit|Cell.*Burning|Damage|Started|Warning)>/i,
-            fire_area_name: /Fire Area\s+'([^']+)'/i,
-
-            // Fallback for fire notification (from SHUDEvent)
             fire_notification: /Added notification.*(?:Fire|fire)/i,
         };
 
@@ -181,50 +186,75 @@ class CombatParser extends BaseParser {
             this.emit('gamestate', { type: 'STATUS', value: 'depressurizing' });
             handled = true;
         }
-        // Fire detection — SKIP background simulation noise
-        if (line.includes('Fire') && !line.includes('Background Simulation Skipped') && !line.includes('fire_extinguisher')) {
+        // Fire detection — Track active fires using snapshot requests (unique to local player)
+        const fireMatch = line.match(this.patterns.fire_actual);
+        if (fireMatch) {
+            const room = fireMatch[1];
             const now = Date.now();
 
-            // Check for actual fire event or fire notification
-            if (this.patterns.fire_actual.test(line) || this.patterns.fire_notification.test(line)) {
-                // Dedup: don't spam alerts
-                if ((now - this.lastFireAlert) > this.FIRE_COOLDOWN_MS) {
-                    // Try to extract room name for context
-                    const areaMatch = line.match(this.patterns.fire_area_name);
-                    const room = areaMatch ? areaMatch[1] : null;
+            // Dedup: don't spam alerts (wait FIRE_COOLDOWN_MS between alerts)
+            if ((now - this.lastFireAlert) > this.FIRE_COOLDOWN_MS) {
+                // Try to extract room name for context
+                let isMyShip = true; // Default: alert (better safe than sorry)
 
-                    // If we know the current ship, try to filter for it
-                    // Ship room names often contain manufacturer prefix (e.g., mrai_guardian_int_*)
-                    let isMyShip = true; // Default: alert (better safe than sorry)
-                    if (room && this.currentShip) {
-                        // Build prefix from ship name (e.g., "Esperia Prowler" -> "espr_prowler")
-                        const shipKey = this.currentShip.toLowerCase().replace(/\s+/g, '_');
-                        // Check if room contains any part of ship name
-                        const roomLower = room.toLowerCase();
-                        // Only suppress if room clearly belongs to ANOTHER ship
-                        // (rooms with generic names like "Room_RN_*" could be any ship)
-                        if (roomLower.includes('mrai_') || roomLower.includes('espr_') ||
-                            roomLower.includes('anvl_') || roomLower.includes('orig_') ||
-                            roomLower.includes('misc_') || roomLower.includes('cnou_') ||
-                            roomLower.includes('drak_') || roomLower.includes('rsi_') ||
-                            roomLower.includes('aegs_') || roomLower.includes('argo_') ||
-                            roomLower.includes('crusader_') || roomLower.includes('banu_')) {
-                            // Room has a manufacturer prefix — check if it matches our ship
-                            isMyShip = shipKey.split('_').some(part => part.length > 3 && roomLower.includes(part));
-                        }
-                    }
+                if (room && this.currentShip) {
+                    // Build partial key from ship name (e.g., "Esperia Prowler" -> "espr_prowler")
+                    const shipKey = this.currentShip.toLowerCase().replace(/\s+/g, '_');
+                    const roomLower = room.toLowerCase();
 
-                    if (isMyShip) {
-                        this.lastFireAlert = now;
-                        this.emit('gamestate', {
-                            type: 'HAZARD_FIRE',
-                            value: room ? `Fire in ${room}` : 'Fire Detected',
-                            room: room
-                        });
-                        handled = true;
+                    // Specific manufacturer suppression check
+                    if (roomLower.includes('mrai_') || roomLower.includes('espr_') ||
+                        roomLower.includes('anvl_') || roomLower.includes('orig_') ||
+                        roomLower.includes('misc_') || roomLower.includes('cnou_') ||
+                        roomLower.includes('drak_') || roomLower.includes('rsi_') ||
+                        roomLower.includes('aegs_') || roomLower.includes('argo_') ||
+                        roomLower.includes('crusader_') || roomLower.includes('banu_')) {
+                        // Room has a manufacturer prefix — check if it matches our ship
+                        isMyShip = shipKey.split('_').some(part => part.length > 3 && roomLower.includes(part));
                     }
                 }
+
+                if (isMyShip) {
+                    this.lastFireAlert = now;
+                    this.emit('gamestate', {
+                        type: 'HAZARD_FIRE',
+                        value: room ? `Fire in ${room}` : 'Fire Detected',
+                        room: room
+                    });
+                    handled = true;
+                }
             }
+        } // ── 5. CrimeStat Tracking ──
+        const crimeMatch = line.match(this.patterns.crimestat);
+        if (crimeMatch) {
+            const direction = crimeMatch[1].toUpperCase(); // INCREASED or DECREASED
+
+            // Emit a high priority security alert
+            this.emit('gamestate', {
+                type: 'STATUS',
+                value: `CRIMESTAT ${direction}`,
+                level: direction === 'INCREASED' ? 'CRITICAL' : 'INFO'
+            });
+
+            // If we also want it to pop an overlay alert directly:
+            if (direction === 'INCREASED') {
+                this.emit('gamestate', { type: 'CRIME_UPDATE', value: 'WANTED LEVEL INCREASED' });
+            }
+
+            handled = true;
+        }
+
+        // ── 6. Medical Respawn Points ──
+        const medMatch = line.match(this.patterns.medical_dropoff);
+        if (medMatch) {
+            const clinicName = medMatch[1].trim();
+            // We just grab the first bound location string (e.g. "Wikelo Emporium Dasi Station")
+            this.emit('gamestate', {
+                type: 'STATUS',
+                value: `RESPAWN SET: ${clinicName}`,
+                level: 'INFO'
+            });
+            handled = true;
         }
 
         return handled;

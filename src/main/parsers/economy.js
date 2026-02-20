@@ -7,7 +7,7 @@ class EconomyParser extends BaseParser {
             transaction: /<Transaction>/,
             shop_purchase: /<ShopPurchase>/,
             insurance_claim: /<InsuranceClaim>/,
-            fine: /<Fine>/
+            fine: /Fined\s+(\d+)\s+UEC/i
         };
     }
 
@@ -38,14 +38,14 @@ class EconomyParser extends BaseParser {
             handled = true;
         }
 
-        // 3. Fines
-        if (this.patterns.fine.test(line)) {
-            const match = line.match(/Amount\s+(\d+)/i);
-            const amount = match ? parseInt(match[1], 10) : 0;
+        // 3. Fines (e.g. Fined 40000 UEC)
+        const fineMatch = line.match(this.patterns.fine);
+        if (fineMatch) {
+            const amount = parseInt(fineMatch[1], 10);
             this.emit('gamestate', {
-                type: 'ECONOMY',
-                subtype: 'FINE',
-                amount: amount
+                type: 'STATUS',
+                value: `FINED ${amount} UEC`,
+                level: 'WARNING'
             });
             handled = true;
         }
