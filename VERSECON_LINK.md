@@ -250,21 +250,42 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
    - **Medical Respawn**: `DropoffLocation_BP[Destination]` -> Emits `STATUS` `RESPAWN SET`
    - **CrimeStat**: `CrimeStat Rating (Increased|Decreased)` -> Emits `CRIME_UPDATE`
    - **UEC Fines**: `Fined [amount] UEC` -> Emits `STATUS` warning
+3. **New Parser Modules (v2.7.2)** — Added 6 new tracking features:
+   - **💰 Insurance Claims**: `CWallet::ProcessClaimToNextStep` → `INSURANCE CLAIM FILED` / `COMPLETE`
+   - **🛒 Shop Terminals**: `CEntityComponentShoppingProvider::OnGainedAuthority` → `SHOP TERMINAL ACCESSED`
+   - **📋 Mission Lifecycle**: `CSubsumptionMissionComponent` create/stop → `MISSION_ENGINE` events
+   - **🔄 Server Transitions**: `Change Server Start/End` + `Context Establisher Done` → `SERVER TRANSFER` alerts
+   - **🎮 Inventory Management**: `<InventoryManagement>` equip/unequip → `INVENTORY` events
+   - **📡 Channel/VOIP**: `Channel Created/Destroyed/Connected/Disconnected` → `VOIP` events
+4. **Log Database now shows ALL patterns** — `getBuiltinPatterns()` in `main.js` injects all 75 built-in patterns from 9 parsers into the Log Database tab. Search, filter by category, and export all patterns (built-in + user) via 📤 Export button.
+5. **Fire message simplified** — Changed from `Fire in Room_RN-005` to `Fire onboard!`
 
 ### Scheduled for Next Agent / Sprint
 
-1. **Log Exporter Tool**: The UI currently shows a "Log Database", but it lacks the ability to explicitly export a list of "Known Working Triggers" versus "Unknown" logs that need to be tested. The user wants the application to be able to output or export a clean list of supported features (across all ships, locations, events) as well as any raw logs that hit the `unknown` fallback wrapper. Implement an export feature, perhaps as a `DOWNLOAD LIST` button on the Log Database tab.
+1. **🎯 Party Sharing / Squad Tactical HUD** (Priority 0):
+   - Each party member installs VerseCon Link
+   - One person hosts (existing Express server on `0.0.0.0`)
+   - Others connect via host IP → WebSocket relay
+   - Each client broadcasts: **Location**, **Ship**, **Dead/Alive**, **Fire/Under Attack**, **Server Transfer**
+   - Overlay party panel shows real-time squad telemetry for 20+ players
+   - All data sources are already tracked by existing parsers
+
+2. **Additional Tracking Enhancements** (Priority 1):
+   - Quantum Travel destination extraction
+   - Landing Pad assignment display on HUD
+   - Insurance claim timer estimation
+   - Player proximity counter (nearby players)
 
 ### Persistent Issues
 
 1. **No `SetDriver` in SC 4.6** — Ship entry uses VOIP, exit uses ClearDriver
 2. **Mining/Salvage/Engineering** — 100% speculative, never found in real logs
 3. **Zone parser disabled** — `zone.js` commented out, `navigation.js` handles zones
-
-4. **Discover Groups button** — Links to non-existent `versecon.space/groups`
-5. **Log extraction** — Only extracts locations from log clicks, not other events
-6. **NetworkWatcher** — TCP polling only works on Windows
-7. **Shard migration** — SC may reassign shards after initial `Join PU`
+4. **Cannot detect incoming damage** — Game.log doesn't log "player taking hits", only results (death, fire, vehicle destroyed)
+5. **Discover Groups button** — Links to non-existent `versecon.space/groups`
+6. **Log extraction** — Only extracts locations from log clicks, not other events
+7. **NetworkWatcher** — TCP polling only works on Windows
+8. **Shard migration** — SC may reassign shards after initial `Join PU`
 
 ---
 
