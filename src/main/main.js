@@ -456,6 +456,44 @@ ipcMain.on('command:send', (event, data) => {
     }
 });
 
+// Command overlay (local-only display on HUD)
+ipcMain.on('command:overlay', (event, data) => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('log:update', {
+            type: 'HUD_WARNING',
+            value: `[${data.target || 'ALL'}] ${data.command}`,
+            level: 'WARNING'
+        });
+    }
+});
+
+// ═══ UNKNOWN LOG TRACKING ═══
+// Forward LogWatcher's built-in unknown tracking to dashboard
+LogWatcher.on('unknown', (data) => {
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+        // LogWatcher emits { groups: [{sample, count, firstSeen, lastSeen}], totalGroups }
+        // Dashboard renderUnknowns() expects [{group, count, sample}]
+        const formatted = (data.groups || []).map(g => ({
+            group: g.sample ? g.sample.substring(0, 80) : 'Unknown',
+            count: g.count,
+            sample: g.sample
+        }));
+        dashboardWindow.webContents.send('log:unknown', { groups: formatted });
+    }
+});
+
+ipcMain.on('log:request-unknowns', () => {
+    LogWatcher.emitUnknowns(); // Re-triggers the 'unknown' event above
+});
+
+ipcMain.on('log:clear-unknowns', () => {
+    LogWatcher.clearUnknowns(); // Clears + re-emits
+});
+
+ipcMain.on('log:ignore-unknown', (event, tag) => {
+    LogWatcher.ignoreUnknownPattern(tag); // Ignore + re-emit
+});
+
 ipcMain.on('command:ack', (event, data) => {
     if (APIClient.socket && APIClient.socket.connected) {
         APIClient.socket.emit('command:ack', data);

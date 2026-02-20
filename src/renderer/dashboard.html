@@ -2023,6 +2023,58 @@
             ipcRenderer.send('log:clear-unknowns');
         }
 
+        // ═══ COMMAND CENTER ═══
+        function sendPresetCommand(cmd) {
+            const target = document.getElementById('cmd-target') ? document.getElementById('cmd-target').value : 'ALL';
+            const broadcast = document.getElementById('cmd-broadcast') ? document.getElementById('cmd-broadcast').checked : false;
+
+            // Log it locally
+            addCommandLog(cmd, target);
+
+            // Send to overlay if broadcast is checked
+            if (broadcast) {
+                ipcRenderer.send('command:send', { command: cmd, target: target });
+            }
+
+            // Also send to overlay for HUD display
+            ipcRenderer.send('command:overlay', { command: cmd, target: target });
+        }
+
+        function sendCustomCommand() {
+            const textInput = document.getElementById('cmd-custom-text');
+            const cmd = textInput ? textInput.value.trim() : '';
+            if (!cmd) return;
+
+            const target = document.getElementById('cmd-target') ? document.getElementById('cmd-target').value : 'ALL';
+            const broadcast = document.getElementById('cmd-broadcast') ? document.getElementById('cmd-broadcast').checked : false;
+
+            addCommandLog(cmd, target);
+
+            if (broadcast) {
+                ipcRenderer.send('command:send', { command: cmd, target: target });
+            }
+
+            ipcRenderer.send('command:overlay', { command: cmd, target: target });
+            textInput.value = '';
+        }
+
+        function addCommandLog(cmd, target) {
+            const log = document.getElementById('command-log');
+            const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const entry = document.createElement('div');
+            entry.className = 'feed-item';
+            entry.innerHTML = `
+                <span class="feed-time">${time}</span>
+                <span class="feed-icon">📡</span>
+                <span><b style="color:var(--accent);">[${target}]</b> ${cmd}</span>
+            `;
+            log.prepend(entry);
+
+            // Remove the placeholder text if it exists
+            const placeholder = log.querySelector('[style*="italic"]');
+            if (placeholder && placeholder.textContent.includes('No commands')) placeholder.remove();
+        }
+
         // ═══ ALERT COOLDOWNS ═══
         function updateCooldown(alertType, seconds) {
             document.getElementById(`cd-${alertType}-val`).textContent = `${seconds}s`;

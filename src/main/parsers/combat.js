@@ -56,9 +56,12 @@ class CombatParser extends BaseParser {
             // Hazards
             suffocating: /Player.*started suffocating/i,
             depressurizing: /Player.*started depressurization/i,
-            // Fire: Track actual fire snapshots (active fires the local client cares about)
-            // Local fires uniquely send a "Snapshot Request" with Similarity data
-            fire_actual: /<Fire Client - Snapshot Request> Fire Area '([^']+)' requested an up-to-date fire grid snapshot.*Similarity: [\d.]+ dB/i,
+            // Fire: Primary — Snapshot Request + Similarity is guaranteed player-specific
+            fire_actual: /<Fire Client - Snapshot Request> Fire Area '([^']+)'.*Similarity: [\d.]+ dB/i,
+            // Fire: Secondary — Skip Initial Snapshot names the vehicle, only trigger if it matches our ship
+            fire_ship_init: /<Fire Client - Skip Initial Snapshot> Fire Area '([^']+)' for vehicle '([^']+)'/i,
+            // Fire: Tertiary — player equips fire extinguisher = strong indicator of fire onboard
+            fire_extinguisher: /<AttachmentReceived>.*fire_extinguisher.*Port\[weapon_attach_hand/i,
 
             fire_notification: /Added notification.*(?:Fire|fire)/i,
         };
@@ -186,44 +189,51 @@ class CombatParser extends BaseParser {
             this.emit('gamestate', { type: 'STATUS', value: 'depressurizing' });
             handled = true;
         }
-        // Fire detection — Track active fires using snapshot requests (unique to local player)
+        // Fire detection — 3-tier approach
+        const now = Date.now();
+        let fireDetected = false;
+        let fireRoom = null;
+        let fireVehicle = null;
+
+        // Tier 1: Snapshot Request + Similarity (always player-specific)
         const fireMatch = line.match(this.patterns.fire_actual);
         if (fireMatch) {
-            const room = fireMatch[1];
-            const now = Date.now();
+            fireDetected = true;
+            fireRoom = fireMatch[1];
+        }
 
-            // Dedup: don't spam alerts (wait FIRE_COOLDOWN_MS between alerts)
-            if ((now - this.lastFireAlert) > this.FIRE_COOLDOWN_MS) {
-                // Try to extract room name for context
-                let isMyShip = true; // Default: alert (better safe than sorry)
-
-                if (room && this.currentShip) {
-                    // Build partial key from ship name (e.g., "Esperia Prowler" -> "espr_prowler")
-                    const shipKey = this.currentShip.toLowerCase().replace(/\s+/g, '_');
-                    const roomLower = room.toLowerCase();
-
-                    // Specific manufacturer suppression check
-                    if (roomLower.includes('mrai_') || roomLower.includes('espr_') ||
-                        roomLower.includes('anvl_') || roomLower.includes('orig_') ||
-                        roomLower.includes('misc_') || roomLower.includes('cnou_') ||
-                        roomLower.includes('drak_') || roomLower.includes('rsi_') ||
-                        roomLower.includes('aegs_') || roomLower.includes('argo_') ||
-                        roomLower.includes('crusader_') || roomLower.includes('banu_')) {
-                        // Room has a manufacturer prefix — check if it matches our ship
-                        isMyShip = shipKey.split('_').some(part => part.length > 3 && roomLower.includes(part));
-                    }
-                }
-
-                if (isMyShip) {
-                    this.lastFireAlert = now;
-                    this.emit('gamestate', {
-                        type: 'HAZARD_FIRE',
-                        value: 'Fire onboard!',
-                        room: room
-                    });
-                    handled = true;
+        // Tier 2: Skip Initial Snapshot — only if vehicle matches our tracked ship
+        if (!fireDetected) {
+            const shipInit = line.match(this.patterns.fire_ship_init);
+            if (shipInit && this.currentShip) {
+                const vehicle = shipInit[2] || '';
+                const shipLower = this.currentShip.toLowerCase();
+                const vehLower = vehicle.toLowerCase();
+                // Fuzzy match: "Crusader Intrepid" ↔ "CRUS_Intrepid_123456"
+                const shipParts = shipLower.split(/[\s_-]+/).filter(p => p.length > 2);
+                if (shipParts.some(part => vehLower.includes(part))) {
+                    fireDetected = true;
+                    fireRoom = shipInit[1];
+                    fireVehicle = vehicle;
                 }
             }
+        }
+
+        // Tier 3: Fire extinguisher equipped = likely fire onboard
+        if (!fireDetected && this.patterns.fire_extinguisher.test(line)) {
+            fireDetected = true;
+            fireRoom = 'unknown';
+        }
+
+        if (fireDetected && (now - this.lastFireAlert) > this.FIRE_COOLDOWN_MS) {
+            this.lastFireAlert = now;
+            this.emit('gamestate', {
+                type: 'HAZARD_FIRE',
+                value: 'Fire onboard!',
+                room: fireRoom,
+                vehicle: fireVehicle
+            });
+            handled = true;
         }
 
         // ── 5. CrimeStat Tracking ──

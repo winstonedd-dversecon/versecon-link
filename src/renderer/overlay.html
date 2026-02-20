@@ -796,11 +796,19 @@
                     break;
 
                 // Alerts
-                case 'STATUS':
-                    if (['death', 'suffocating', 'depressurizing'].includes(data.value)) {
+                case 'STATUS': {
+                    const v = (data.value || '').toLowerCase();
+                    if (['death', 'suffocating', 'depressurizing'].includes(v)) {
                         showAlert(data.value.toUpperCase(), 'CRITICAL STATUS ALERT');
+                    } else if (data.level === 'WARNING') {
+                        showAlert('⚠️ ' + data.value, 'WARNING');
+                        addFeedEntry('⚠️', data.value);
+                    } else {
+                        // INFO-level status events (insurance, shop, ASOP, server, etc.)
+                        addFeedEntry('ℹ️', data.value);
                     }
                     break;
+                }
 
                 case 'ZONE':
                     if (data.value === 'Armistice Zone') addFeedEntry('🛡️', 'Entered Armistice');
@@ -899,6 +907,49 @@
 
                 case 'MISSION_CHANGED':
                     addFeedEntry('📍', `Tracking: ${data.value}`);
+                    break;
+
+                // ── New Event Types (v2.7.2) ──
+                case 'MISSION_ENGINE':
+                    addFeedEntry('⚙️', data.value);
+                    break;
+
+                case 'INVENTORY':
+                    if (data.level === 'WARNING') {
+                        addFeedEntry('⚠️', data.value);
+                    }
+                    // Silent for success to avoid spam (48+ events per session)
+                    break;
+
+                case 'VOIP':
+                    addFeedEntry('📡', data.value);
+                    break;
+
+                case 'CRIME_UPDATE':
+                    showAlert('🚨 CRIMESTAT', data.value);
+                    addFeedEntry('🚨', data.value);
+                    break;
+
+                case 'HUD_WARNING':
+                    showAlert('⚠️', data.value || 'Warning');
+                    addFeedEntry('⚠️', data.value);
+                    break;
+
+                // ── Custom Pattern Matches (weapons, user-defined regexes) ──
+                case 'CUSTOM':
+                    if (data.level === 'CRITICAL') {
+                        showAlert('🔴 ' + (data.message || data.value), 'CRITICAL ALERT');
+                        addFeedEntry('🔴', data.message || data.value);
+                    } else if (data.level === 'WARN' || data.level === 'WARNING') {
+                        showAlert('⚠️ ' + (data.message || data.value), 'WARNING');
+                        addFeedEntry('⚠️', data.message || data.value);
+                    } else {
+                        addFeedEntry('🔧', data.message || data.value);
+                    }
+                    break;
+
+                case 'ECONOMY':
+                    addFeedEntry('💰', data.value || 'Economy event');
                     break;
             }
         });
