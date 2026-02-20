@@ -700,10 +700,9 @@ LogWatcher.on('gamestate', (data) => {
     function handlePatternReactions(data) {
         if (!patternDatabase.patterns) return;
 
-        // Find first pattern that matches this event type and possibly regex (for custom)
-        // For built-in events, we match by data.type
-        // For custom events, we match by data.patternId if we add it to the payload
-        const p = patternDatabase.patterns.find(x => x.event === data.type);
+        // Only match USER-DEFINED patterns (not built-in ones from the Log Database)
+        // Built-in patterns are for display/search only, not for triggering reactions
+        const p = patternDatabase.patterns.find(x => x.event === data.type && x.source !== 'builtin');
         if (!p) return;
 
         // 1. Alert (Full Screen)
@@ -1310,6 +1309,49 @@ function getBuiltinPatterns() {
     };
 
     const builtins = [];
+
+    // Default effect assignments for built-in patterns
+    const effectDefaults = {
+        // Combat - Critical
+        death: { hue: 'red', overlay: 'both', alert: 'both', warning: 'KILLED' },
+        kill_player: { hue: 'orange', overlay: 'alert', alert: 'visual' },
+        kill_npc: { hue: 'none', overlay: 'feed', alert: 'none' },
+        vehicle_destruction: { hue: 'red', overlay: 'alert', alert: 'visual', warning: 'VEHICLE DESTROYED' },
+        vehicle_destruction_detail: { hue: 'red', overlay: 'both', alert: 'both', warning: 'SHIP DESTROYED' },
+        crimestat: { hue: 'orange', overlay: 'alert', alert: 'visual', warning: 'CRIMESTAT' },
+        crimestat_cleared: { hue: 'green', overlay: 'feed', alert: 'none' },
+        // Hazards
+        suffocating: { hue: 'red', overlay: 'alert', alert: 'visual', warning: 'SUFFOCATING' },
+        depressurizing: { hue: 'red', overlay: 'alert', alert: 'visual', warning: 'DEPRESSURIZING' },
+        fire_actual: { hue: 'red', overlay: 'alert', alert: 'both', warning: 'FIRE ONBOARD' },
+        fire_ship_init: { hue: 'orange', overlay: 'alert', alert: 'visual', warning: 'FIRE DETECTED' },
+        fire_notification: { hue: 'orange', overlay: 'feed', alert: 'none' },
+        // Navigation
+        location: { hue: 'none', overlay: 'feed', alert: 'none' },
+        location_hint: { hue: 'none', overlay: 'feed', alert: 'none' },
+        quantum_travel: { hue: 'none', overlay: 'feed', alert: 'none' },
+        interdiction: { hue: 'orange', overlay: 'alert', alert: 'visual', warning: 'INTERDICTION' },
+        // Vehicle
+        ship_enter: { hue: 'none', overlay: 'feed', alert: 'none' },
+        ship_current: { hue: 'none', overlay: 'feed', alert: 'none' },
+        landing_pad: { hue: 'none', overlay: 'feed', alert: 'none' },
+        // Session
+        login: { hue: 'none', overlay: 'feed', alert: 'none' },
+        server_connect: { hue: 'none', overlay: 'feed', alert: 'none' },
+        server_region: { hue: 'none', overlay: 'feed', alert: 'none' },
+        loading_screen: { hue: 'blue', overlay: 'feed', alert: 'none' },
+        // Economy
+        shop_browse: { hue: 'none', overlay: 'feed', alert: 'none' },
+        insurance_claim: { hue: 'none', overlay: 'feed', alert: 'none' },
+        // Mission
+        mission_accepted: { hue: 'blue', overlay: 'feed', alert: 'none' },
+        mission_completed: { hue: 'green', overlay: 'feed', alert: 'none' },
+        mission_failed: { hue: 'red', overlay: 'feed', alert: 'none' },
+        // Social
+        friend_join: { hue: 'none', overlay: 'feed', alert: 'none' },
+        proximity: { hue: 'none', overlay: 'feed', alert: 'none' },
+    };
+
     for (const file of parserFiles) {
         try {
             const parser = require(path.join(parserDir, file));
@@ -1318,6 +1360,7 @@ function getBuiltinPatterns() {
             // Handle parsers with a `patterns` object
             if (parser.patterns) {
                 for (const [key, regex] of Object.entries(parser.patterns)) {
+                    const defaults = effectDefaults[key] || {};
                     builtins.push({
                         id: `builtin_${file}_${key}`,
                         name: `${key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`,
@@ -1326,6 +1369,10 @@ function getBuiltinPatterns() {
                         regex: regex.toString(),
                         status: 'verified',
                         source: 'builtin',
+                        hue: defaults.hue || 'none',
+                        overlay: defaults.overlay || 'none',
+                        alert: defaults.alert || 'none',
+                        warning: defaults.warning || '',
                         notes: `Built-in pattern from ${file}.js parser`,
                         example: '',
                         addedBy: 'system',
@@ -1593,12 +1640,10 @@ if (!gotTheLock) {
 
         LogWatcher.setShipMap(config.shipMap); // Apply saved map
 
-        // Unify custom patterns and pattern DB
-        const unifiedPatterns = [
-            ...(config.customPatterns || []),
-            ...(patternDatabase.patterns || [])
-        ];
-        LogWatcher.setCustomPatterns(unifiedPatterns);
+        // Only send user-defined custom patterns to the CustomParser
+        // Built-in patterns from getBuiltinPatterns() are for Log Database display only
+        const userPatterns = (config.customPatterns || []).filter(p => p.source !== 'builtin');
+        LogWatcher.setCustomPatterns(userPatterns);
 
         createWindows();
         createTray();

@@ -60,8 +60,6 @@ class CombatParser extends BaseParser {
             fire_actual: /<Fire Client - Snapshot Request> Fire Area '([^']+)'.*Similarity: [\d.]+ dB/i,
             // Fire: Secondary — Skip Initial Snapshot names the vehicle, only trigger if it matches our ship
             fire_ship_init: /<Fire Client - Skip Initial Snapshot> Fire Area '([^']+)' for vehicle '([^']+)'/i,
-            // Fire: Tertiary — player equips fire extinguisher = strong indicator of fire onboard
-            fire_extinguisher: /<AttachmentReceived>.*fire_extinguisher.*Port\[weapon_attach_hand/i,
 
             fire_notification: /Added notification.*(?:Fire|fire)/i,
         };
@@ -217,12 +215,6 @@ class CombatParser extends BaseParser {
                     fireVehicle = vehicle;
                 }
             }
-        }
-
-        // Tier 3: Fire extinguisher equipped = likely fire onboard
-        if (!fireDetected && this.patterns.fire_extinguisher.test(line)) {
-            fireDetected = true;
-            fireRoom = 'unknown';
         }
 
         if (fireDetected && (now - this.lastFireAlert) > this.FIRE_COOLDOWN_MS) {

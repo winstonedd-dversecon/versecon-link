@@ -1335,7 +1335,34 @@
 
                 <div style="display:flex; gap:10px;">
                     <div style="flex:1;">
-                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Alert Type</label>
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">🎨 Hue Effect</label>
+                        <select id="pm-hue" class="modern-input" style="margin:0;">
+                            <option value="none">None</option>
+                            <option value="red">🔴 Red (Critical)</option>
+                            <option value="orange">🟠 Orange (Warning)</option>
+                            <option value="blue">🔵 Blue (Info)</option>
+                            <option value="green">🟢 Green (Success)</option>
+                            <option value="purple">🟣 Purple (Special)</option>
+                            <option value="cyan">🩵 Cyan (System)</option>
+                            <option value="white">⚪ White (Flash)</option>
+                            <option value="yellow">🟡 Yellow (Caution)</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">📺 Overlay Effect</label>
+                        <select id="pm-overlay" class="modern-input" style="margin:0;">
+                            <option value="none">None</option>
+                            <option value="feed">📜 Feed Entry Only</option>
+                            <option value="alert">⚠️ Alert Popup</option>
+                            <option value="both">🔥 Both (Feed + Alert)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">🖥️ HUD Alert
+                            Type</label>
                         <select id="pm-alert" class="modern-input" style="margin:0;">
                             <option value="none">None</option>
                             <option value="audio">🔊 Audio Only</option>
@@ -1343,15 +1370,15 @@
                             <option value="both">🔥 Both (Critical)</option>
                         </select>
                     </div>
-                </div>
-
-                <div style="display:flex; gap:10px;">
                     <div style="flex:1;">
                         <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">HUD Warning
                             Message</label>
                         <input type="text" id="pm-warning" class="modern-input" placeholder="Wasted / Hull Breach / etc"
                             style="margin:0;">
                     </div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
                     <div style="flex:1;">
                         <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Reaction (TTS or
                             Cmd)</label>
@@ -2285,6 +2312,26 @@
                     addDashItem('🛡️', `<span class="feed-highlight" style="color:#a855f7">INSURANCE CLAIM</span>`);
                     playSound('alert_status');
                     break;
+                // ═══ Fire & Combat ═══
+                case 'HAZARD_FIRE':
+                    addDashItem('🔥', `<span class="feed-highlight" style="color:#ff2222">FIRE ONBOARD</span> ${data.room ? `(${data.room})` : ''}`);
+                    playSound('alert_death');
+                    break;
+                case 'VEHICLE_DESTRUCTION':
+                    addDashItem('💥', `<span class="feed-highlight" style="color:#ff4444">VEHICLE DESTROYED</span> ${data.value || ''}`);
+                    playSound('alert_death');
+                    break;
+                case 'KILL_PLAYER':
+                    addDashItem('☠️', `<span class="feed-highlight" style="color:#ff4444">${data.value || 'Player Kill'}</span>`);
+                    playSound('alert_status');
+                    break;
+                case 'KILL_NPC':
+                    addDashItem('🎯', `NPC Kill: <span class="feed-highlight">${data.value || 'Target Down'}</span>`);
+                    break;
+                case 'CRIMESTAT':
+                    addDashItem('🚨', `<span class="feed-highlight" style="color:#ff6600">CRIMESTAT ${data.value || ''}</span>`);
+                    playSound('alert_status');
+                    break;
                 // ═══ NEW: Docking ═══
                 case 'DOCKING':
                     addDashItem('🔗', `Docking <span class="feed-highlight">${data.value}</span>`);
@@ -3110,11 +3157,13 @@
                             padding:3px 8px; border-radius:3px; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             📝 ${escapeHtml(p.example || 'No example')}
                         </div>
-                        <div style="display:flex; gap:10px; font-size:0.7rem; color:#888; margin-bottom:4px;">
+                        <div style="display:flex; gap:10px; font-size:0.7rem; color:#888; margin-bottom:4px; flex-wrap:wrap;">
                             <span>Event: <b style="color:var(--accent);">${escapeHtml(p.event)}</b></span>
-                            ${p.alert && p.alert !== 'none' ? `<span>Alert: <b style="color:#ff4444;">${p.alert.toUpperCase()}</b></span>` : ''}
-                            ${p.warning ? `<span>Warning: <b style="color:#00c8ff;">"${escapeHtml(p.warning)}"</b></span>` : ''}
-                            ${p.reaction ? `<span>Reaction: <b style="color:#aa88ff;">${escapeHtml(p.reaction)}</b></span>` : ''}
+                            ${p.hue && p.hue !== 'none' ? `<span style="background:${p.hue}33; color:${p.hue === 'white' ? '#ccc' : p.hue}; padding:1px 5px; border-radius:3px; border:1px solid ${p.hue}55;">🎨 ${p.hue.toUpperCase()}</span>` : ''}
+                            ${p.overlay && p.overlay !== 'none' ? `<span style="background:rgba(0,200,255,0.1); color:#00c8ff; padding:1px 5px; border-radius:3px;">📺 ${p.overlay.toUpperCase()}</span>` : ''}
+                            ${p.alert && p.alert !== 'none' ? `<span style="background:rgba(255,68,68,0.1); color:#ff4444; padding:1px 5px; border-radius:3px;">🖥️ ${p.alert.toUpperCase()}</span>` : ''}
+                            ${p.warning ? `<span style="background:rgba(255,165,0,0.1); color:#ffa500; padding:1px 5px; border-radius:3px;">⚠️ "${escapeHtml(p.warning)}"</span>` : ''}
+                            ${p.reaction ? `<span style="background:rgba(170,136,255,0.1); color:#aa88ff; padding:1px 5px; border-radius:3px;">📢 ${escapeHtml(p.reaction)}</span>` : ''}
                         </div>
                         ${p.notes ? `<div style="font-size:0.7rem; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">💬 ${escapeHtml(p.notes)}</div>` : ''}
                     </div>
@@ -3153,6 +3202,8 @@
             document.getElementById('pm-status').value = 'research';
             document.getElementById('pm-regex').value = '';
             document.getElementById('pm-example').value = '';
+            document.getElementById('pm-hue').value = '';
+            document.getElementById('pm-overlay').value = 'none';
             document.getElementById('pm-alert').value = 'none';
             document.getElementById('pm-warning').value = '';
             document.getElementById('pm-reaction').value = '';
@@ -3173,6 +3224,8 @@
             document.getElementById('pm-status').value = p.status || 'research';
             document.getElementById('pm-regex').value = p.regex || '';
             document.getElementById('pm-example').value = p.example || '';
+            document.getElementById('pm-hue').value = p.hue || 'none';
+            document.getElementById('pm-overlay').value = p.overlay || 'none';
             document.getElementById('pm-alert').value = p.alert || 'none';
             document.getElementById('pm-warning').value = p.warning || '';
             document.getElementById('pm-reaction').value = p.reaction || '';
@@ -3196,6 +3249,8 @@
                 status: document.getElementById('pm-status').value,
                 regex: document.getElementById('pm-regex').value.trim(),
                 example: document.getElementById('pm-example').value.trim(),
+                hue: document.getElementById('pm-hue').value,
+                overlay: document.getElementById('pm-overlay').value,
                 alert: document.getElementById('pm-alert').value,
                 warning: document.getElementById('pm-warning').value.trim(),
                 reaction: document.getElementById('pm-reaction').value.trim(),
