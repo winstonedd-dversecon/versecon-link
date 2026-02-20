@@ -370,6 +370,14 @@
 
         .ship-image-panel.visible {
             opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Always show and make interactive in edit mode for repositioning */
+        body.edit-mode .ship-image-panel {
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            border: 1px dashed rgba(255, 165, 0, 0.5);
         }
 
         .ship-image-panel img {
