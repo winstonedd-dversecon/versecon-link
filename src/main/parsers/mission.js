@@ -47,6 +47,10 @@ class MissionParser extends BaseParser {
 
             // Tracked mission change
             tracked_mission: /TrackedMission|MissionMarker/i,
+
+            // Engine-level mission lifecycle (verified in Game.log)
+            mission_engine_create: /<CSubsumptionMissionComponent::CreateMissionInstance>.*?\[MISSION\].*?Creating.*?Missions\/([^\/]+\/[^\.]+)/i,
+            mission_engine_stop: /<CSubsumptionMissionComponent::StopMissionLogic>/i,
         };
         this.missionMap = new Map(); // UUID -> Title
         this.lastSeenId = null;
@@ -163,6 +167,28 @@ class MissionParser extends BaseParser {
                 this.emit('gamestate', { type: 'MISSION_CHANGED', value: title, id: effectiveId });
                 handled = true;
             }
+        }
+
+        // ── 8. Engine-level Mission Create ──
+        const engineCreate = line.match(this.patterns.mission_engine_create);
+        if (engineCreate) {
+            const missionFile = engineCreate[1].replace(/\//g, ' / ');
+            this.emit('gamestate', {
+                type: 'MISSION_ENGINE',
+                value: `Mission Loaded: ${missionFile}`,
+                level: 'INFO'
+            });
+            handled = true;
+        }
+
+        // ── 9. Engine-level Mission Stop ──
+        if (this.patterns.mission_engine_stop.test(line)) {
+            this.emit('gamestate', {
+                type: 'MISSION_ENGINE',
+                value: 'Mission Logic Stopped',
+                level: 'INFO'
+            });
+            handled = true;
         }
 
         return handled;

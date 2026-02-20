@@ -8,7 +8,12 @@ class SessionParser extends BaseParser {
             build_info: /Build\((\d+)\)/i, // Capture build number
             environment: /\[Trace\] Environment:\s+(\w+)/i,
             session_id: /\[Trace\] @session:\s+'([^']+)'/i,
-            system_quit: /<SystemQuit>\s+CSystem::Quit invoked/i
+            system_quit: /<SystemQuit>\s+CSystem::Quit invoked/i,
+
+            // Server Transitions (verified in Game.log)
+            server_change_start: /<Change Server Start>/i,
+            server_change_end: /<Change Server End>/i,
+            context_done: /<Context Establisher Done>/i,
         };
         this.sessionData = {
             startTime: null,
@@ -65,6 +70,36 @@ class SessionParser extends BaseParser {
         // 5. System Quit
         if (this.patterns.system_quit.test(line)) {
             this.emit('gamestate', { type: 'GAME_LEAVE', value: 'SystemQuit' });
+            handled = true;
+        }
+
+        // 6. Server Transfer Start
+        if (this.patterns.server_change_start.test(line)) {
+            this.emit('gamestate', {
+                type: 'STATUS',
+                value: 'SERVER TRANSFER IN PROGRESS',
+                level: 'WARNING'
+            });
+            handled = true;
+        }
+
+        // 7. Server Transfer End
+        if (this.patterns.server_change_end.test(line)) {
+            this.emit('gamestate', {
+                type: 'STATUS',
+                value: 'SERVER TRANSFER COMPLETE',
+                level: 'INFO'
+            });
+            handled = true;
+        }
+
+        // 8. Context Establisher Done (loading complete after server hop)
+        if (this.patterns.context_done.test(line)) {
+            this.emit('gamestate', {
+                type: 'STATUS',
+                value: 'WORLD LOADED',
+                level: 'INFO'
+            });
             handled = true;
         }
 

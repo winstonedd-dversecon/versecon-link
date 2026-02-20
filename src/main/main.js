@@ -1257,6 +1257,85 @@ function loadPatternDB() {
     return { _meta: { version: '1.0.0', lastUpdated: new Date().toISOString().split('T')[0] }, patterns: [] };
 }
 
+/**
+ * Extract all built-in regex patterns from the registered parsers so they appear
+ * in the Log Database for browsing, searching, and exporting.
+ */
+function getBuiltinPatterns() {
+    const parserDir = path.join(__dirname, 'parsers');
+    const parserFiles = ['navigation', 'session', 'hangar', 'vehicle', 'inventory', 'combat', 'mission', 'economy', 'social'];
+
+    const categoryMap = {
+        navigation: 'Navigation', session: 'Session', hangar: 'Vehicle',
+        vehicle: 'Vehicle', inventory: 'Inventory', combat: 'Combat',
+        mission: 'Mission', economy: 'Economy', social: 'Social'
+    };
+
+    const builtins = [];
+    for (const file of parserFiles) {
+        try {
+            const parser = require(path.join(parserDir, file));
+            const cat = categoryMap[file] || 'Other';
+
+            // Handle parsers with a `patterns` object
+            if (parser.patterns) {
+                for (const [key, regex] of Object.entries(parser.patterns)) {
+                    builtins.push({
+                        id: `builtin_${file}_${key}`,
+                        name: `${key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`,
+                        category: cat,
+                        event: key.toUpperCase(),
+                        regex: regex.toString(),
+                        status: 'verified',
+                        source: 'builtin',
+                        notes: `Built-in pattern from ${file}.js parser`,
+                        example: '',
+                        addedBy: 'system',
+                        addedDate: '2026-02-20'
+                    });
+                }
+            }
+
+            // Handle parsers with a single `pattern` property (e.g., inventory)
+            if (parser.pattern) {
+                builtins.push({
+                    id: `builtin_${file}_main`,
+                    name: `${file.charAt(0).toUpperCase() + file.slice(1)} Main Pattern`,
+                    category: cat,
+                    event: file.toUpperCase(),
+                    regex: parser.pattern.toString(),
+                    status: 'verified',
+                    source: 'builtin',
+                    notes: `Primary pattern from ${file}.js parser`,
+                    example: '',
+                    addedBy: 'system',
+                    addedDate: '2026-02-20'
+                });
+            }
+
+            // Handle parsers with inventoryPattern (e.g., inventory)
+            if (parser.inventoryPattern) {
+                builtins.push({
+                    id: `builtin_${file}_inventory_mgmt`,
+                    name: 'Inventory Management',
+                    category: 'Inventory',
+                    event: 'INVENTORY',
+                    regex: parser.inventoryPattern.toString(),
+                    status: 'verified',
+                    source: 'builtin',
+                    notes: `Inventory management pattern from ${file}.js parser`,
+                    example: '',
+                    addedBy: 'system',
+                    addedDate: '2026-02-20'
+                });
+            }
+        } catch (e) {
+            console.warn(`[Main] Could not extract patterns from ${file}.js:`, e.message);
+        }
+    }
+    return builtins;
+}
+
 function updateUnifiedPatterns() {
     const db = loadPatternDB();
     patternDatabase = db; // Sync global state
@@ -1279,7 +1358,20 @@ function savePatternDB(db) {
 }
 
 ipcMain.handle('patterns:load', async () => {
-    return loadPatternDB();
+    const db = loadPatternDB();
+
+    // Inject built-in parser patterns so they appear in the Log Database for search and export
+    const builtinPatterns = getBuiltinPatterns();
+    const userIds = new Set(db.patterns.map(p => p.id));
+
+    // Prepend built-in patterns that aren't already in the user DB
+    for (const bp of builtinPatterns) {
+        if (!userIds.has(bp.id)) {
+            db.patterns.unshift(bp);
+        }
+    }
+
+    return db;
 });
 
 ipcMain.handle('patterns:save', async (event, db) => {
@@ -1329,6 +1421,16 @@ ipcMain.handle('patterns:delete', async (event, patternId) => {
 
 ipcMain.handle('patterns:export', async () => {
     const db = loadPatternDB();
+
+    // Merge built-in patterns so export includes everything
+    const builtinPatterns = getBuiltinPatterns();
+    const userIds = new Set(db.patterns.map(p => p.id));
+    for (const bp of builtinPatterns) {
+        if (!userIds.has(bp.id)) {
+            db.patterns.unshift(bp);
+        }
+    }
+
     const result = await dialog.showSaveDialog(dashboardWindow, {
         title: 'Export Pattern Database',
         defaultPath: `versecon-patterns-${db._meta.lastUpdated}.json`,

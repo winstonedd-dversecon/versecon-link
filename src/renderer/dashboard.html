@@ -1277,11 +1277,13 @@
                             <option>Navigation</option>
                             <option>Combat</option>
                             <option>Mission</option>
+                            <option>Economy</option>
                             <option>Hazard</option>
                             <option>Session</option>
                             <option>Fire</option>
                             <option>Inventory</option>
                             <option>Social</option>
+                            <option>VOIP</option>
                             <option>Industrial</option>
                             <option>Other</option>
                         </select>
@@ -3045,7 +3047,7 @@
                             <div style="display:flex; gap:4px;">
                                 <button class="cyber-btn small" onclick="editPattern('${p.id}')" style="margin:0; font-size:0.65rem;">✏️</button>
                                 <button class="cyber-btn small" onclick="copyPatternRegex('${p.id}')" style="margin:0; font-size:0.65rem;">📋</button>
-                                <button class="cyber-btn small danger" onclick="deletePattern('${p.id}')" style="margin:0; font-size:0.65rem;">🗑️</button>
+                                ${p.source !== 'builtin' ? `<button class="cyber-btn small danger" onclick="deletePattern('${p.id}')" style="margin:0; font-size:0.65rem;">🗑️</button>` : `<span style="font-size:0.6rem; color:#00c8ff; padding:2px 6px; background:rgba(0,200,255,0.1); border-radius:3px;">🔧 BUILT-IN</span>`}
                             </div>
                         </div>
                         <div style="font-family:monospace; font-size:0.75rem; color:#aaffaa; background:rgba(0,0,0,0.3);

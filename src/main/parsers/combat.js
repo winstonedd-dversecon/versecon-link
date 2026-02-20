@@ -218,13 +218,15 @@ class CombatParser extends BaseParser {
                     this.lastFireAlert = now;
                     this.emit('gamestate', {
                         type: 'HAZARD_FIRE',
-                        value: room ? `Fire in ${room}` : 'Fire Detected',
+                        value: 'Fire onboard!',
                         room: room
                     });
                     handled = true;
                 }
             }
-        } // ── 5. CrimeStat Tracking ──
+        }
+
+        // ── 5. CrimeStat Tracking ──
         const crimeMatch = line.match(this.patterns.crimestat);
         if (crimeMatch) {
             const direction = crimeMatch[1].toUpperCase(); // INCREASED or DECREASED
