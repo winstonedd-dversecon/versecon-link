@@ -222,6 +222,7 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 4. **Fast Log Drops (Gun Triggers failing)**: Rapidly written logs were split midpoint by `fs.watchFile` streams, invalidating regex sequences mid-line. **Fix**: Added a persistent `this.tailBuffer` in `log-watcher.js` to hold incomplete line fragments between polling intervals.
 5. **Outpost & Bunker detection failing**: Outposts didn't map cleanly via the `Location[]` variables. **Fix**: Hooked the `LoadingPlatformManager` regex to grab location hints, and overhauled `cleanLocationName()` to nicely format strings like `Pyro4_Outpost_col_m_trdpst_indy_001` to "Pyro Trading Post Outpost".
 6. **Custom Patterns not editable**: Users had to delete and recreate rules. **Fix**: Added inline "✏️ Edit" button to `dashboard.html` that repopulates the input form and executes an inline array update rather than appending.
+7. **App Startup Frozen/UI Blocked**: The app took several seconds to open. **Fix**: Identified `log-watcher.js` synchronously parsed 5,000 lines on boot. Refactored this to read via `fs.promises` and process lines in asynchronous chunks of 500, unblocking the event loop and allowing the UI to render instantly.
 
 ### Fixed (2026-02-15 — v2.7)
 
