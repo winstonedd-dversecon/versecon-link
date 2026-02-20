@@ -26,6 +26,10 @@ class CombatParser extends BaseParser {
             // Actor Death — wide net first, then extract details
             actor_death: /<Actor Death>/,
 
+            // Actual verified Actor State Dead (SC 4.6)
+            // <[ActorState] Dead> [ACTOR STATE][CSCActorControlStateDead::PrePhysicsUpdate] Actor 'TypicallyBrit_ish' [204269884415] ejected from zone 'AEGS_Gladius_9490661802904' [9490661802904] to zone 'OOC_Stanton_2b_Daymar' [9431957087341]
+            actor_state_dead: /<\[ActorState\] Dead>.*?Actor '([^']+)'\s*\[\d+\].*?from zone '([^']+)'\s*\[\d+\].*?to zone '([^']+)'/i,
+
             // Detailed death extraction (real format from MASTER_GUIDE)
             // Captures: victim, killer, weapon, damage type
             death_detailed: /<Actor Death>.*?'([^']+)'\s*\[\d+\].*?killed by\s+'([^']+)'\s*\[\d+\].*?using\s+'([^']+)'.*?damage type\s+'([^']+)'/i,
@@ -102,6 +106,32 @@ class CombatParser extends BaseParser {
                 // Fallback: detected <Actor Death> but couldn't parse details
                 this.emit('gamestate', { type: 'STATUS', value: 'death' });
             }
+            handled = true;
+        }
+
+        // ── 1.5 Verified Actor State Dead ──
+        const stateDeadMatch = line.match(this.patterns.actor_state_dead);
+        if (stateDeadMatch) {
+            const victim = stateDeadMatch[1];
+            const fromZone = stateDeadMatch[2];
+            const toZone = stateDeadMatch[3];
+
+            const payload = {
+                type: 'DEATH',
+                value: 'Killed',
+                details: {
+                    victim,
+                    killer: 'Unknown',
+                    weapon: 'Unknown',
+                    damageType: 'Unknown',
+                    zone: toZone, // where they ended up
+                    fromZone: fromZone // usually the ship they died in
+                }
+            };
+            this.emit('gamestate', payload);
+
+            this.recentDeaths.push({ victim, timestamp: Date.now() });
+            this._cleanOldDeaths();
             handled = true;
         }
 

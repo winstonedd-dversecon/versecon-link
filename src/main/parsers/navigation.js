@@ -48,6 +48,10 @@ class NavigationParser extends BaseParser {
 
             // Freight Elevator (Outpost hints)
             loading_platform: /\[LoadingPlatformManager_([^\]]+)\]\s+Platform state changed/i,
+
+            // OCS (Object Container Selection) hints
+            // Proximity sensor [Door] is creating a local helper... Master zone is [StreamingSOC_util_cmpd_wrhse_lge_001_rund_c...]
+            ocs_master_zone: /Master zone is \[([^\]]+)\]/i,
         };
         this.lastLocationHint = null;
         this.lastLocation = null;
@@ -165,6 +169,28 @@ class NavigationParser extends BaseParser {
             const rawVal = objMatch[1];
             const cleanVal = this.cleanLocationHint(rawVal);
             if (cleanVal && cleanVal !== this.lastLocationHint) {
+                this.lastLocationHint = cleanVal;
+                this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+                handled = true;
+            }
+        }
+
+        // ── 8. OCS Streaming Zones ──
+        const ocsMatch = line.match(this.patterns.ocs_master_zone);
+        if (ocsMatch) {
+            // Usually looks like: StreamingSOC_util_cmpd_wrhse_lge_001_rund_c_final_int - Class(ObjectContainer)...
+            const rawVal = ocsMatch[1];
+            // Split out just the zone name before the hyphen
+            const zoneName = rawVal.split(' - ')[0].trim();
+
+            // Clean up the generic "StreamingSOC_" part if present
+            let cleanVal = zoneName.replace(/^StreamingSOC_/, '').replace(/_/g, ' ').replace(/\b\d+\b/g, '').replace(/\b(?:int|ext|c|b|a|final|rund|cmpd|wrhse|lge|util)\b/ig, '').replace(/\s+/g, ' ').replace(/[\r\n]/g, '').trim();
+
+            // Sometimes it's left completely empty after aggressive cleaning, fallback to slightly cleaner raw
+            if (!cleanVal) cleanVal = zoneName.replace(/^StreamingSOC_/, '').replace(/_/g, ' ').replace(/[\r\n]/g, '').trim();
+
+            // Only emit if it's new and somewhat readable (at least 3 chars)
+            if (cleanVal.length > 3 && cleanVal !== this.lastLocationHint) {
                 this.lastLocationHint = cleanVal;
                 this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
                 handled = true;

@@ -7,7 +7,8 @@ class SessionParser extends BaseParser {
             log_start: /^<([^>]+)> Log started on/i,
             build_info: /Build\((\d+)\)/i, // Capture build number
             environment: /\[Trace\] Environment:\s+(\w+)/i,
-            session_id: /\[Trace\] @session:\s+'([^']+)'/i
+            session_id: /\[Trace\] @session:\s+'([^']+)'/i,
+            system_quit: /<SystemQuit>\s+CSystem::Quit invoked/i
         };
         this.sessionData = {
             startTime: null,
@@ -59,6 +60,12 @@ class SessionParser extends BaseParser {
                 this.emit('gamestate', { type: 'SESSION_ID', value: this.sessionData.sessionId });
                 handled = true;
             }
+        }
+
+        // 5. System Quit
+        if (this.patterns.system_quit.test(line)) {
+            this.emit('gamestate', { type: 'GAME_LEAVE', value: 'SystemQuit' });
+            handled = true;
         }
 
         return handled;
