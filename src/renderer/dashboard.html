@@ -1157,7 +1157,8 @@
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="new-pattern-msg" class="modern-input"
                         placeholder="Alert Message (Use $1 for value)" style="flex:1; margin:0;">
-                    <button class="cyber-btn" style="width: auto; margin:0;" onclick="addCustomPattern()">Add
+                    <button id="btn-add-pattern" class="cyber-btn" style="width: auto; margin:0;"
+                        onclick="addCustomPattern()">Add
                         Pattern</button>
                 </div>
             </div>
@@ -1865,7 +1866,10 @@
                             ${p.hueColor ? ` • <span style="color:#aa88ff;">HUE: ${p.hueColor.toUpperCase()}</span>` : ''}
                         </div>
                     </div>
-                    <button class="cyber-btn small danger" onclick="removeCustomPattern(${i})" style="margin:0; padding: 2px 8px;">×</button>
+                    <div>
+                        <button class="cyber-btn small" onclick="editCustomPattern(${i})" style="margin:0 5px 0 0; padding: 2px 8px;">✏️</button>
+                        <button class="cyber-btn small danger" onclick="removeCustomPattern(${i})" style="margin:0; padding: 2px 8px;">×</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1878,6 +1882,8 @@
                 default: return '#eee';
             }
         }
+
+        let editingPatternIndex = -1;
 
         function addCustomPattern() {
             const regex = document.getElementById('new-pattern-regex').value.trim();
@@ -1895,7 +1901,13 @@
                 return alert('Invalid Regex: ' + e.message);
             }
 
-            customPatterns.push({ regex, level, message, hueColor, id: Date.now() });
+            if (editingPatternIndex >= 0) {
+                customPatterns[editingPatternIndex] = { regex, level, message, hueColor, id: customPatterns[editingPatternIndex].id || Date.now() };
+                editingPatternIndex = -1;
+                document.getElementById('btn-add-pattern').innerText = 'Add Pattern';
+            } else {
+                customPatterns.push({ regex, level, message, hueColor, id: Date.now() });
+            }
             saveCustomPatterns();
 
             document.getElementById('new-pattern-regex').value = '';
@@ -1904,8 +1916,29 @@
             renderPatternList();
         }
 
+        function editCustomPattern(index) {
+            const pattern = customPatterns[index];
+            document.getElementById('new-pattern-regex').value = pattern.regex;
+            document.getElementById('new-pattern-level').value = pattern.level;
+            document.getElementById('new-pattern-msg').value = pattern.message;
+            document.getElementById('new-pattern-hue').value = pattern.hueColor || '';
+
+            editingPatternIndex = index;
+            document.getElementById('btn-add-pattern').innerText = 'Update Pattern';
+            document.getElementById('new-pattern-regex').focus();
+        }
+
         function removeCustomPattern(index) {
             customPatterns.splice(index, 1);
+            if (editingPatternIndex === index) {
+                editingPatternIndex = -1;
+                document.getElementById('btn-add-pattern').innerText = 'Add Pattern';
+                document.getElementById('new-pattern-regex').value = '';
+                document.getElementById('new-pattern-msg').value = '';
+                document.getElementById('new-pattern-hue').value = '';
+            } else if (editingPatternIndex > index) {
+                editingPatternIndex--;
+            }
             saveCustomPatterns();
             renderPatternList();
         }
@@ -2599,8 +2632,10 @@
                 div.style.display = 'none';
             }
 
-            rawFeed.prepend(div);
-            if (rawFeed.children.length > 100) rawFeed.lastElementChild.remove();
+            const isAtBottom = rawFeed.scrollHeight - rawFeed.clientHeight <= rawFeed.scrollTop + 50;
+            rawFeed.appendChild(div);
+            if (rawFeed.children.length > 200) rawFeed.firstElementChild.remove();
+            if (isAtBottom) rawFeed.scrollTop = rawFeed.scrollHeight;
         }
 
         function filterRawLogs() {

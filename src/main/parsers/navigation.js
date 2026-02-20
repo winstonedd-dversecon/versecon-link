@@ -45,6 +45,9 @@ class NavigationParser extends BaseParser {
 
             // Interdiction
             interdiction: /Interdiction/i,
+
+            // Freight Elevator (Outpost hints)
+            loading_platform: /\[LoadingPlatformManager_([^\]]+)\]\s+Platform state changed/i,
         };
         this.lastLocationHint = null;
         this.lastLocation = null;
@@ -111,6 +114,19 @@ class NavigationParser extends BaseParser {
             handled = true;
         } else if (this.patterns.armistice_leave.test(line)) {
             this.emit('gamestate', { type: 'ZONE', value: 'Open Space' });
+            handled = true;
+        }
+
+        // ── 4.5 Loading Platform (Outpost/Facility Hint) ──
+        const platformMatch = line.match(this.patterns.loading_platform);
+        if (platformMatch) {
+            const rawVal = platformMatch[1];
+            const cleanVal = rawVal.replace(/_/g, ' '); // FreightElevator HT Outpost -> FreightElevator HT Outpost
+            // We emit this as a location hint to give user context they are at an outpost
+            if (cleanVal && cleanVal !== this.lastLocationHint) {
+                this.lastLocationHint = cleanVal;
+                this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+            }
             handled = true;
         }
 
@@ -235,6 +251,27 @@ class NavigationParser extends BaseParser {
         const locationMap = this.getBuiltInLocationMap();
 
         if (locationMap[raw]) return locationMap[raw];
+
+        // Outpost, Bunker, Cave (e.g. Pyro4_Outpost_col_m_trdpst_indy_001)
+        if (raw.toLowerCase().includes('_outpost_') || raw.toLowerCase().includes('_bunker_') || raw.toLowerCase().includes('_cave_')) {
+            let type = '';
+            let rawLower = raw.toLowerCase();
+            if (rawLower.includes('_outpost_')) type = 'Outpost';
+            else if (rawLower.includes('_bunker_')) type = 'Bunker';
+            else if (rawLower.includes('_cave_')) type = 'Cave';
+
+            let desc = '';
+            if (rawLower.includes('_trdpst_')) desc = 'Trading Post ';
+            else if (rawLower.includes('_scrp_')) desc = 'Scrap Yard ';
+            else if (rawLower.includes('_sec_')) desc = 'Security ';
+            else if (rawLower.includes('_dc_')) desc = 'Data Center ';
+            else if (rawLower.includes('_shck_')) desc = 'Shack ';
+
+            const parts = raw.split('_');
+            const planet = parts[0].replace(/\d+$/, ''); // Pyro4 -> Pyro, Stanton1 -> Stanton
+
+            return `${planet} ${desc}${type}`.trim();
+        }
 
         // Generic cleanup: remove Stanton prefix, replace underscores
         let cleaned = raw

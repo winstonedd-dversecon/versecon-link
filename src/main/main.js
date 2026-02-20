@@ -111,6 +111,9 @@ function createWindows() {
             dashboardWindow.webContents.send('log:update', { type: 'SPAWN_POINT', value: config.spawnPoint });
         }
 
+        // Sync Settings so dashboard UI inputs aren't blank (Fixes Hue getting wiped on first save)
+        dashboardWindow.webContents.send('settings:updated', config);
+
         // Sync Friend Code
         dashboardWindow.webContents.send('settings:friend-code', config.friendCode);
 

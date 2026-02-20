@@ -214,7 +214,7 @@ class LogWatcher extends EventEmitter {
     start(customPath = null) {
         console.log('[LogWatcher] START called with customPath:', customPath);
         console.log('[LogWatcher] Current isWatching:', this.isWatching);
-        
+
         if (this.isWatching) {
             console.log(`[LogWatcher] Already watching: ${this.filePath}`);
             return;
@@ -259,9 +259,7 @@ class LogWatcher extends EventEmitter {
             console.log(`[LogWatcher] Initial file size: ${this.lastSize} bytes`);
 
             fs.watchFile(this.filePath, { interval: 100 }, (curr, prev) => {
-                console.log(`[LogWatcher] File changed: prev=${prev.size}, curr=${curr.size}`);
                 if (curr.size > this.lastSize) {
-                    console.log(`[LogWatcher] File grew: reading from ${this.lastSize} to ${curr.size - 1}`);
                     const stream = fs.createReadStream(this.filePath, {
                         start: this.lastSize,
                         end: curr.size - 1,
@@ -270,9 +268,16 @@ class LogWatcher extends EventEmitter {
                     let buffer = '';
                     stream.on('data', (chunk) => { buffer += chunk; });
                     stream.on('end', () => {
-                        const lines = buffer.split('\n').filter(l => l.trim());
-                        console.log(`[LogWatcher] Processing ${lines.length} new lines`);
-                        lines.forEach(line => this.processLine(line, false));
+                        this.tailBuffer = (this.tailBuffer || '') + buffer;
+                        const lines = this.tailBuffer.split('\n');
+
+                        // The last element might be an incomplete line. Save it for the next read event.
+                        this.tailBuffer = lines.pop();
+
+                        const completeLines = lines.filter(l => l.trim());
+                        if (completeLines.length > 0) {
+                            completeLines.forEach(line => this.processLine(line, false));
+                        }
                     });
                     this.lastSize = curr.size;
                 } else if (curr.size < this.lastSize) {
@@ -345,7 +350,7 @@ class LogWatcher extends EventEmitter {
         group.lastSeen = new Date().toISOString();
 
         // Emit batch
-        if (group.count % 10 === 0) this.emitUnknowns();
+        if (group.count === 1 || group.count % 10 === 0) this.emitUnknowns();
     }
 
     emitUnknowns() {
