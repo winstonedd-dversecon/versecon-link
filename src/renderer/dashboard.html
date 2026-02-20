@@ -1594,9 +1594,10 @@
             `;
             feed.prepend(item);
             if (feed.children.length > 150) feed.lastElementChild.remove();
+            return item;
         }
 
-        function addDashItem(icon, text) { addFeedItem('event-feed', icon, text); }
+        function addDashItem(icon, text) { return addFeedItem('event-feed', icon, text); }
         function addVconItem(icon, text) { addFeedItem('vcon-feed', icon, text); }
 
         // ═══ AUTH ═══
@@ -2229,6 +2230,14 @@
                     else if (data.value === 'depressurizing') { addDashItem('💨', '<span class="feed-highlight" style="color:#ff4444">DEPRESSURIZATION</span>'); playSound('alert_status'); }
                     else if (data.value === 'death') { addDashItem('💀', '<span class="feed-highlight" style="color:#ff4444">DEATH DETECTED</span>'); playSound('alert_death'); }
                     break;
+                case 'DEATH': {
+                    const d = data.details || {};
+                    const victim = d.victim || 'Unknown';
+                    const killer = d.killer && d.killer !== 'Unknown' ? ` by ${d.killer}` : '';
+                    addDashItem('💀', `<span class="feed-highlight" style="color:#ff4444">${victim} KILLED${killer}</span>`);
+                    playSound('alert_death');
+                    break;
+                }
                 case 'LOGIN':
                     addDashItem('👋', `Session: <span class="feed-highlight">${data.handle || 'Login Detected'}</span>`);
                     break;
@@ -2337,10 +2346,21 @@
                     addDashItem('🔗', `Docking <span class="feed-highlight">${data.value}</span>`);
                     playSound('notification');
                     break;
-                // ═══ NEW: Inventory ═══
-                case 'INVENTORY':
-                    addDashItem('📦', `Inventory <span class="feed-highlight">${data.value}</span>`);
+                // ═══ NEW: Inventory (Stacked) ═══
+                case 'INVENTORY': {
+                    // Stack rapid inventory updates into a single counter
+                    const feed = document.getElementById('event-feed');
+                    const lastEntry = feed && feed.firstElementChild;
+                    if (lastEntry && lastEntry.dataset.type === 'INVENTORY') {
+                        const count = parseInt(lastEntry.dataset.count || '1') + 1;
+                        lastEntry.dataset.count = count;
+                        lastEntry.querySelector('.feed-text').innerHTML = `Inventory Updated <span class="feed-highlight">(×${count})</span>`;
+                    } else {
+                        const item = addDashItem('📦', `Inventory <span class="feed-highlight">${data.value}</span>`);
+                        if (item) { item.dataset.type = 'INVENTORY'; item.dataset.count = '1'; }
+                    }
                     break;
+                }
                 // ═══ NEW: Medical & Spawn ═══
                 case 'MEDICAL_BED':
                     addDashItem('🏥', '<span class="feed-highlight" style="color:#00c8ff">Medical Bed</span>');
