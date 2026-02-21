@@ -1031,7 +1031,11 @@ ipcMain.handle('settings:get-default-patterns', async () => {
                 for (const [key, regex] of Object.entries(parser.patterns)) {
                     // Avoid overwriting if key conflict (or maybe prefix?)
                     // Let's assume unique keys for now, or last-one-wins (which is fine, modular is newer).
-                    if (regex instanceof RegExp) {
+
+                    // Do not return patterns that have been soft-deleted by the user
+                    const isDeleted = config.patternOverrides && config.patternOverrides[key] && config.patternOverrides[key].deleted;
+
+                    if (regex instanceof RegExp && !isDeleted) {
                         defaults[key] = regex.source;
                     }
                 }

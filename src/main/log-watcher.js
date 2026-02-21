@@ -136,9 +136,38 @@ class LogWatcher extends EventEmitter {
     }
 
     setPatternOverrides(overrides) {
-        // TODO: Implement overrides for specific built-in patterns if needed
-        // For now, no-op to prevent crash
-        console.log('[LogWatcher] Pattern overrides not yet supported in modular parser');
+        if (!LogEngine || !LogEngine.parsers) {
+            console.log('[LogWatcher] Cannot apply pattern overrides: LogEngine not loaded');
+            return;
+        }
+
+        // Apply overrides to all registered parsers
+        for (const parser of LogEngine.parsers) {
+            if (parser.patterns) {
+                for (const [key, _] of Object.entries(parser.patterns)) {
+                    if (overrides[key]) {
+                        const override = overrides[key];
+
+                        // If it's disabled or deleted by the user, we replace the regex in memory
+                        // with an unmatchable regex string so it never triggers.
+                        if (override.deleted || override.disabled) {
+                            parser.patterns[key] = /(?!)/;
+                            continue;
+                        }
+
+                        // If the user provided a custom regex definition, apply it
+                        if (override.regex) {
+                            try {
+                                parser.patterns[key] = new RegExp(override.regex, 'i');
+                            } catch (e) {
+                                console.error(`[LogWatcher] Invalid regex override for ${key}:`, e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        console.log('[LogWatcher] Applied built-in pattern overrides to modular parsers');
     }
 
     setAlertCooldown(alertType, cooldownMs) {

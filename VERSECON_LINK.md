@@ -11,7 +11,7 @@
 > [!IMPORTANT]
 > The **ONLY** source of truth for log data is the live Game.log on the user's **Windows gaming PC**:
 >
-> ```
+> ```text
 > C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\Game.log
 > ```
 >
@@ -27,7 +27,9 @@
 export VCON_WINDOWS_HOST=192.168.1.100
 export VCON_WINDOWS_USER=damien
 ./fetch-log.sh
+```
 
+```powershell
 # Manual copy (from Windows PowerShell, push TO dev machine):
 scp "C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\Game.log" damien@DEV_IP:~/versecon-link/src/Game.log
 ```
@@ -153,6 +155,15 @@ You have joined channel 'Esperia Prowler Utility : TypicallyBrit_ish'
 
 ```log
 <Join PU> address[34.11.90.244] port[64307] shard[pub_use1b_11218823_110]
+```
+
+**SOCIAL PROXIMITY** — Player Nearby (`social.js`):
+Detected using the server streaming replication events.
+When a player physically moves close enough to the local client (e.g., entering the same server node or within a few kilometers), the game logs a subscription. When they leave, it unsubscribes.
+
+```log
+<SubscribeToPlayerSocial> Subscribing to player 204269884415
+<UnsubscribeFromPlayerSocial> Unsubscribing from player 204269884415
 ```
 
 ### Research Patterns (awaiting live verification)

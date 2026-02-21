@@ -562,7 +562,8 @@
             // If current location matches a newly-mapped raw code, update display
             const locEl = document.getElementById('val-location');
             if (locEl && locEl.dataset.raw && customLocations[locEl.dataset.raw]) {
-                locEl.textContent = customLocations[locEl.dataset.raw];
+                const valObj = customLocations[locEl.dataset.raw];
+                locEl.textContent = typeof valObj === 'object' ? valObj.name : valObj;
             }
         });
 
@@ -750,16 +751,29 @@
             }
         });
 
+        // State tracking for new feature requests
+        let currentSystem = 'Unknown';
+        let currentZone = 'Open Space';
+
         // Game Events
         ipcRenderer.on('log:update', (e, data) => {
             switch (data.type) {
+                case 'SYSTEM':
+                    currentSystem = data.value;
+                    if (currentZone === 'Open Space') {
+                        const zoneEl = document.getElementById('val-zone');
+                        if (zoneEl) zoneEl.textContent = `${currentSystem.toUpperCase()} SYSTEM`;
+                    }
+                    break;
+
                 case 'LOCATION':
                 case 'LOCATION_HINT':
                     const locDisplay = document.getElementById('val-location');
                     // Store raw code for custom location sync
                     if (data.raw) locDisplay.dataset.raw = data.raw;
                     // Check if we have a custom name for this raw code
-                    const customName = data.raw && customLocations[data.raw];
+                    const valObj = data.raw && customLocations[data.raw];
+                    const customName = typeof valObj === 'object' ? valObj.name : valObj;
                     locDisplay.textContent = customName || data.value;
                     break;
 
@@ -854,7 +868,9 @@
                 }
 
                 case 'ZONE': {
+                    currentZone = data.value;
                     const zoneEl = document.getElementById('val-zone');
+
                     if (data.value === 'Armistice Zone') {
                         addFeedEntry('🛡️', 'Entered Armistice');
                         if (zoneEl) {
@@ -864,7 +880,7 @@
                     } else if (data.value === 'Open Space') {
                         addFeedEntry('⚠️', 'Left Armistice');
                         if (zoneEl) {
-                            zoneEl.textContent = 'OPEN SPACE';
+                            zoneEl.textContent = currentSystem !== 'Unknown' ? `${currentSystem.toUpperCase()} SYSTEM` : 'OPEN SPACE';
                             zoneEl.style.color = 'var(--accent)';
                         }
                     } else {

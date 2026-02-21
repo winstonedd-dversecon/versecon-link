@@ -920,6 +920,11 @@
                         <span style="color:#666;">➔</span>
                         <input type="text" id="new-loc-val" placeholder="Friendly Name" class="modern-input"
                             style="flex:1;">
+                        <select id="new-loc-zone" class="modern-input" style="width:120px; font-size:0.75rem;">
+                            <option value="Auto">Auto Zone</option>
+                            <option value="Armistice Zone">Armistice</option>
+                            <option value="Open Space">Open Space</option>
+                        </select>
                         <button class="cyber-btn small" onclick="saveNewCustomLocation()"
                             style="margin:0;">Save</button>
                     </div>
@@ -1436,12 +1441,18 @@
                 <div style="font-size:0.7rem; color:var(--accent); text-transform:uppercase; margin-bottom:8px;">
                     ✏️ Edit Selected Location
                 </div>
-                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
                     <input type="text" id="location-edit-key" class="modern-input" readonly placeholder="Raw Code"
                         style="flex:1; margin:0; opacity:0.7;">
                     <span style="color:#666; align-self:center;">➔</span>
                     <input type="text" id="location-edit-val" class="modern-input" placeholder="Friendly Name"
                         style="flex:1; margin:0;">
+                    <select id="location-edit-zone" class="modern-input"
+                        style="width:110px; font-size:0.75rem; margin:0;">
+                        <option value="Auto">Auto Zone</option>
+                        <option value="Armistice Zone">Armistice</option>
+                        <option value="Open Space">Open Space</option>
+                    </select>
                 </div>
                 <div style="display:flex; gap:8px;">
                     <button class="cyber-btn small success" onclick="saveLocationEdit()" style="flex:1; margin:0;">
@@ -2579,16 +2590,22 @@
                 return;
             }
 
-            list.innerHTML = Object.entries(customLocations).map(([key, val]) => `
+            list.innerHTML = Object.entries(customLocations).map(([key, val]) => {
+                const name = typeof val === 'object' ? val.name : val;
+                const zone = typeof val === 'object' ? val.zone : 'Auto';
+                const zoneBadge = zone !== 'Auto' ? `<span style="background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:#aaa;">${zone}</span>` : '';
+
+                return `
                         <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; border-radius:4px; transition:background 0.2s; background:rgba(0,0,0,0.1);" onmouseenter="this.style.background='rgba(255,165,0,0.1)'" onmouseleave="this.style.background='rgba(0,0,0,0.1)'">
                             <div style="overflow:hidden; flex:1;">
                                 <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
-                                <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(val)}</div>
+                                <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${zoneBadge}</div>
                             </div>
-                            <button class="cyber-btn small" onclick="event.stopPropagation(); openLocationSearch(); selectLocationForEdit('${encodeURIComponent(key)}', '${encodeURIComponent(val)}')" style="margin-left:10px; margin:0 0 0 8px;">✏️</button>
+                            <button class="cyber-btn small" onclick="event.stopPropagation(); openLocationSearch(); selectLocationForEdit('${encodeURIComponent(key)}')" style="margin-left:10px; margin:0 0 0 8px;">✏️</button>
                             <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:5px; margin:0;">×</button>
                         </div>
-                    `).join('');
+                    `;
+            }).join('');
         }
 
         // let lastRawLocation = ''; (Already declared above)
@@ -2632,11 +2649,16 @@
                 item.className = 'map-item';
                 item.style.cssText = 'padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);';
                 item.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
-                                <label style="font-size: 0.8rem; cursor: pointer;">
-                                    <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
-                                </label>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; align-items: flex-start;">
+                                <div>
+                                    <span style="color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.9rem;">${key}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <label style="font-size: 0.8rem; cursor: pointer;">
+                                        <input type="checkbox" ${isDisabled ? '' : 'checked'} onchange="togglePattern('${key}', this.checked)"> Enabled
+                                    </label>
+                                    <button class="cyber-btn small danger" onclick="deleteBuiltinPattern('${key}')" title="Delete Pattern">×</button>
+                                </div>
                             </div>
                             <div style="font-size: 0.7rem; color: #888; margin-bottom: 2px;">Trigger Regex:</div>
                             <div style="font-family:monospace; font-size:0.7rem; color:#666; margin-bottom:2px;">Default: ${escapeHtml(defaultRegex.toString())}</div>
@@ -2659,6 +2681,15 @@
         function renderBuiltinList() {
             // Backwards compatibility for older calls
             renderBuiltinPatterns();
+        }
+
+        async function deleteBuiltinPattern(key) {
+            if (await vcModal.confirm('Delete Pattern?', `Are you sure you want to delete the built-in pattern "${key}"?`)) {
+                patternOverrides[key] = patternOverrides[key] || {};
+                patternOverrides[key].deleted = true;
+                await ipcRenderer.invoke('settings:save-pattern-overrides', patternOverrides);
+                await loadBuiltinPatterns();
+            }
         }
 
         function updatePatternValueMap(key, value) {
@@ -2968,9 +2999,11 @@
         function saveNewCustomLocation() {
             const key = document.getElementById('new-loc-key').value.trim();
             const val = document.getElementById('new-loc-val').value.trim();
+            const zone = document.getElementById('new-loc-zone').value;
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
-            customLocations[key] = val;
+            const finalObj = zone === 'Auto' ? val : { name: val, zone: zone };
+            customLocations[key] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
             // Feedback
@@ -2979,6 +3012,7 @@
             // Clear inputs
             document.getElementById('new-loc-key').value = '';
             document.getElementById('new-loc-val').value = '';
+            document.getElementById('new-loc-zone').value = 'Auto';
             renderCustomLocationList();
         }
 
@@ -3031,9 +3065,10 @@
             const resultsList = document.getElementById('location-search-results');
 
             // Filter locations
-            let filtered = Object.entries(locationSearchCache).filter(([key, val]) =>
-                key.toLowerCase().includes(search) || val.toLowerCase().includes(search)
-            );
+            let filtered = Object.entries(locationSearchCache).filter(([key, val]) => {
+                const searchStr = typeof val === 'object' ? val.name : val;
+                return key.toLowerCase().includes(search) || searchStr.toLowerCase().includes(search);
+            });
 
             document.getElementById('location-search-count').textContent = filtered.length;
 
@@ -3042,31 +3077,41 @@
                 return;
             }
 
-            resultsList.innerHTML = filtered.map(([key, val]) => `
+            resultsList.innerHTML = filtered.map(([key, val]) => {
+                const name = typeof val === 'object' ? val.name : val;
+                const zone = typeof val === 'object' ? val.zone : 'Auto';
+                const zoneBadge = zone !== 'Auto' ? `<span style="background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:#aaa;">${zone}</span>` : '';
+
+                return `
                 <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); 
                     cursor:pointer; border-radius:4px; transition:background 0.2s; background:${selectedLocationKey === key ? 'rgba(255,165,0,0.15)' : 'transparent'};"
-                    onclick="selectLocationForEdit('${encodeURIComponent(key)}', '${encodeURIComponent(val)}')">
+                    onclick="selectLocationForEdit('${encodeURIComponent(key)}')">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="overflow:hidden; flex:1;">
                             <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
-                            <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(val)}</div>
+                            <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${zoneBadge}</div>
                         </div>
-                        <button class="cyber-btn small" style="margin:0; margin-left:8px;" onclick="event.stopPropagation(); selectLocationForEdit('${encodeURIComponent(key)}', '${encodeURIComponent(val)}')">
+                        <button class="cyber-btn small" style="margin:0; margin-left:8px;" onclick="event.stopPropagation(); selectLocationForEdit('${encodeURIComponent(key)}')">
                             ✏️
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
-        function selectLocationForEdit(encodedKey, encodedVal) {
+        function selectLocationForEdit(encodedKey) {
             const key = decodeURIComponent(encodedKey);
-            const val = decodeURIComponent(encodedVal);
+            const valObj = customLocations[key] || locationSearchCache[key]; // Fallback to cache if needed
+            const val = typeof valObj === 'object' ? valObj.name : valObj;
+            const zone = typeof valObj === 'object' ? valObj.zone || 'Auto' : 'Auto';
+
             selectedLocationKey = key;
 
             document.getElementById('location-edit-original-key').value = key;
             document.getElementById('location-edit-key').value = key;
             document.getElementById('location-edit-val').value = val;
+            document.getElementById('location-edit-zone').value = zone;
             document.getElementById('location-edit-panel').style.display = 'block';
             renderLocationSearchResults(); // Re-render to show selection highlighting
         }
@@ -3074,6 +3119,7 @@
         function saveLocationEdit() {
             const originalKey = document.getElementById('location-edit-original-key').value;
             const newVal = document.getElementById('location-edit-val').value.trim();
+            const newZone = document.getElementById('location-edit-zone').value;
 
             if (!newVal) {
                 alert('Please enter a friendly name.');
@@ -3086,7 +3132,8 @@
             }
 
             // Update with new value
-            customLocations[selectedLocationKey] = newVal;
+            const finalObj = newZone === 'Auto' ? newVal : { name: newVal, zone: newZone };
+            customLocations[selectedLocationKey] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
             // Update both modal and main location list

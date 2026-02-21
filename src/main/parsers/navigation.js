@@ -39,6 +39,7 @@ class NavigationParser extends BaseParser {
             location_obj: /<StatObjLoad\s+0x[0-9A-Fa-f]+\s+Format>\s+'[^']*?objectcontainers\/pu\/loc\/(?:flagship|mod)\/(?:stanton\/)?(?:station\/ser\/)?(?:[^\/]+\/)*([^\/]{5,})\//i,
 
             // ── QUANTUM TRAVEL (keep for future sessions where QT occurs) ──
+            quantum_spooling: /Player Selected Quantum Target|Successfully calculated route to/i,
             quantum_entered: /<Jump Drive Requesting State Change>.*to Traveling/,
             quantum_exited: /<Jump Drive Requesting State Change>.*to Idle/,
             quantum_arrived: /<Quantum Drive Arrived/,
@@ -125,11 +126,15 @@ class NavigationParser extends BaseParser {
         const platformMatch = line.match(this.patterns.loading_platform);
         if (platformMatch) {
             const rawVal = platformMatch[1];
-            const cleanVal = rawVal.replace(/_/g, ' '); // FreightElevator HT Outpost -> FreightElevator HT Outpost
-            // We emit this as a location hint to give user context they are at an outpost
-            if (cleanVal && cleanVal !== this.lastLocationHint) {
-                this.lastLocationHint = cleanVal;
-                this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+
+            // Filter out internal/generic SC 3.23+ elevators
+            if (!rawVal.toLowerCase().includes('elevator') && !rawVal.toLowerCase().includes('kiosk')) {
+                const cleanVal = rawVal.replace(/_/g, ' '); // FreightElevator HT Outpost -> FreightElevator HT Outpost
+                // We emit this as a location hint to give user context they are at an outpost
+                if (cleanVal && cleanVal !== this.lastLocationHint) {
+                    this.lastLocationHint = cleanVal;
+                    this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+                }
             }
             handled = true;
         }
@@ -149,7 +154,7 @@ class NavigationParser extends BaseParser {
         }
 
         // ── 6. Quantum State ──
-        if (this.patterns.quantum_entered.test(line)) {
+        if (this.patterns.quantum_spooling.test(line) || this.patterns.quantum_entered.test(line)) {
             this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
             handled = true;
         } else if (this.patterns.quantum_exited.test(line)) {
@@ -205,16 +210,17 @@ class NavigationParser extends BaseParser {
 
         let finalName = cleanedName || rawName;
         let isCustomMapped = false;
+        let matchedObj = null;
 
         if (this.customLocations) {
             // 1. Try exact match on raw
             if (this.customLocations[rawName]) {
-                finalName = this.customLocations[rawName];
+                matchedObj = this.customLocations[rawName];
                 isCustomMapped = true;
             }
             // 2. Try exact match on cleaned
             else if (this.customLocations[cleanedName]) {
-                finalName = this.customLocations[cleanedName];
+                matchedObj = this.customLocations[cleanedName];
                 isCustomMapped = true;
             }
             // 3. Try normalized match
@@ -225,10 +231,19 @@ class NavigationParser extends BaseParser {
                 for (const [key, val] of Object.entries(this.customLocations)) {
                     const normKey = key.toLowerCase().replace(/[+_\s-]/g, '');
                     if (normKey === normalizedRaw || (normalizedCleaned && normKey === normalizedCleaned)) {
-                        finalName = val;
+                        matchedObj = val;
                         isCustomMapped = true;
                         break;
                     }
+                }
+            }
+
+            if (matchedObj) {
+                finalName = typeof matchedObj === 'object' ? matchedObj.name : matchedObj;
+                const zone = typeof matchedObj === 'object' ? matchedObj.zone : 'Auto';
+                if (zone && zone !== 'Auto') {
+                    // Emit zone override immediately before emitting the location
+                    this.emit('gamestate', { type: 'ZONE', value: zone });
                 }
             }
         }
@@ -236,6 +251,13 @@ class NavigationParser extends BaseParser {
         if (finalName !== this.lastLocation) {
             this.lastLocation = finalName;
             this.emit('gamestate', { type: 'LOCATION', value: finalName, raw: rawName });
+
+            // Detect and emit systemic changes explicitly so UI can track what system the user is in
+            if (rawName && rawName.toLowerCase().includes('stanton')) {
+                this.emit('gamestate', { type: 'SYSTEM', value: 'Stanton' });
+            } else if (rawName && rawName.toLowerCase().includes('pyro')) {
+                this.emit('gamestate', { type: 'SYSTEM', value: 'Pyro' });
+            }
 
             // Check if this is a completely new/unmapped location
             if (!isCustomMapped && finalName === (cleanedName || rawName)) {
