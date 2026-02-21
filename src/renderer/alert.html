@@ -446,7 +446,12 @@
                 const config = ALERTS[data.value];
                 if (config) showAlert(config);
             } else if (data.type === 'ZONE') {
-                const config = ALERTS[data.value];
+                // Map logical values to alert keys
+                let key = data.value;
+                if (data.value === 'Armistice Zone') key = 'armistice_enter';
+                if (data.value === 'Open Space') key = 'armistice_leave';
+                
+                const config = ALERTS[key];
                 if (config) showAlert(config);
             } else if (data.type === 'HAZARD_FIRE') {
                 const config = { ...ALERTS.fire };

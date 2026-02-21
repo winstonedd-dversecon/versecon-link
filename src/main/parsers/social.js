@@ -5,7 +5,8 @@ class SocialParser extends BaseParser {
         super();
         this.patterns = {
             // "SubscribeToPlayerSocial: PlayerName" - often appears when a player streams in
-            social_subscribe: /SubscribeToPlayerSocial:\s*([^\s]+)/,
+            social_subscribe: /<SubscribeToPlayerSocial> Subscribing to player (\d+)/,
+            social_unsubscribe: /<UnsubscribeFromPlayerSocial> Unsubscribing from player (\d+)/,
             // Generic Group (Rare in logs, but good to have)
             group_invite: /<Group>.*Invite/i,
             group_join: /<Group>.*Join/i,
@@ -28,7 +29,20 @@ class SocialParser extends BaseParser {
             this.emit('gamestate', {
                 type: 'SOCIAL_PROXIMITY',
                 value: player,
+                action: 'enter',
                 message: `Player nearby: ${player}`
+            });
+            handled = true;
+        }
+
+        const unsubMatch = line.match(this.patterns.social_unsubscribe);
+        if (unsubMatch) {
+            const player = unsubMatch[1];
+            this.emit('gamestate', {
+                type: 'SOCIAL_PROXIMITY',
+                value: player,
+                action: 'leave',
+                message: `Player left proximity: ${player}`
             });
             handled = true;
         }

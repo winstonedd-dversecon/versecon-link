@@ -431,6 +431,18 @@
                 <div class="fd-value large" id="val-location">Unknown</div>
             </div>
 
+            <!-- Zone -->
+            <div class="fd-col">
+                <div class="fd-label">Zone</div>
+                <div class="fd-value" id="val-zone">---</div>
+            </div>
+
+            <!-- Nearby -->
+            <div class="fd-col">
+                <div class="fd-label">Nearby</div>
+                <div class="fd-value" id="val-nearby">0</div>
+            </div>
+
 
             <!-- Ship -->
             <div class="fd-col">
@@ -530,6 +542,12 @@
         let startTime = null;
         let timerInterval = null;
         let hangarStartTime = null;
+
+        const nearbyPlayers = new Set();
+        function updateNearbyUI() {
+            const el = document.getElementById('val-nearby');
+            if (el) el.textContent = nearbyPlayers.size;
+        }
 
         // Auto-start session timer immediately (counts from app launch)
         // Will be corrected if/when SESSION_START event arrives with the real start time
@@ -818,9 +836,36 @@
                     break;
                 }
 
-                case 'ZONE':
-                    if (data.value === 'Armistice Zone') addFeedEntry('🛡️', 'Entered Armistice');
-                    else if (data.value === 'Open Space') addFeedEntry('⚠️', 'Left Armistice');
+                case 'ZONE': {
+                    const zoneEl = document.getElementById('val-zone');
+                    if (data.value === 'Armistice Zone') {
+                        addFeedEntry('🛡️', 'Entered Armistice');
+                        if (zoneEl) {
+                            zoneEl.textContent = 'ARMISTICE';
+                            zoneEl.style.color = 'var(--success)';
+                        }
+                    } else if (data.value === 'Open Space') {
+                        addFeedEntry('⚠️', 'Left Armistice');
+                        if (zoneEl) {
+                            zoneEl.textContent = 'OPEN SPACE';
+                            zoneEl.style.color = 'var(--accent)';
+                        }
+                    } else {
+                        if (zoneEl) zoneEl.textContent = data.value.toUpperCase();
+                        addFeedEntry('🗺️', `Zone: ${data.value}`);
+                    }
+                    break;
+                }
+
+                case 'SOCIAL_PROXIMITY':
+                    if (data.action === 'enter') {
+                        nearbyPlayers.add(data.value);
+                        addFeedEntry('👥', `Player inbound: ${data.value}`);
+                    } else if (data.action === 'leave') {
+                        nearbyPlayers.delete(data.value);
+                        addFeedEntry('👥', `Player outbound: ${data.value}`);
+                    }
+                    updateNearbyUI();
                     break;
 
                 case 'JURISDICTION':
