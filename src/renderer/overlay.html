@@ -703,7 +703,24 @@
         });
 
         // ═══ UI HELPERS ═══
+        const recentFeeds = new Map();
+
         function addFeedEntry(icon, text) {
+            // Deduplication logic (5-second window)
+            const signature = `${icon}-${text}`;
+            const now = Date.now();
+            if (recentFeeds.has(signature) && (now - recentFeeds.get(signature)) < 5000) {
+                return; // Ignore duplicate
+            }
+            recentFeeds.set(signature, now);
+
+            // Cleanup old signatures periodically to prevent memory leak
+            if (recentFeeds.size > 20) {
+                for (const [key, timestamp] of recentFeeds.entries()) {
+                    if (now - timestamp >= 5000) recentFeeds.delete(key);
+                }
+            }
+
             const list = document.getElementById('feed-list');
             const div = document.createElement('div');
             div.className = 'feed-item';

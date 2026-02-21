@@ -1092,6 +1092,8 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     return true;
 });
 
+let hueRestoreTimers = {};
+
 async function triggerHueAlert(color) {
     if (!config.hueEnabled || !config.hueBridge || !config.hueUser) return;
     const states = {
@@ -1103,13 +1105,63 @@ async function triggerHueAlert(color) {
         off: { on: false }
     };
     const state = states[color] || states.white;
+    const baseUrl = `http://${config.hueBridge}/api/${config.hueUser}/lights`;
+
     try {
-        await Promise.all(config.hueLights.map(id =>
-            fetch(`http://${config.hueBridge}/api/${config.hueUser}/lights/${id}/state`, {
+        await Promise.all(config.hueLights.map(async id => {
+            // Cancel any pending restores for this light
+            if (hueRestoreTimers[id]) {
+                clearTimeout(hueRestoreTimers[id]);
+            }
+
+            // 1. Fetch current state before alerting
+            let originalState = null;
+            try {
+                const res = await fetch(`${baseUrl}/${id}`);
+                const data = await res.json();
+                if (data && data.state) {
+                    originalState = {
+                        on: data.state.on,
+                        bri: data.state.bri,
+                        hue: data.state.hue,
+                        sat: data.state.sat,
+                        ct: data.state.ct,
+                        xy: data.state.xy
+                    };
+                }
+            } catch (err) {
+                console.warn(`[Hue] Failed to fetch state for light ${id}:`, err.message);
+            }
+
+            // 2. Apply alert state
+            await fetch(`${baseUrl}/${id}/state`, {
                 method: 'PUT',
                 body: JSON.stringify(state)
-            })
-        ));
+            });
+
+            // 3. Schedule restore if we captured original state
+            if (originalState) {
+                hueRestoreTimers[id] = setTimeout(async () => {
+                    try {
+                        // Clear the 'alert' effect first if it was set
+                        if (state.alert) {
+                            await fetch(`${baseUrl}/${id}/state`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ alert: 'none' })
+                            });
+                        }
+                        // Restore previous config
+                        await fetch(`${baseUrl}/${id}/state`, {
+                            method: 'PUT',
+                            body: JSON.stringify(originalState)
+                        });
+                        console.log(`[Hue] Restored state for light ${id}`);
+                    } catch (err) {
+                        console.error(`[Hue] Failed to restore light ${id}:`, err.message);
+                    }
+                }, 5000); // Revert after 5 seconds
+            }
+        }));
     } catch (e) { console.error('[Hue] Trigger Failed:', e.message); }
 }
 
