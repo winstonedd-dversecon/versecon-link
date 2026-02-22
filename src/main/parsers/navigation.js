@@ -128,11 +128,11 @@ class NavigationParser extends BaseParser {
         // ── 4.2 Generated Location Property (Mission Caves/Outposts) ──
         const genMatch = line.match(this.patterns.generated_location);
         if (genMatch) {
-            const rawFriendly = genMatch[1].trim(); // e.g., "Hurston Cave"
             const rawVal = genMatch[2];             // e.g., "Cave_Unoccupied_Stanton1"
 
-            // We use the rawVal for mapping, but we default to the nice friendly name if unmapped
-            this.emitLocation(rawFriendly, rawVal);
+            // Only emit NEW_LOCATION so the UI can log it for custom mapping.
+            // Do NOT forcefully overwrite the current location because these drop continuously.
+            this.emit('gamestate', { type: 'NEW_LOCATION', value: rawVal });
             return true;
         }
 
@@ -256,8 +256,11 @@ class NavigationParser extends BaseParser {
                 finalName = typeof matchedObj === 'object' ? matchedObj.name : matchedObj;
                 const zone = typeof matchedObj === 'object' ? matchedObj.zone : 'Auto';
                 if (zone && zone !== 'Auto') {
-                    // Emit zone override immediately before emitting the location
-                    this.emit('gamestate', { type: 'ZONE', value: zone });
+                    // Only emit zone override immediately if we are physically arriving at the location.
+                    // This prevents constant background location updates from fighting native 'Leaving Armistice' events.
+                    if (rawName !== this.currentLocationRaw) {
+                        this.emit('gamestate', { type: 'ZONE', value: zone });
+                    }
                 }
             }
         }
