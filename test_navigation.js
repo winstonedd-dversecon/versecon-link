@@ -27,3 +27,6 @@ parser.parse('<2026-02-21T01:21:50.391Z> [Notice] <GenerateLocationProperty> Gen
 console.log('\n--- Testing System Detection (Pyro) ---');
 parser.parse('<2026-02-21T01:21:50.391Z> [Notice] <GenerateLocationProperty> Generated Locations - Location[OOC_Pyro_2_Aki]');
 
+console.log('\n--- Testing Generated Locations (Mission Caves) ---');
+parser.parse('<2026-02-21T02:17:06.547Z> [Notice] <GenerateLocationProperty> Generated Locations - variablename: SubLocationType_BP, locations: (Hurston Cave [3018817963] [Cave_Unoccupied_Stanton1]) contract: CleanAir_DefendShip_Hard_1 [Team_MissionFeatures][Missions]');
+

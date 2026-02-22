@@ -34,6 +34,9 @@ class NavigationParser extends BaseParser {
             // Generic Location[...] fallback (appears in many log lines)
             location_generic: /Location\[([^\]]+)\]/i,
 
+            // Line 44819: <GenerateLocationProperty> Generated Locations - ... locations: (Hurston Cave [3018817963] [Cave_Unoccupied_Stanton1])
+            generated_location: /<GenerateLocationProperty>.*?locations:\s*\(([^\[]+)\s*\[\d+\]\s*\[([^\]]+)\]\)/i,
+
             // ── LOCATION HINT (Object Container loading) ──
             // Lines like: data/objectcontainers/pu/loc/flagship/stanton/lorville/...
             location_obj: /<StatObjLoad\s+0x[0-9A-Fa-f]+\s+Format>\s+'[^']*?objectcontainers\/pu\/loc\/(?:flagship|mod)\/(?:stanton\/)?(?:station\/ser\/)?(?:[^\/]+\/)*([^\/]{5,})\//i,
@@ -120,6 +123,17 @@ class NavigationParser extends BaseParser {
         } else if (this.patterns.armistice_leave.test(line)) {
             this.emit('gamestate', { type: 'ZONE', value: 'Open Space' });
             handled = true;
+        }
+
+        // ── 4.2 Generated Location Property (Mission Caves/Outposts) ──
+        const genMatch = line.match(this.patterns.generated_location);
+        if (genMatch) {
+            const rawFriendly = genMatch[1].trim(); // e.g., "Hurston Cave"
+            const rawVal = genMatch[2];             // e.g., "Cave_Unoccupied_Stanton1"
+
+            // We use the rawVal for mapping, but we default to the nice friendly name if unmapped
+            this.emitLocation(rawFriendly, rawVal);
+            return true;
         }
 
         // ── 4.5 Loading Platform (Outpost/Facility Hint) ──

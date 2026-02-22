@@ -166,6 +166,21 @@ When a player physically moves close enough to the local client (e.g., entering 
 <UnsubscribeFromPlayerSocial> Unsubscribing from player 204269884415
 ```
 
+**MISSION LOCATIONS & CAVES** — Generated Locations (`navigation.js`):
+Dynamically generated Points of Interest (like caves or mission wrecks) that do not have static Outpost logs.
+
+```log
+<GenerateLocationProperty> Generated Locations - ... locations: (Hurston Cave [3018817963] [Cave_Unoccupied_Stanton1])
+```
+
+**QUANTUM TRAVEL** — Spooling (`navigation.js`):
+Start of Quantum Travel. Legacy 'Jump Drive Requesting State Change' is unreliable in SC 3.23+.
+
+```log
+Player Selected Quantum Target
+Successfully calculated route to
+```
+
 ### Research Patterns (awaiting live verification)
 
 **ACTOR DEATH**:
@@ -198,7 +213,9 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 
 - Transparent, always-on-top, positioned in **Top Center** safe zone
 - "Flight Deck" HUD: Location, Ship, Shard (USE1B-110 format), Timer (auto-starts)
+- **Dynamic Zones**: Zone indicator natively states the overarching system (e.g. `STANTON SYSTEM`) when in `Open Space` for planetary context.
 - Tactical Feed: Ship enter/exit, deaths, vehicle destruction, missions, zones, quantum
+- **Custom Location Zones**: If a custom mapped location specifies a zone override (e.g. `Armistice Zone`), it forces the overlay out of `Open Space` to fix missing game logs.
 - Alert popups for: death, fire, mission fail, ship destroyed
 
 ### Dashboard (`dashboard.html`)
@@ -234,6 +251,24 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 5. **Outpost & Bunker detection failing**: Outposts didn't map cleanly via the `Location[]` variables. **Fix**: Hooked the `LoadingPlatformManager` regex to grab location hints, and overhauled `cleanLocationName()` to nicely format strings like `Pyro4_Outpost_col_m_trdpst_indy_001` to "Pyro Trading Post Outpost".
 6. **Custom Patterns not editable**: Users had to delete and recreate rules. **Fix**: Added inline "✏️ Edit" button to `dashboard.html` that repopulates the input form and executes an inline array update rather than appending.
 7. **App Startup Frozen/UI Blocked**: The app took several seconds to open. **Fix**: Identified `log-watcher.js` synchronously parsed 5,000 lines on boot. Refactored this to read via `fs.promises` and process lines in asynchronous chunks of 500, unblocking the event loop and allowing the UI to render instantly.
+
+## 🛠️ Modding & Extensibility
+
+### 1. Dashboard UI (`dashboard.html`)
+
+- Displays list of custom locations and a dropdown for setting an explicit **Zone Override** (`Auto`, `Armistice Zone`, `Open Space`).
+- Displays a list of built-in Regex patterns with toggle checkboxes, a regex override text box, and a **Delete (`×`)** soft-deletion mechanism.
+- Communicates with `main.js` via IPC to save JSON.
+
+### 2. Storage (`config.json`)
+
+- Saves to `~/.versecon-link/config.json`.
+- `customLocations`: Array of objects `{ name: "Base Name", zone: "Armistice Zone" }`.
+- `patternOverrides`: Object containing `deleted`, `disabled`, and custom `regex` strings.
+
+### 3. LogWatcher Injection (`log-watcher.js`)
+
+- Retrieves `patternOverrides` from `LogEngine` memory and applies `/(?!)/` dummy regexes to physically disable deleted/disabled patterns.
 
 ### Fixed (2026-02-15 — v2.7)
 
