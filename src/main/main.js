@@ -56,11 +56,13 @@ class StreamChatService {
         const url = 'wss://irc-ws.chat.twitch.tv:443';
         this.twitchWs = new WebSocket(url);
 
+        const normalizedChannel = channel.startsWith('#') ? channel.slice(1).toLowerCase() : channel.toLowerCase();
+
         this.twitchWs.on('open', () => {
             console.log('[Chat] Twitch IRC Connected');
-            this.twitchWs.send('PASS SCHMOOPIIE');
-            this.twitchWs.send('NICK justinfan' + Math.floor(Math.random() * 90000 + 10000));
-            this.twitchWs.send('JOIN #' + channel.toLowerCase());
+            this.twitchWs.send('PASS SCHMOOPIIE\r\n');
+            this.twitchWs.send('NICK justinfan' + Math.floor(Math.random() * 90000 + 10000) + '\r\n');
+            this.twitchWs.send('JOIN #' + normalizedChannel + '\r\n');
         });
 
         this.twitchWs.on('message', (data) => {
@@ -162,7 +164,12 @@ function loadConfig() {
             if (config.performanceMode === undefined) config.performanceMode = false;
             if (config.logLimit === undefined) config.logLimit = 200;
             if (config.initialScanLimit === undefined) config.initialScanLimit = 5000;
+            if (config.ttsEnabled === undefined) config.ttsEnabled = true;
+            if (config.ttsVolume === undefined) config.ttsVolume = 0.8;
+            if (!config.ttsVoice) config.ttsVoice = '';
             if (!config.logPath) config.logPath = null; // Initialize logPath (will be auto-detected if null)
+            if (!config.interdictionShips) config.interdictionShips = ['Mantis', 'AEGS_Mantis', 'Cutlass_Blue', 'DRAK_Cutlass_Blue', 'Zeus_Sentinel', 'Antares'];
+            if (config.interdictionQuantumOnly === undefined) config.interdictionQuantumOnly = true;
             if (!config.friendCode) {
                 config.friendCode = generateFriendCode();
                 saveConfig();
@@ -655,6 +662,7 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.autoCleanMissions !== undefined) config.autoCleanMissions = newConfig.autoCleanMissions;
     if (newConfig.shareLocation !== undefined) config.shareLocation = newConfig.shareLocation; // Phase 5
     if (newConfig.teamNames !== undefined) config.teamNames = newConfig.teamNames;
+    if (newConfig.userTeam !== undefined) config.userTeam = newConfig.userTeam;
     if (newConfig.overlayPositions !== undefined) config.overlayPositions = newConfig.overlayPositions;
 
     // Philips Hue Settings
@@ -673,8 +681,37 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.overlayVisibility !== undefined) {
         config.overlayVisibility = { ...config.overlayVisibility, ...newConfig.overlayVisibility };
     }
+    if (newConfig.ttsEnabled !== undefined) config.ttsEnabled = newConfig.ttsEnabled;
+    if (newConfig.ttsVolume !== undefined) config.ttsVolume = newConfig.ttsVolume;
+    if (newConfig.ttsVoice !== undefined) config.ttsVoice = newConfig.ttsVoice;
+
+    // Interdiction Ship Detection (v2.10.44)
+    if (newConfig.interdictionShips !== undefined) {
+        config.interdictionShips = newConfig.interdictionShips;
+        // Propagate immediately to the running LogEngine singleton
+        try {
+            const logEngine = require('./parsers');
+            if (logEngine && typeof logEngine.setInterdictionShips === 'function') {
+                logEngine.setInterdictionShips(config.interdictionShips);
+            }
+        } catch (e) {
+            console.warn('[Main] Could not update interdiction ships on parser:', e.message);
+        }
+    }
+    if (newConfig.interdictionQuantumOnly !== undefined) {
+        config.interdictionQuantumOnly = newConfig.interdictionQuantumOnly;
+        try {
+            const logEngine = require('./parsers');
+            if (logEngine && typeof logEngine.setInterdictionQuantumOnly === 'function') {
+                logEngine.setInterdictionQuantumOnly(config.interdictionQuantumOnly);
+            }
+        } catch (e) {
+            console.warn('[Main] Could not update quantum-only mode on parser:', e.message);
+        }
+    }
 
     saveConfig();
+
 
     if (streamChatService) streamChatService.start();
 
@@ -732,7 +769,19 @@ LogWatcher.on('raw-line', (line) => {
     }
 });
 
+const speak = (text) => {
+    if (!config.ttsEnabled) return;
+    if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+        dashboardWindow.webContents.send('app:tts', text);
+    }
+};
+
 LogWatcher.on('gamestate', (data) => {
+    // ═══ VOICE ALERTS (v2.10) ═══
+    if (data.type === 'SERVER_CONNECTED' && data.value) speak(`Connected to shard ${data.value}`);
+    if (data.type === 'MISSION_ACCEPTED' && data.value) speak(`Mission accepted. ${data.value}`);
+    if (data.type === 'SPAWN_SET' && data.value) speak(`Spawn point set to ${data.value}`);
+
     // ═══ SHIP IMAGE RESOLUTION (must run BEFORE broadcast) ═══
     // Attach image path to ship events so overlay receives it
     if ((data.type === 'SHIP_ENTER' || data.type === 'SHIP_CURRENT') && !data.image && data.value && config.shipMap) {
@@ -759,6 +808,15 @@ LogWatcher.on('gamestate', (data) => {
     }
 
     broadcast('log:update', data);
+
+    // ═══ VOICE ALERTS (HUD) ═══
+    if (data.type === 'HUD_WARNING' && data.value) {
+        if (data.value.toLowerCase().includes('fire')) {
+            speak('Warning. Fire detected.');
+        } else {
+            speak(data.value);
+        }
+    }
 
     // ═══ PATTERN REACTIONS (v2.8) ═══
     handlePatternReactions(data);
@@ -798,6 +856,17 @@ LogWatcher.on('gamestate', (data) => {
         if (alertWindow && !alertWindow.isDestroyed()) {
             alertWindow.show();
             alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'interdiction' });
+        }
+        speak('Warning. Quantum interdiction detected.');
+    }
+
+    if (data.type === 'TACTICAL_PROXIMITY') {
+        const shipName = data.ship || 'Unknown';
+        showTrayNotification('⚠️ TACTICAL ALERT', `Interdiction ship nearby: ${shipName}`);
+        speak(`Warning. ${shipName} detected nearby.`);
+        if (alertWindow && !alertWindow.isDestroyed()) {
+            alertWindow.show();
+            alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'tactical_proximity', ship: shipName });
         }
     }
     if (data.type === 'VEHICLE_DEATH') {
@@ -1842,6 +1911,12 @@ if (!gotTheLock) {
 
         createWindows();
         createTray();
+
+        // Sync state again after initial log scan is complete (v2.10.4)
+        LogWatcher.on('initial-scan-complete', () => {
+            console.log('[Main] Initial log scan complete, re-syncing state to windows.');
+            LogWatcher.emitCurrentState();
+        });
 
         // ════ SQUAD HUD TELEMETRY (v2.8) ═══
         setInterval(async () => {

@@ -61,6 +61,10 @@ class CombatParser extends BaseParser {
             // Fire: Secondary — Skip Initial Snapshot names the vehicle, only trigger if it matches our ship
             fire_ship_init: /<Fire Client - Skip Initial Snapshot> Fire Area '([^']+)' for vehicle '([^']+)'/i,
 
+            // Tactical Proximity — Background Simulation Skipped fires for all nearby ships, not just ours
+            // This is used to detect interdictor ships (e.g. Mantis, Cutlass Blue) by their room names
+            proximity_fire: /\u003cFire Client - Background Simulation Skipped\u003e Fire Area '([^']+)'/i,
+
             fire_notification: /Added notification.*(?:Fire|fire)/i,
         };
 
@@ -71,6 +75,16 @@ class CombatParser extends BaseParser {
         // Fire dedup: prevent spamming from multiple fire area logs in rapid succession
         this.lastFireAlert = 0;
         this.FIRE_COOLDOWN_MS = 10000; // 10 seconds between fire alerts
+
+        // Tactical Proximity: list of interdictor ship name fragments (case-insensitive substring)
+        this.interdictionShips = ['Mantis', 'AEGS_Mantis', 'Cutlass_Blue', 'DRAK_Cutlass_Blue', 'Zeus_Sentinel', 'Antares'];
+        // Map of lastSeen timestamps per ship name to avoid repeated alerts
+        this.lastProximityAlert = {};
+        this.PROXIMITY_COOLDOWN_MS = 60000; // 60 seconds between alerts per ship
+        // If true, only fire proximity alerts when currently in quantum travel
+        this.interdictionQuantumOnly = true;
+        // Track quantum travel state (set by jump drive log lines)
+        this.inQuantum = false;
 
         // Reference to current ship (set by vehicle parser via main.js)
         this.currentShip = null;
@@ -261,7 +275,67 @@ class CombatParser extends BaseParser {
             handled = true;
         }
 
+        // ── 7. Tactical Proximity Detection ──
+        // When another ship's rooms are loaded into our instance (Fire Area Background Simulation),
+        // it means that ship is in proximity. We check if it's an interdictor ship.
+        //
+        // Also track quantum state from jump drive log lines so we can gate alerts.
+        if (/Jump Drive Requesting State Change.*to Traveling/i.test(line)) {
+            this.inQuantum = true;
+        } else if (/Jump Drive Requesting State Change.*to Idle/i.test(line)) {
+            this.inQuantum = false;
+        }
+
+        const proxMatch = line.match(this.patterns.proximity_fire);
+        if (proxMatch && this.interdictionShips.length > 0) {
+            // Gate: if quantumOnly mode is on, skip unless we're currently in quantum
+            const shouldCheck = !this.interdictionQuantumOnly || this.inQuantum;
+            if (shouldCheck) {
+                const roomName = proxMatch[1]; // e.g. 'Room_Mantis_Cockpit-001'
+                for (const shipFragment of this.interdictionShips) {
+                    const frag = shipFragment.toLowerCase();
+                    if (roomName.toLowerCase().includes(frag)) {
+                        const now = Date.now();
+                        const lastAlert = this.lastProximityAlert[frag] || 0;
+                        if ((now - lastAlert) > this.PROXIMITY_COOLDOWN_MS) {
+                            this.lastProximityAlert[frag] = now;
+                            this.emit('gamestate', {
+                                type: 'TACTICAL_PROXIMITY',
+                                value: 'Interdiction ship detected nearby',
+                                ship: shipFragment,
+                                room: roomName,
+                                inQuantum: this.inQuantum
+                            });
+                            handled = true;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
         return handled;
+    }
+
+    /**
+     * Update the list of interdictor ship name fragments to detect.
+     * Called by LogEngine when config changes.
+     * @param {string[]} ships 
+     */
+    setInterdictionShips(ships) {
+        this.interdictionShips = Array.isArray(ships) ? ships : [];
+        // Reset cooldowns when list changes so new additions trigger immediately
+        this.lastProximityAlert = {};
+        console.log('[CombatParser] Interdiction ship list updated:', this.interdictionShips);
+    }
+
+    /**
+     * Set whether proximity alerts only fire during quantum travel.
+     * @param {boolean} quantumOnly 
+     */
+    setInterdictionQuantumOnly(quantumOnly) {
+        this.interdictionQuantumOnly = !!quantumOnly;
+        console.log('[CombatParser] Interdiction quantum-only mode:', this.interdictionQuantumOnly);
     }
 
     /** Strip trailing entity ID and convert underscores */

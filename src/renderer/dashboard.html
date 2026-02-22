@@ -914,6 +914,76 @@
                 </div>
             </div>
 
+            <!-- Voice Alerts (TTS) (v2.10) -->
+            <div
+                style="background: rgba(255,165,0,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--accent); margin-bottom: 20px;">
+                <div class="section-title" style="margin-top: 0; color: var(--accent);">
+                    <span>📢 Voice Alerts (TTS)</span>
+                    <label class="switch small" style="margin-left: auto;">
+                        <input type="checkbox" id="config-tts-enabled" onchange="saveConfig()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div style="font-size: 0.7rem; color: #888; margin-bottom: 10px;">
+                    Announce critical events (Warnings, Fire, Shard discovery) using system voices.
+                </div>
+
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Voice Selection</span>
+                    <select id="config-tts-voice" class="modern-input" style="width: 200px; font-size: 0.75rem;"
+                        onchange="saveConfig()"></select>
+                </div>
+
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Voice Volume</span>
+                    <input type="range" id="config-tts-volume" min="0" max="1" step="0.1" value="0.8"
+                        style="width: 150px;" oninput="updateVolumeLabel(this.value)" onchange="saveConfig()">
+                    <span id="tts-volume-val"
+                        style="font-size: 0.8rem; color: var(--accent); min-width: 40px;">80%</span>
+                </div>
+
+                <div style="margin-top: 10px; text-align: right;">
+                    <button class="cyber-btn small" onclick="testVoice()" style="width: auto; margin:0;">🧪 Test
+                        Voice</button>
+                </div>
+            </div>
+
+            <!-- Tactical Proximity / Interdiction Ship Detection (v2.10.44) -->
+            <div
+                style="background: rgba(255,45,45,0.07); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,80,80,0.35); margin-bottom: 20px;">
+                <div class="section-title" style="margin-top: 0; color: #ff6666;">⚠️ Interdiction Ship Detection</div>
+                <div style="font-size: 0.7rem; color: #888; margin-bottom: 12px;">
+                    Triggers a <strong>Tactical Proximity Alert</strong> when a ship's fire area is detected in your
+                    log.
+                    Add the ship name fragment (e.g. <code>Mantis</code>, <code>Cutlass_Blue</code>). 60s cooldown per
+                    ship.
+                </div>
+
+                <!-- Detection Mode Toggle -->
+                <div class="status-row"
+                    style="margin-bottom: 10px; padding: 8px 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                    <span style="color: var(--text-dim); font-size: 0.8rem;">⚡ Only alert during Quantum Travel</span>
+                    <label class="switch small" style="margin-left: auto;">
+                        <input type="checkbox" id="config-interdiction-quantum-only" checked
+                            onchange="updateInterdictionHint(this.checked); saveConfig()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div id="interdiction-mode-hint" style="font-size:0.65rem; color:#666; margin-bottom:10px;">
+                    ✅ <strong>Quantum Only:</strong> Alert fires only when you're mid-jump (prevents false positives
+                    from docking near an interdictor).
+                </div>
+
+                <div id="interdiction-ship-list" style="min-height: 30px; margin-bottom: 10px;"></div>
+
+                <div style="display:flex; gap: 8px;">
+                    <input type="text" id="new-interdiction-ship" class="modern-input" placeholder="e.g. Cutlass_Blue"
+                        style="flex:1; font-size:0.8rem;" onkeydown="if(event.key==='Enter') addInterdictionShip()">
+                    <button class="cyber-btn small" onclick="addInterdictionShip()"
+                        style="width:auto; margin:0; background: rgba(255,80,80,0.2);">➕ Add</button>
+                </div>
+            </div>
+
             <!-- Alert Cooldowns -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -1040,10 +1110,26 @@
                         <span style="color:#666;">➔</span>
                         <input type="text" id="new-loc-val" placeholder="Friendly Name" class="modern-input"
                             style="flex:1;">
-                        <select id="new-loc-zone" class="modern-input" style="width:120px; font-size:0.75rem;">
+                        <select id="new-loc-system" class="modern-input" style="width:100px; font-size:0.75rem;">
+                            <option value="Auto">Auto System</option>
+                            <option value="Stanton">Stanton</option>
+                            <option value="Pyro">Pyro</option>
+                            <option value="Nyx">Nyx</option>
+                            <option value="Magnus">Magnus</option>
+                        </select>
+                        <select id="new-loc-zone" class="modern-input" style="width:130px; font-size:0.75rem;">
                             <option value="Auto">Auto Zone</option>
                             <option value="Armistice Zone">Armistice</option>
                             <option value="Open Space">Open Space</option>
+                            <option value="Monitored Space">Monitored</option>
+                            <option value="Unmonitored">Unmonitored</option>
+                            <option value="Restricted Area">Restricted</option>
+                            <option value="Comm Array">Comm Array</option>
+                            <option value="Landing Zone">Landing Zone</option>
+                            <option value="Space Station">Space Station</option>
+                            <option value="Outpost">Outpost</option>
+                            <option value="Medical Zone">Medical</option>
+                            <option value="Wormhole Transit">Wormhole</option>
                         </select>
                         <button class="cyber-btn small" onclick="saveNewCustomLocation()"
                             style="margin:0;">Save</button>
@@ -1567,11 +1653,30 @@
                     <span style="color:#666; align-self:center;">➔</span>
                     <input type="text" id="location-edit-val" class="modern-input" placeholder="Friendly Name"
                         style="flex:1; margin:0;">
-                    <select id="location-edit-zone" class="modern-input"
-                        style="width:110px; font-size:0.75rem; margin:0;">
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                    <select id="location-edit-system" class="modern-input" style="flex:1; font-size:0.75rem; margin:0;">
+                        <option value="Auto">Auto System</option>
+                        <option value="Stanton">Stanton</option>
+                        <option value="Pyro">Pyro</option>
+                        <option value="Nyx">Nyx</option>
+                        <option value="Magnus">Magnus</option>
+                        <option value="Terra">Terra</option>
+                        <option value="Sol">Sol</option>
+                    </select>
+                    <select id="location-edit-zone" class="modern-input" style="flex:1.5; font-size:0.75rem; margin:0;">
                         <option value="Auto">Auto Zone</option>
                         <option value="Armistice Zone">Armistice</option>
                         <option value="Open Space">Open Space</option>
+                        <option value="Station">Space Station / R&R</option>
+                        <option value="Outpost">Outpost / Facility</option>
+                        <option value="Settlement">Settlement / Village</option>
+                        <option value="Distribution Center">Distribution Center</option>
+                        <option value="Bunker">Underground / Bunker</option>
+                        <option value="Cave">Cave / Tunnel</option>
+                        <option value="Crash Site">Crash Site / Derelict</option>
+                        <option value="Comm-Array">Comm-Array</option>
+                        <option value="Restricted Area">Restricted Area</option>
                     </select>
                 </div>
                 <div style="display:flex; gap:8px;">
@@ -1684,7 +1789,14 @@
                 youtubeId: document.getElementById('config-youtube-id').value,
                 performanceMode: document.getElementById('config-perf-mode').checked,
                 logLimit: document.getElementById('config-log-limit').value,
-                initialScanLimit: document.getElementById('config-scan-limit').value
+                initialScanLimit: document.getElementById('config-scan-limit').value,
+                ttsEnabled: document.getElementById('config-tts-enabled').checked,
+                ttsVolume: document.getElementById('config-tts-volume').value,
+                ttsVoice: document.getElementById('config-tts-voice').value,
+                interdictionShips: Array.from(document.querySelectorAll('.interdiction-ship-tag')).map(el => el.dataset.ship),
+                interdictionQuantumOnly: document.getElementById('config-interdiction-quantum-only').checked,
+                teamNames: config.teamNames || ['Alpha', 'Bravo', 'Charlie', 'Delta'],
+                userTeam: document.getElementById('config-user-team').value
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
@@ -1715,6 +1827,23 @@
                 const hueUserEl = document.getElementById('config-hue-user');
                 if (hueUserEl) hueUserEl.value = config.hueUser;
             }
+
+            // TTS Settings (v2.10)
+            if (config.ttsEnabled !== undefined) document.getElementById('config-tts-enabled').checked = config.ttsEnabled;
+            if (config.ttsVolume !== undefined) {
+                document.getElementById('config-tts-volume').value = config.ttsVolume;
+                updateVolumeLabel(config.ttsVolume);
+            }
+            if (config.ttsVoice !== undefined) {
+                // We'll populate voices later, but set the value if it exists
+                document.getElementById('config-tts-voice').dataset.pendingValue = config.ttsVoice;
+            }
+            if (config.interdictionShips !== undefined) renderInterdictionShipList(config.interdictionShips);
+            if (config.interdictionQuantumOnly !== undefined) {
+                const cb = document.getElementById('config-interdiction-quantum-only');
+                if (cb) { cb.checked = config.interdictionQuantumOnly; updateInterdictionHint(config.interdictionQuantumOnly); }
+            }
+            if (config.userTeam !== undefined) document.getElementById('config-user-team').value = config.userTeam;
             if (config.hueLights !== undefined && Array.isArray(config.hueLights)) {
                 const hueLightsEl = document.getElementById('config-hue-lights');
                 if (hueLightsEl) hueLightsEl.value = config.hueLights.join(', ');
@@ -2759,13 +2888,16 @@
             list.innerHTML = Object.entries(customLocations).map(([key, val]) => {
                 const name = typeof val === 'object' ? val.name : val;
                 const zone = typeof val === 'object' ? val.zone : 'Auto';
-                const zoneBadge = zone !== 'Auto' ? `<span style="background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:#aaa;">${zone}</span>` : '';
+                const system = typeof val === 'object' ? val.system : 'Auto';
+
+                const zoneBadge = zone !== 'Auto' ? `<span style="background:rgba(255,165,0,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:var(--accent); border:1px solid rgba(255,165,0,0.2);">${zone}</span>` : '';
+                const systemBadge = system !== 'Auto' ? `<span style="background:rgba(0,255,136,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:var(--success); border:1px solid rgba(0,255,136,0.2);">${system}</span>` : '';
 
                 return `
                         <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; border-radius:4px; transition:background 0.2s; background:rgba(0,0,0,0.1);" onmouseenter="this.style.background='rgba(255,165,0,0.1)'" onmouseleave="this.style.background='rgba(0,0,0,0.1)'">
                             <div style="overflow:hidden; flex:1;">
                                 <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
-                                <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${zoneBadge}</div>
+                                <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${systemBadge}${zoneBadge}</div>
                             </div>
                             <button class="cyber-btn small" onclick="event.stopPropagation(); openLocationSearch(); selectLocationForEdit('${encodeURIComponent(key)}')" style="margin-left:10px; margin:0 0 0 8px;">✏️</button>
                             <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:5px; margin:0;">×</button>
@@ -3169,10 +3301,16 @@
         function saveNewCustomLocation() {
             const key = document.getElementById('new-loc-key').value.trim();
             const val = document.getElementById('new-loc-val').value.trim();
+            const system = document.getElementById('new-loc-system').value;
             const zone = document.getElementById('new-loc-zone').value;
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
-            const finalObj = zone === 'Auto' ? val : { name: val, zone: zone };
+            // Build object if any field is not Auto
+            let finalObj = val;
+            if (system !== 'Auto' || zone !== 'Auto') {
+                finalObj = { name: val, system: system, zone: zone };
+            }
+
             customLocations[key] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
@@ -3182,6 +3320,7 @@
             // Clear inputs
             document.getElementById('new-loc-key').value = '';
             document.getElementById('new-loc-val').value = '';
+            document.getElementById('new-loc-system').value = 'Auto';
             document.getElementById('new-loc-zone').value = 'Auto';
             renderCustomLocationList();
         }
@@ -3250,7 +3389,10 @@
             resultsList.innerHTML = filtered.map(([key, val]) => {
                 const name = typeof val === 'object' ? val.name : val;
                 const zone = typeof val === 'object' ? val.zone : 'Auto';
-                const zoneBadge = zone !== 'Auto' ? `<span style="background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:#aaa;">${zone}</span>` : '';
+                const system = typeof val === 'object' ? val.system : 'Auto';
+
+                const zoneBadge = zone !== 'Auto' ? `<span style="background:rgba(255,165,0,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:var(--accent); border:1px solid rgba(255,165,0,0.2);">${zone}</span>` : '';
+                const systemBadge = system !== 'Auto' ? `<span style="background:rgba(0,255,136,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:var(--success); border:1px solid rgba(0,255,136,0.2);">${system}</span>` : '';
 
                 return `
                 <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); 
@@ -3259,7 +3401,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="overflow:hidden; flex:1;">
                             <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
-                            <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${zoneBadge}</div>
+                            <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${systemBadge}${zoneBadge}</div>
                         </div>
                         <button class="cyber-btn small" style="margin:0; margin-left:8px;" onclick="event.stopPropagation(); selectLocationForEdit('${encodeURIComponent(key)}')">
                             ✏️
@@ -3281,15 +3423,16 @@
             document.getElementById('location-edit-original-key').value = key;
             document.getElementById('location-edit-key').value = key;
             document.getElementById('location-edit-val').value = val;
-            document.getElementById('location-edit-zone').value = zone;
+            document.getElementById('location-edit-zone').value = typeof valObj === 'object' ? valObj.zone || 'Auto' : 'Auto';
+            document.getElementById('location-edit-system').value = typeof valObj === 'object' ? valObj.system || 'Auto' : 'Auto';
             document.getElementById('location-edit-panel').style.display = 'block';
             renderLocationSearchResults(); // Re-render to show selection highlighting
         }
 
         function saveLocationEdit() {
-            const originalKey = document.getElementById('location-edit-original-key').value;
             const newVal = document.getElementById('location-edit-val').value.trim();
             const newZone = document.getElementById('location-edit-zone').value;
+            const newSystem = document.getElementById('location-edit-system').value;
 
             if (!newVal) {
                 alert('Please enter a friendly name.');
@@ -3302,7 +3445,7 @@
             }
 
             // Update with new value
-            const finalObj = newZone === 'Auto' ? newVal : { name: newVal, zone: newZone };
+            const finalObj = (newZone === 'Auto' && newSystem === 'Auto') ? newVal : { name: newVal, zone: newZone, system: newSystem };
             customLocations[selectedLocationKey] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
@@ -3750,6 +3893,96 @@
             if (rawFeed) rawFeed.innerHTML = '';
             addDashItem('🗑️', 'Log feed cleared');
         }
+
+        // ═══ VOICE ALERTS (TTS) ═══
+        function updateVolumeLabel(val) {
+            document.getElementById('tts-volume-val').textContent = Math.round(val * 100) + '%';
+        }
+
+        function populateVoices() {
+            const voiceSelect = document.getElementById('config-tts-voice');
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) return;
+
+            const pending = voiceSelect.dataset.pendingValue;
+            voiceSelect.innerHTML = voices.map(v => `<option value="${v.name}" ${v.name === pending ? 'selected' : ''}>${v.name} (${v.lang})</option>`).join('');
+            delete voiceSelect.dataset.pendingValue;
+        }
+
+        window.speechSynthesis.onvoiceschanged = populateVoices;
+        setTimeout(populateVoices, 1000); // Fallback
+
+        function testVoice() {
+            speak('VerseCon Link Voice Protocol active. Ready for deployment.');
+        }
+
+        // ═══ INTERDICTION SHIP MANAGEMENT (v2.10.44) ═══
+        function renderInterdictionShipList(ships) {
+            const container = document.getElementById('interdiction-ship-list');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!ships || ships.length === 0) {
+                container.innerHTML = '<div style="font-size:0.7rem; color:#555; font-style:italic;">No ships configured. Add one below.</div>';
+                return;
+            }
+            ships.forEach(ship => {
+                const tag = document.createElement('span');
+                tag.className = 'interdiction-ship-tag';
+                tag.dataset.ship = ship;
+                tag.style.cssText = 'display:inline-flex; align-items:center; gap:6px; background:rgba(255,80,80,0.2); border:1px solid rgba(255,80,80,0.4); color:#ff9999; padding:3px 8px; border-radius:4px; font-size:0.75rem; margin:3px;';
+                tag.innerHTML = `<span>🛡️ ${ship}</span><span onclick="removeInterdictionShip('${ship}')" style="cursor:pointer; color:#ff5555; font-weight:bold; margin-left:4px;">✕</span>`;
+                container.appendChild(tag);
+            });
+        }
+
+        function addInterdictionShip() {
+            const input = document.getElementById('new-interdiction-ship');
+            const raw = (input.value || '').trim();
+            if (!raw) return;
+            const existing = Array.from(document.querySelectorAll('.interdiction-ship-tag')).map(el => el.dataset.ship);
+            if (existing.includes(raw)) { input.value = ''; return; }
+            renderInterdictionShipList([...existing, raw]);
+            input.value = '';
+            saveConfig();
+        }
+
+        function removeInterdictionShip(ship) {
+            const existing = Array.from(document.querySelectorAll('.interdiction-ship-tag')).map(el => el.dataset.ship);
+            renderInterdictionShipList(existing.filter(s => s !== ship));
+            saveConfig();
+        }
+
+        function updateInterdictionHint(quantumOnly) {
+            const hint = document.getElementById('interdiction-mode-hint');
+            if (!hint) return;
+            if (quantumOnly) {
+                hint.innerHTML = '✅ <strong>Quantum Only:</strong> Alert fires only when you\'re mid-jump. No false positives from docking near an interdictor.';
+            } else {
+                hint.innerHTML = '⚠️ <strong>Always On:</strong> Alert fires for <em>any</em> nearby interdictor ship — even in normal space. Good for ambush awareness.';
+            }
+        }
+
+        function speak(text) {
+            const enabled = document.getElementById('config-tts-enabled').checked;
+            if (!enabled) return;
+
+            const volume = parseFloat(document.getElementById('config-tts-volume').value);
+            const voiceName = document.getElementById('config-tts-voice').value;
+            const voices = window.speechSynthesis.getVoices();
+            const voice = voices.find(v => v.name === voiceName);
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.volume = volume;
+            if (voice) utterance.voice = voice;
+
+            window.speechSynthesis.cancel(); // Interrupt previous
+            window.speechSynthesis.speak(utterance);
+        }
+
+        ipcRenderer.on('app:tts', (event, text) => {
+            console.log('[TTS] Speaking:', text);
+            speak(text);
+        });
     </script>
 </body>
 

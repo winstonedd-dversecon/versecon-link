@@ -37,6 +37,30 @@ class LogEngine extends EventEmitter {
         }
         return handled;
     }
+
+    /**
+     * Update the interdiction ship list on any parser that supports it.
+     * @param {string[]} ships 
+     */
+    setInterdictionShips(ships) {
+        for (const parser of this.parsers) {
+            if (typeof parser.setInterdictionShips === 'function') {
+                parser.setInterdictionShips(ships);
+            }
+        }
+    }
+
+    /**
+     * Set whether proximity alerts should only fire during quantum travel.
+     * @param {boolean} quantumOnly
+     */
+    setInterdictionQuantumOnly(quantumOnly) {
+        for (const parser of this.parsers) {
+            if (typeof parser.setInterdictionQuantumOnly === 'function') {
+                parser.setInterdictionQuantumOnly(quantumOnly);
+            }
+        }
+    }
 }
 
 // Instantiate and register parsers

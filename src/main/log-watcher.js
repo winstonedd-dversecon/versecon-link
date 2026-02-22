@@ -288,6 +288,7 @@ class LogWatcher extends EventEmitter {
                     await new Promise(resolve => setTimeout(resolve, 5)); // Yield to unblock UI
                 }
                 console.log(`[LogWatcher] Initial scan complete.`);
+                this.emit('initial-scan-complete');
             } catch (e) {
                 console.error('[LogWatcher] Initial scan failed:', e);
             }

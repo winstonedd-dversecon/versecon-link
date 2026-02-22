@@ -521,6 +521,12 @@
                 <div class="fd-label" id="label-env">LIVE</div>
                 <div class="fd-value" id="val-timer">00:00:00</div>
             </div>
+
+            <!-- Team (v2.10) -->
+            <div class="fd-col" id="col-team">
+                <div class="fd-label">Assigned Team</div>
+                <div class="fd-value" id="val-team" style="color:var(--accent);">ALPHA</div>
+            </div>
         </div>
 
         <!-- Squad HUD Row (v2.8) -->
@@ -830,6 +836,15 @@
                 document.documentElement.style.setProperty('--accent', config.accentColor);
             }
 
+            // Team Names (v2.10)
+            if (config.userTeam) {
+                const names = config.teamNames || ['Alpha', 'Bravo', 'Charlie', 'Delta'];
+                const teamIdx = ['Alpha', 'Bravo', 'Charlie', 'Delta'].indexOf(config.userTeam);
+                const finalName = (teamIdx !== -1) ? names[teamIdx] : config.userTeam;
+                const teamEl = document.getElementById('val-team');
+                if (teamEl) teamEl.textContent = finalName.toUpperCase();
+            }
+
             // Chat Visibility (v2.10)
             const chatPanel = document.getElementById('hud-chat-panel');
             if (chatPanel) {
@@ -1033,13 +1048,13 @@
                         let shardDisplay;
                         if (shardParts.length >= 4) {
                             // Region (e.g. use1b, euw1a) + Instance number (e.g. 110)
-                            shardDisplay = `${shardParts[1].toUpperCase()}-${shardParts[3]}`;
+                            shardDisplay = `${shardParts[1].toUpperCase()} &nbsp; ${shardParts[3]}`;
                         } else if (shardParts.length >= 2) {
                             shardDisplay = shardParts[1].toUpperCase();
                         } else {
                             shardDisplay = data.value.shard;
                         }
-                        document.getElementById('val-shard').textContent = shardDisplay;
+                        document.getElementById('val-shard').innerHTML = shardDisplay;
                         document.getElementById('val-shard').style.color = 'var(--cyan)';
                         // Show IP
                         const ipEl = document.getElementById('val-net-ip');

@@ -48,7 +48,7 @@ class NavigationParser extends BaseParser {
             quantum_arrived: /<Quantum Drive Arrived/,
 
             // Interdiction
-            interdiction: /Interdiction/i,
+            interdiction: /Interdiction|Jammed|Interrupted|Forced Exit|Pulled out/i,
 
             // Freight Elevator (Outpost hints)
             // Can be: [LoadingPlatformManager_...] Platform state changed
@@ -102,6 +102,14 @@ class NavigationParser extends BaseParser {
             if (cleaned) {
                 this.emitLocation(cleaned, rawVal);
             }
+            return true;
+        }
+
+        // ── 2.5 Jump Point Transit (High Priority) ──
+        const jumpMatch = line.match(this.patterns.jump_point);
+        if (jumpMatch) {
+            const rawVal = jumpMatch[1]; // e.g. OOC_JumpPoint_stanton_magnus
+            this.emitLocation('Wormhole Transit', rawVal);
             return true;
         }
 
@@ -200,16 +208,7 @@ class NavigationParser extends BaseParser {
             }
         }
 
-        // ── 7.5 Jump Point Transit ──
-        const jumpMatch = line.match(this.patterns.jump_point);
-        if (jumpMatch) {
-            const rawVal = jumpMatch[1]; // e.g. OOC_JumpPoint_stanton_magnus
-            if (rawVal !== this.lastLocationHint) {
-                this.lastLocationHint = rawVal;
-                this.emitLocation('Wormhole Transit', rawVal);
-                handled = true;
-            }
-        }
+
 
         // ── 8. OCS Streaming Zones ──
         const ocsMatch = line.match(this.patterns.ocs_master_zone);
@@ -272,9 +271,14 @@ class NavigationParser extends BaseParser {
             if (matchedObj) {
                 finalName = typeof matchedObj === 'object' ? matchedObj.name : matchedObj;
                 const zone = typeof matchedObj === 'object' ? matchedObj.zone : 'Auto';
+                const system = typeof matchedObj === 'object' ? matchedObj.system : 'Auto';
+
+                if (system && system !== 'Auto') {
+                    this.emit('gamestate', { type: 'SYSTEM', value: system });
+                }
+
                 if (zone && zone !== 'Auto') {
                     // Only emit zone override immediately if we are physically arriving at the location.
-                    // This prevents constant background location updates from fighting native 'Leaving Armistice' events.
                     if (rawName !== this.currentLocationRaw) {
                         this.emit('gamestate', { type: 'ZONE', value: zone });
                     }
@@ -288,20 +292,23 @@ class NavigationParser extends BaseParser {
 
             // Detect and emit systemic changes explicitly so UI can track what system the user is in
             const lowerRaw = rawName ? rawName.toLowerCase() : '';
-            if (lowerRaw.includes('stanton') ||
-                lowerRaw.includes('cru_') || lowerRaw.includes('hur_') || lowerRaw.includes('arc_') || lowerRaw.includes('mic_') ||
-                lowerRaw.includes('grimhex') || lowerRaw.includes('kareah') || lowerRaw.includes('portolisar') || lowerRaw.includes('seraphim') ||
-                lowerRaw.includes('everus') || lowerRaw.includes('baijini') || lowerRaw.includes('tressler') ||
-                lowerRaw.includes('orison') || lowerRaw.includes('lorville') || lowerRaw.includes('area18') || lowerRaw.includes('newbabbage')
-            ) {
-                this.emit('gamestate', { type: 'SYSTEM', value: 'Stanton' });
-            } else if (lowerRaw.includes('pyro') || lowerRaw.includes('pext')) {
-                // Internal assets sometimes use PeXt for Pyro Exterior/Outposts
-                this.emit('gamestate', { type: 'SYSTEM', value: 'Pyro' });
-            } else if (lowerRaw.includes('nyx')) {
-                this.emit('gamestate', { type: 'SYSTEM', value: 'Nyx' });
-            } else if (lowerRaw.includes('magnus')) {
-                this.emit('gamestate', { type: 'SYSTEM', value: 'Magnus' });
+            // Exclude jump point transits from system identification to prevent mid-jump misidentification
+            if (!lowerRaw.includes('jumppoint')) {
+                if (lowerRaw.includes('pyro') || lowerRaw.includes('pext') || lowerRaw.includes('pyro-') || lowerRaw.startsWith('p_')) {
+                    this.emit('gamestate', { type: 'SYSTEM', value: 'Pyro' });
+                } else if (lowerRaw.includes('nyx') || lowerRaw.includes('nyx-')) {
+                    this.emit('gamestate', { type: 'SYSTEM', value: 'Nyx' });
+                } else if (lowerRaw.includes('magnus') || lowerRaw.includes('magnus-')) {
+                    this.emit('gamestate', { type: 'SYSTEM', value: 'Magnus' });
+                } else if (lowerRaw.includes('stanton') ||
+                    lowerRaw.includes('cru_') || lowerRaw.includes('hur_') || lowerRaw.includes('arc_') || lowerRaw.includes('mic_') ||
+                    lowerRaw.includes('grimhex') || lowerRaw.includes('kareah') || lowerRaw.includes('portolisar') || lowerRaw.includes('seraphim') ||
+                    lowerRaw.includes('everus') || lowerRaw.includes('baijini') || lowerRaw.includes('tressler') ||
+                    lowerRaw.includes('orison') || lowerRaw.includes('lorville') || lowerRaw.includes('area18') || lowerRaw.includes('newbabbage') ||
+                    lowerRaw.includes('stan-')
+                ) {
+                    this.emit('gamestate', { type: 'SYSTEM', value: 'Stanton' });
+                }
             }
 
             // Check if this is a completely new/unmapped location
@@ -384,6 +391,14 @@ class NavigationParser extends BaseParser {
         // Skip the top-level "OOC_Stanton" (too vague)
         if (raw === 'OOC_Stanton') return null;
 
+        // Common Stanton Planet Mappings (v2.10.12)
+        const stantonMap = {
+            '1': 'Hurston',
+            '2': 'Crusader',
+            '3': 'ArcCorp',
+            '4': 'MicroTech'
+        };
+
         // OOC_Stanton_1_Hurston -> Hurston
         // OOC_Stanton_2b_Daymar -> Daymar
         // OOC_Stanton_3_ArcCorp -> ArcCorp
@@ -394,8 +409,13 @@ class NavigationParser extends BaseParser {
 
         // OOC_Stanton_1_Hurston without the underscore pattern
         const simpleMatch = raw.match(/OOC_Stanton_(\d+)_?(.+)/i);
-        if (simpleMatch && simpleMatch[2]) {
-            return simpleMatch[2].replace(/_/g, ' ');
+        if (simpleMatch) {
+            if (simpleMatch[2]) return simpleMatch[2].replace(/_/g, ' ');
+            if (stantonMap[simpleMatch[1]]) return stantonMap[simpleMatch[1]];
+        }
+
+        if (raw.toLowerCase().includes('jumppoint')) {
+            return 'Wormhole Transit';
         }
 
         return raw.replace(/^OOC_/, '').replace(/_/g, ' ');
