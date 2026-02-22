@@ -1,40 +1,38 @@
-# VerseCon Link — Agent Handoff Documentation
+# VerseCon Link — Documentation & Agent Handoff
 
-> **Last Updated**: 2026-02-15  
-> **Version**: 2.7.0 (Electron)  
-> **Purpose**: Desktop companion app that reads Star Citizen's `Game.log` in real-time, parses game events, and displays an in-game overlay + dashboard.
+> **Last Updated**: 2026-02-22  
+> **Version**: 2.10.44 (Electron)  
+> **Purpose**: Desktop companion app that reads Star Citizen's `Game.log` in real-time, parses game events, and displays an in-game HUD overlay + dashboard.
 
 ---
 
 ## 📂 Game.log Source (CRITICAL)
 
 > [!IMPORTANT]
-> The **ONLY** source of truth for log data is the live Game.log on the user's **Windows gaming PC**:
+> The **ONLY** source of truth for log data is the live `Game.log` on the user's **Windows gaming PC**:
 >
 > ```text
 > C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\Game.log
 > ```
 >
-> This file is constantly updated while the game is running. Sample logs in `src/` are snapshots for development.
+> This file is constantly updated while the game is running. The app tails it in real-time via `log-watcher.js`.
 
-### Fetching the Latest Log
+### Fetching the Latest Log (Dev)
 
 ```bash
-# Quick fetch (requires SSH on Windows PC — see fetch-log.sh for setup)
+# Quick fetch (requires SSH on Windows PC)
 ./fetch-log.sh
 
 # Or set host first:
-export VCON_WINDOWS_HOST=192.168.1.100
+export VCON_WINDOWS_HOST=192.168.1.XXX
 export VCON_WINDOWS_USER=damien
 ./fetch-log.sh
 ```
 
 ```powershell
 # Manual copy (from Windows PowerShell, push TO dev machine):
-scp "C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\Game.log" damien@DEV_IP:~/versecon-link/src/Game.log
+scp "C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\Game.log" damien@DEV_IP:~/versecon-link/Game.log
 ```
-
-The script auto-backs up the existing log with a timestamp, and prints a quick analysis (deaths, ships, locations, missions, fire sims).
 
 ---
 
@@ -42,29 +40,35 @@ The script auto-backs up the existing log with a timestamp, and prints a quick a
 
 ```text
 versecon-link/
-├── package.json             # Electron app config, v2.7.0
-├── known-patterns.json      # Log pattern database (20+ patterns, exportable)
+├── package.json             # Electron app config
+├── known-patterns.json      # Log pattern database (exportable)
 ├── fetch-log.sh             # Pull latest Game.log from Windows PC
-├── TRACKED_LOGS.md          # Regex pattern reference (keep in sync!)
-├── VERSECON_LINK.md          # THIS FILE — agent handoff doc
+├── VERSECON_LINK.md          # THIS FILE
 ├── MASTER_GUIDE.md           # Research findings & roadmap
-├── src/
-│   ├── Game.log              # Latest fetched log (use fetch-log.sh to update)
-│   ├── Game (2).log          # Prowler session snapshot (6448 lines)
-│   ├── main/                 # Electron Main Process
-│   │   ├── main.js           # Entry point — windows, IPC, event wiring
-│   │   ├── log-watcher.js    # File tailing + LogEngine orchestration
-│   │   ├── api-client.js     # VerseCon API client (friend sharing)
-│   │   ├── update-manager.js # Auto-update via electron-updater
-│   │   ├── parsers/          # 15 parser modules (see below)
-│   │   └── telemetry/        # Network watcher + telemetry engine
-│   ├── renderer/             # Electron Renderer (UI)
-│   │   ├── dashboard.html    # Main control panel (~125KB, 6 tabs)
-│   │   ├── overlay.html      # In-game HUD overlay (transparent, always-on-top)
-│   │   ├── alert.html        # Full-screen alert pop-ups (status, fire, death, destruction)
-│   │   └── audio-synth.js    # Web Audio API sound effects
-│   └── styles/               # CSS files
-└── test/                     # Test files
+├── Game.log                  # Symlinked / latest fetched log
+└── src/
+    ├── main/                 # Electron Main Process
+    │   ├── main.js           # Entry point — windows, IPC, event wiring
+    │   ├── log-watcher.js    # File tailing + LogEngine orchestration
+    │   ├── api-client.js     # VerseCon API client (friend sharing)
+    │   ├── update-manager.js # Auto-update via electron-updater
+    │   └── parsers/          # Modular parser system (see below)
+    │       ├── index.js      # LogEngine — registers + routes all parsers
+    │       ├── navigation.js # Location, system, shard, quantum travel
+    │       ├── session.js    # Session start/ID detection
+    │       ├── vehicle.js    # Ship enter/exit, spawn points
+    │       ├── hangar.js     # Hangar elevator states
+    │       ├── combat.js     # Deaths, fire, destruction, INTERDICTION
+    │       ├── mission.js    # Mission accept/status/objectives
+    │       ├── inventory.js  # Equip/unequip tracking
+    │       ├── economy.js    # Trade/economy tracking
+    │       ├── social.js     # Player proximity detection
+    │       └── custom.js     # User-defined regex patterns
+    └── renderer/             # Electron Renderer (UI)
+        ├── dashboard.html    # Main control panel (6 tabs)
+        ├── overlay.html      # In-game HUD (transparent, always-on-top)
+        ├── alert.html        # Full-screen critical event alerts
+        └── audio-synth.js    # Web Audio API sound effects
 ```
 
 ---
@@ -72,118 +76,460 @@ versecon-link/
 ## 🔄 Data Flow
 
 ```text
-Game.log (file on disk)
+Game.log (file on disk, tailed by chokidar)
     ▼
-LogWatcher (log-watcher.js) — tails file, reads last 10K lines on startup
+LogWatcher (log-watcher.js)
+  - Initial scan: async chunks of 500 lines (last N lines from config.initialScanLimit)
+  - Live tail: reads new bytes on each file change event
     ▼
-LogEngine (parsers/index.js) — routes each line to ALL registered parsers
+LogEngine (parsers/index.js)
+  - Routes every line to ALL registered parsers simultaneously
+  - Each parser emits 'gamestate' events upward to the engine
     ▼
 main.js — listens for 'gamestate' events
-  → Ship image resolution (fuzzy match config.shipMap BEFORE broadcast)
-  → broadcast() to ALL renderer windows via IPC
+  → Ship image resolution (fuzzy match against config.shipMap)
+  → TTS voice alerts (SpeechSynthesis via dashboardWindow IPC)
+  → Hue reactions (Phillips Hue light color flashes)
+  → Pattern reactions (custom log rules)
+  → TACTICAL_PROXIMITY alerts (interdiction ship detection)
+  → broadcast() to ALL renderer windows
     ▼
 Renderer Windows (overlay.html, dashboard.html, alert.html)
 ```
 
-**IPC channels**: `log:update` (parsed events), `log:raw-batch` (raw lines batched @ 50ms)
+**Key IPC channels:**
+
+- `log:update` — parsed gamestate events (location, ship, death, etc.)
+- `log:raw-batch` — raw log lines batched @ 50ms intervals
+- `settings:save` / `settings:updated` — config sync
+- `app:tts` — TTS text → dashboardWindow speaks it
+- `alert:trigger` — fires alert.html overlays
 
 ---
 
 ## 🎯 Parser System
 
-### Registered Parsers (`parsers/index.js`)
+### Registered Parsers
 
 | Parser | File | Status | Events Emitted |
-| ------ | ---- | ------ | -------------- |
-| **Navigation** | `navigation.js` | ✅ VERIFIED | `LOCATION`, `SERVER_CONNECTED`, `ZONE` |
-| **Session** | `session.js` | ✅ VERIFIED | `SESSION_START` |
+|--------|------|--------|----------------|
+| **Navigation** | `navigation.js` | ✅ VERIFIED | `LOCATION`, `SYSTEM`, `SERVER_CONNECTED`, `ZONE`, `QUANTUM_*`, `NEW_LOCATION` |
+| **Session** | `session.js` | ✅ VERIFIED | `SESSION_START`, `SESSION_ID`, `BUILD_INFO` |
 | **Vehicle** | `vehicle.js` | ✅ VERIFIED | `SHIP_ENTER`, `SHIP_EXIT`, `SPAWN_SET` |
-| **Hangar** | `hangar.js` | ✅ VERIFIED | `HANGAR_STATE` (TRANSIT/READY/CLOSED) |
-| **Combat** | `combat.js` | 🔬 RESEARCH | `DEATH`, `VEHICLE_DESTRUCTION`, `STATUS`, `HAZARD_FIRE` |
+| **Hangar** | `hangar.js` | ✅ VERIFIED | `HANGAR_STATE` |
+| **Combat** | `combat.js` | ✅ VERIFIED | `DEATH`, `VEHICLE_DESTRUCTION`, `STATUS`, `HAZARD_FIRE`, `INTERDICTION`, `TACTICAL_PROXIMITY` |
 | **Mission** | `mission.js` | 🔬 RESEARCH | `MISSION_ACCEPTED`, `MISSION_STATUS`, `MISSION_OBJECTIVE`, `MISSION_CHANGED` |
-| **Custom** | `custom.js` | ✅ WORKS | User-defined regex patterns |
-| **Mining** | `mining.js` | ❌ SPECULATIVE | Never matched real logs |
-| **Salvage** | `salvage.js` | ❌ SPECULATIVE | Never matched real logs |
-| **Engineering** | `engineering.js` | ❌ SPECULATIVE | Never matched real logs |
-| **Economy** | `economy.js` | ⚠️ UNVERIFIED | Trade/economy tracking |
-| **Social** | `social.js` | ⚠️ UNVERIFIED | Friend detection |
+| **Inventory** | `inventory.js` | ⚠️ UNVERIFIED | `ATTACHMENT_RECEIVED` |
+| **Economy** | `economy.js` | ⚠️ UNVERIFIED | Trade/economy |
+| **Social** | `social.js` | ✅ WORKS | `PLAYER_NEARBY`, `PLAYER_LEFT` |
+| **Custom** | `custom.js` | ✅ WORKS | User-defined events |
 | **Zone** | `zone.js` | ❌ DISABLED | Conflicts with `navigation.js` |
 
-### Vehicle Parser — Dedup, Soft Exit & Ship Images
+---
 
-- **SHIP_ENTER**: Only matches `SHUDEvent_OnNotification` lines (avoids 3x duplicates from continuation/update lines). 5-second dedup timer for same ship.
-- **SHIP_EXIT**: Fires on `ClearDriver` (leaving pilot seat). Does NOT clear `currentShip` — player may still be aboard. Overlay shows `🪑 Left Pilot Seat` and `ShipName (Aboard)`.
-- **HANGAR_STATE**: Only from `hangar.js` (vehicle.js duplicate removed). Shows `🔄 ELEVATOR MOVING` / `✅ HANGAR OPEN`.
-- **Ship Image Resolution**: Uses `findShipImage()` — fuzzy partial matching (case-insensitive, bidirectional substring). Map key `"Prowler"` matches detected name `"Esperia Prowler Utility"`. Falls back to `main.js` if parser didn't resolve (e.g., shipMap updated after parser init). Overlay converts paths to `file:///` protocol for Windows compatibility.
+## 🌍 System & Location Detection (`navigation.js`)
 
-### Fire Detection (3-Layer Filter)
+### How It Works
 
-| Layer | Filter | Purpose |
-| ----- | ------ | ------- |
-| **Exclusion** | Skip `Background Simulation Skipped` + `fire_extinguisher` | Eliminates 1,000+ noise lines per session |
-| **Pattern** | Match `Spread`, `Ignit`, `Cell Burning`, `Damage`, `Started`, `Warning` | Only real fire events |
-| **Ship filter** | Cross-reference room name with 12 manufacturer prefixes | Suppress fires on OTHER ships when possible |
-| **Cooldown** | 10-second minimum between alerts | Prevent spam |
+The `navigation.js` parser detects location and system from two primary log patterns:
 
-Manufacturer prefixes checked: `mrai_`, `espr_`, `anvl_`, `orig_`, `misc_`, `cnou_`, `drak_`, `rsi_`, `aegs_`, `argo_`, `crusader_`, `banu_`
-
-### Shard Display
-
-Shard string `pub_use1b_11218823_110` parsed as: `USE1B-110` (region + instance). IP shown below.
-
-### Verified Patterns (SC 4.6)
-
-**SHIP ENTER** — VOIP Channel Join:
-
-```log
-You have joined channel 'Esperia Prowler Utility : TypicallyBrit_ish'
-```
-
-**SHIP EXIT** — ClearDriver (leaves pilot seat, NOT ship):
-
-```log
-<Vehicle Control Flow> CVehicleMovementBase::ClearDriver: ...releasing control token for 'ESPR_Prowler_Utility_9448279551878'
-```
-
-**LOCATION** — RequestLocationInventory:
+**1. Physical Location** — `RequestLocationInventory`:
 
 ```log
 <RequestLocationInventory> Player[Name] requested inventory for Location[RR_HUR_LEO]
 ```
 
-**SERVER/SHARD** — Join PU:
+**2. System from Entity Names** — any entity/zone string is scanned for system keywords:
+
+| System | Trigger Fragments |
+|--------|------------------|
+| **Pyro** | `pyro`, `pext`, `pyro-`, `p_` prefix |
+| **Nyx** | `nyx`, `nyx-` |
+| **Magnus** | `magnus`, `magnus-` |
+| **Stanton** | `stanton`, `cru_`, `hur_`, `arc_`, `mic_`, `grimhex`, `orison`, `lorville`, `area18`, `newbabbage`, `stan-` |
+
+> [!IMPORTANT]
+> **Pyro takes priority over Stanton**. The code checks Pyro first to prevent misidentification. Jump point transit strings (`jumppoint`) are excluded from triggering system changes.
+
+### Jump Point Transitions
+
+Detected by tracking `OOC_JumpPoint_*` physics grid entries:
+
+```log
+CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid (OOC_JumpPoint_stanton_magnus)
+```
+
+The system emits `ZONE: Wormhole Transit` and suppresses system detection mid-jump to prevent flip-flopping.
+
+---
+
+## 🔥 Combat Parser (`combat.js`)
+
+### Fire Detection (3-Layer Filter)
+
+| Layer | Filter | Purpose |
+|-------|--------|---------|
+| **Pattern** | `<Fire Client - Snapshot Request>.*Similarity` | Only genuine fire on local player's ship |
+| **Ship filter** | Cross-reference room name with manufacturer prefix | Suppress fires on other ships |
+| **Cooldown** | 10 seconds | Prevent alert spam |
+
+> [!NOTE]
+> `Fire Client - Background Simulation Skipped` lines are **not** fires on your ship. They fire for ALL nearby ships and are used for **Interdiction Detection** instead (see below).
+
+### Death & Vehicle Destruction
+
+```log
+<Actor Death> CActor::Kill: 'VictimName' [id] ...
+killed by 'KillerName' [id] using 'WeaponName'
+with damage type 'DamageType' from direction x:X, y:Y, z:Z
+```
+
+```log
+<Vehicle Destruction> CVehicle::OnAdvanceDestroyLevel: Vehicle 'ANVL_Paladin_123' [id]
+advanced from destroy level 0 to 1 caused by 'Attacker'
+```
+
+---
+
+## ⚠️ Tactical Interdiction Detection (v2.10.44)
+
+### How It Works
+
+When Star Citizen loads any ship into your local simulation bubble, it logs fire area snapshots for all rooms on that ship:
+
+```log
+[Notice] <Fire Client - Background Simulation Skipped> Fire Area 'Room_Mantis_Cockpit-001' received a snapshot...
+```
+
+The `CombatParser` scans these lines against a configurable list of **interdictor ship name fragments**. A match fires a `TACTICAL_PROXIMITY` gamestate event.
+
+### Default Ship List
+
+Pre-loaded in `config.json` on first run:
+
+| Fragment | Ship |
+|----------|------|
+| `Mantis` / `AEGS_Mantis` | RSI Mantis (Quantum Snare) |
+| `Cutlass_Blue` / `DRAK_Cutlass_Blue` | Drake Cutlass Blue (law enforcement interceptor) |
+| `Zeus_Sentinel` | Zeus Mk II Sentinel (planned interdictor) |
+| `Antares` | Antares (scan/interdict platform) |
+
+### Alert Flow
+
+```
+proximity_fire regex matches log line
+    → Check ship fragment list (case-insensitive substring)
+    → Check 60s per-ship cooldown
+    → Check detection mode (quantumOnly vs always-on)
+    → Emit TACTICAL_PROXIMITY { ship, room, inQuantum }
+        → main.js: TTS "Warning. Mantis detected nearby."
+        → main.js: Tray notification "⚠️ TACTICAL ALERT"
+        → alert.html: tactical_proximity alert
+```
+
+### Quantum State Tracking
+
+The `CombatParser` self-tracks quantum state by reading jump drive lines:
+
+```log
+<Jump Drive Requesting State Change> ... to Traveling    ← inQuantum = true
+<Jump Drive Requesting State Change> ... to Idle         ← inQuantum = false
+```
+
+### Detection Mode Toggle
+
+Configurable in **Settings → ⚠️ Interdiction Ship Detection**:
+
+| Mode | Setting | Behaviour |
+|------|---------|-----------|
+| **Quantum Only** ✅ (default) | `interdictionQuantumOnly: true` | Alert only fires mid-jump. Zero false positives from passing/docking near an interdictor. |
+| **Always On** | `interdictionQuantumOnly: false` | Alert fires any time an interdictor ship is in proximity. Useful for ambush awareness. |
+
+### Managing the Ship List
+
+In **Settings → ⚠️ Interdiction Ship Detection**:
+
+- Type a ship name fragment (e.g. `Scorpius`) into the text box → **➕ Add**
+- Click **✕** on a tag to remove it
+- Changes apply **instantly** to the running parser (no restart required)
+- Cooldowns reset when the list changes, so new ships trigger immediately
+
+> [!TIP]
+> Use the internal ship ID fragment, not the display name. Find it in your log by searching for `Room_` entries when a ship is nearby, e.g. `Room_Zeus_ES_Sentinel_Cockpit` → fragment is `Zeus_ES_Sentinel`.
+
+---
+
+## 📡 Inter-System Travel Tracking
+
+### Wormhole Transit
+
+Detected via physics grid transitions. When the player enters a jump point:
+
+1. **Entry**: `OOC_JumpPoint_*` grid entry → `ZONE: Wormhole Transit`
+2. **System lock**: System identification is suppressed during transit
+3. **Arrival**: First entity placement in new system triggers correct system detection
+
+### Verified Transition Log Signatures
+
+```log
+# Jump point grid entry
+CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid (OOC_JumpPoint_stanton_magnus)
+
+# Context established (new system loaded)
+establisher="Network"...taskname="WaitRemoteState"...state=eCVS_InGame...status="Finished"
+
+# Arrival verification (station inventory)
+<RequestLocationInventory> Player[Name] requested inventory for Location[RR_JP_NyxCastra]
+
+# Jump point relay station
+<RequestLocationInventory> Player[Name] requested inventory for Location[RR_JP_Stanton_Magnus]
+```
+
+---
+
+## 🖥️ Overlay HUD (`overlay.html`)
+
+### Layout — Safe Zones
+
+```
+┌─────────────┬───────────────────────┬─────────────┐
+│  ❌ BLOCKED  │  ✅ FLIGHT DECK HUD   │  ❌ BLOCKED  │
+│ (QT markers)│  (Top Center — Safe)  │ (chat/party) │
+├─────────────┴───────────────────────┴─────────────┤
+│                                    ┌─────────────┐│
+│                                    │ ✅ PARTY/FEED││
+│  (game world)                      │ (Mid-Right) ││
+│                                    └─────────────┘│
+├─────────────────────────────────────────────────  ┤
+│  ❌ BLOCKED  │                      │  ❌ BLOCKED  │
+│ (health/O2)  │                      │ (ship HUD)   │
+└─────────────┴──────────────────────┴─────────────┘
+```
+
+### HUD Modules (all toggleable in Settings)
+
+| Module | Toggle ID | What it shows |
+|--------|-----------|---------------|
+| Top Bar | `hudTop` | System clock, shard, timer |
+| Session Info | `sessionInfo` | Session duration, build |
+| System Info | `systemInfo` | Current system (Stanton/Pyro etc.) |
+| Ship Status | `shipStatus` | Current ship + image |
+| Location/Zone | `locationZone` | Physical location + zone override |
+| Right Panel | `rightPanel` | Party list, tactical feed |
+| Ship Visualizer | `shipVisualizer` | 3D ship model preview |
+| Chat HUD | `chatHud` | Twitch/YouTube stream chat |
+
+### Accent Colors
+
+Configurable in Settings → **Theme & Personalization**. Presets:
+
+- 🟠 VCON Orange `#ffa500` (default)
+- 🔵 Science Cyan `#00c8ff`
+- 🔴 Combat Red `#ff2e63`
+- 🟢 Medical Green `#22c55e`
+- 🟣 Command Purple `#a855f7`
+
+---
+
+## 📢 Voice Alerts (TTS)
+
+Announced via browser `SpeechSynthesisUtterance` through the dashboard window.
+
+| Event | Announcement |
+|-------|-------------|
+| `SERVER_CONNECTED` | "Connected to shard {id}" |
+| `MISSION_ACCEPTED` | "Mission accepted. {name}" |
+| `SPAWN_SET` | "Spawn point set to {location}" |
+| `HUD_WARNING` with "fire" | "Warning. Fire detected." |
+| `INTERDICTION` | "Warning. Quantum interdiction detected." |
+| `TACTICAL_PROXIMITY` | "Warning. {ShipName} detected nearby." |
+
+Settings: **Settings → 📢 Voice Alerts (TTS)**
+
+- Enable/disable toggle
+- Voice selection dropdown (system voices)
+- Volume slider (0–100%)
+- Test button
+
+---
+
+## 💬 Stream Chat HUD
+
+Displays live Twitch/YouTube chat messages in the overlay.
+
+### Twitch
+
+Connects via Twitch IRC WebSocket (`wss://irc-ws.chat.twitch.tv:443`) as an anonymous viewer (no OAuth required). Auto-reconnects after 10s on disconnect.
+
+### YouTube
+
+Polling-based. Enter the Live Video ID to link chat.
+
+Settings: **Settings → Stream Integration**
+
+- Twitch channel name input
+- YouTube live video ID input
+- Chat HUD visibility toggle
+
+---
+
+## 🗺️ Custom Locations
+
+Used to name dynamically-generated locations (caves, mission sites, outposts) that have no static log entry.
+
+### Adding a Custom Location
+
+1. While at the location, the overlay shows the raw ID (e.g. `Cave_Unoccupied_Stanton1`)
+2. Dashboard → **Settings → Custom Locations** → click **Grab from Log**
+3. Add a human-readable name and optional zone override
+4. Optionally assign a system (Stanton / Pyro)
+
+### Zone Overrides
+
+Force the HUD to display a specific zone type for a location:
+
+- `Armistice Zone` — triggers Armistice alerts on entry/exit
+- `Open Space` — space/asteroid field
+- `Restricted Area` — military/restricted
+
+Config stored in `config.json` under `customLocations`.
+
+---
+
+## 🎯 Custom Log Patterns
+
+User-defined regex rules that fire `gamestate` events. Useful for tracking niche game events not covered by built-in parsers.
+
+### Management (Settings → Custom Patterns)
+
+- Add regex + friendly name + event type
+- Test regex against a sample line inline
+- Edit/delete existing patterns
+- Built-in patterns can be **disabled** (but not deleted) with a toggle
+
+### Pattern Database
+
+**Log Database tab** shows all 75+ built-in patterns from 9 parsers:
+
+- Filter by category, search by text
+- Export/import as JSON (`known-patterns.json`)
+
+---
+
+## ⚙️ Performance & Optimization
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Performance Mode | `false` | Disables raw log feed UI to save CPU |
+| Log History Limit | `200` | Max lines kept in raw log viewer |
+| Initial Scan Depth | `5000` | Lines read from log tail on startup |
+| Clear Log Feed | — | Immediately flushes the raw log queue |
+
+> [!TIP]
+> During long play sessions (4+ hours), the log can grow to 20K+ lines. Enable Performance Mode to prevent UI lag.
+
+---
+
+## 🔧 IPC Reference
+
+| Channel | Direction | Payload | Description |
+|---------|-----------|---------|-------------|
+| `log:update` | Main → Renderer | `gamestate` object | Parsed game event |
+| `log:raw-batch` | Main → Renderer | `string[]` | Raw log lines (batched) |
+| `settings:save` | Renderer → Main | config partial | Save and apply config changes |
+| `settings:updated` | Main → Renderer | full config | Broadcast config to all windows |
+| `app:tts` | Main → Dashboard | `string` | Speak text via SpeechSynthesis |
+| `alert:trigger` | Main → Alert | alert object | Trigger full-screen alert |
+| `alert:show` / `alert:hide` | Renderer → Main | — | Show/hide alert window |
+| `command:send` | Dashboard → Main | command object | Remote command relay |
+| `app:login` | Dashboard → Main | token | VerseCon auth token |
+| `app:tts` | Main → Dashboard | string | Trigger TTS speech |
+
+---
+
+## 🐛 Known Issues & Gotchas
+
+### Active Limitations
+
+1. **No `SetDriver` in SC 4.6** — Ship entry uses VOIP channel join, exit uses `ClearDriver`
+2. **Mining/Salvage/Engineering parsers** — 100% speculative; never found in real logs
+3. **`zone.js` disabled** — `navigation.js` now handles all zone state
+4. **Cannot detect incoming damage** — Game.log only records results (death, fire, vehicle destroyed), not hit events
+5. **NetworkWatcher** — TCP polling for shard latency only works on Windows
+6. **Shard migration** — SC may reassign shards mid-session after initial `Join PU`
+7. **YouTube Chat** — Fully server-side polling; YouTube Data API key improves reliability
+8. **`Fire Client - Background Simulation Skipped`** — Appears for ALL nearby ships. Used for Interdiction Detection (by design), not a bug.
+
+### Interdiction False Positive Prevention
+
+The `proximity_fire` pattern fires for any ship in your simulation bubble, not just interdictor ships. Two mitigations are in place:
+
+1. **Ship allowlist** — Only ships on the user's configured list trigger alerts
+2. **Quantum-only mode** (default ON) — Alert only fires when `inQuantum === true`, preventing false positives from passing/docking near an interdictor ship in normal space
+
+---
+
+## 🔬 Verified Log Patterns (SC 4.6+)
+
+### Ship Entry (VOIP join)
+
+```log
+You have joined channel 'Esperia Prowler Utility : TypicallyBrit_ish'
+```
+
+### Ship Exit (leaves pilot seat)
+
+```log
+<Vehicle Control Flow> CVehicle::ClearDriver: ...releasing control token for 'ESPR_Prowler_9448279551878'
+```
+
+### Physical Location
+
+```log
+<RequestLocationInventory> Player[Name] requested inventory for Location[RR_HUR_LEO]
+```
+
+### Shard / Server
 
 ```log
 <Join PU> address[34.11.90.244] port[64307] shard[pub_use1b_11218823_110]
 ```
 
-**SOCIAL PROXIMITY** — Player Nearby (`social.js`):
-Detected using the server streaming replication events.
-When a player physically moves close enough to the local client (e.g., entering the same server node or within a few kilometers), the game logs a subscription. When they leave, it unsubscribes.
+→ Parsed as `USE1B-110` (region + instance)
+
+### Quantum Travel
+
+```log
+<Jump Drive Requesting State Change> ... to Traveling    ← start
+<Jump Drive Requesting State Change> ... to Idle         ← end
+```
+
+### Jump Point Entry
+
+```log
+CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid (OOC_JumpPoint_stanton_magnus)
+```
+
+### Interdiction Ship (in simulation bubble)
+
+```log
+[Notice] <Fire Client - Background Simulation Skipped> Fire Area 'Room_Mantis_Cockpit-001' received a snapshot ahead of the current simulation by 0 steps
+```
+
+### Player Proximity (Social)
 
 ```log
 <SubscribeToPlayerSocial> Subscribing to player 204269884415
 <UnsubscribeFromPlayerSocial> Unsubscribing from player 204269884415
 ```
 
-**MISSION LOCATIONS & CAVES** — Generated Locations (`navigation.js`):
-Dynamically generated Points of Interest (like caves or mission wrecks) that do not have static Outpost logs.
+### Mission Location (dynamic POI)
 
 ```log
 <GenerateLocationProperty> Generated Locations - ... locations: (Hurston Cave [3018817963] [Cave_Unoccupied_Stanton1])
 ```
 
-**QUANTUM TRAVEL** — Spooling (`navigation.js`):
-Start of Quantum Travel. Legacy 'Jump Drive Requesting State Change' is unreliable in SC 3.23+.
-
-```log
-Player Selected Quantum Target
-Successfully calculated route to
-```
-
-### Research Patterns (awaiting live verification)
-
-**ACTOR DEATH**:
+### Actor Death
 
 ```log
 <Actor Death> CActor::Kill: 'VictimName' [id] in zone 'location'
@@ -191,7 +537,7 @@ killed by 'KillerName' [id] using 'WeaponName' [Class X]
 with damage type 'DamageType' from direction x: X, y: Y, z: Z
 ```
 
-**VEHICLE DESTRUCTION**:
+### Vehicle Destruction
 
 ```log
 <Vehicle Destruction> CVehicle::OnAdvanceDestroyLevel: Vehicle 'ANVL_Paladin_123' [id]
@@ -199,202 +545,75 @@ in zone 'zone' driven by 'Driver' [id]
 advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 ```
 
-**MISSION ENDED**:
-
-```log
-<MissionEnded> mission_id [UUID] - mission_state [MISSION_STATE_SUCCEEDED]
-```
-
----
-
-## 🖥️ Windows & UI
-
-### Overlay (`overlay.html`)
-
-- Transparent, always-on-top, positioned in **Top Center** safe zone
-- "Flight Deck" HUD: Location, Ship, Shard (USE1B-110 format), Timer (auto-starts)
-- **Dynamic Zones**: Zone indicator natively states the overarching system (e.g. `STANTON SYSTEM`) when in `Open Space` for planetary context.
-- Tactical Feed: Ship enter/exit, deaths, vehicle destruction, missions, zones, quantum
-- **Custom Location Zones**: If a custom mapped location specifies a zone override (e.g. `Armistice Zone`), it forces the overlay out of `Open Space` to fix missing game logs.
-- Alert popups for: death, fire, mission fail, ship destroyed
-
-### Dashboard (`dashboard.html`)
-
-- Main control panel (~125KB, 6 tabs: Dashboard, VerseCon Feed, Command, Settings, Players, Log Database)
-- Live log viewer (click line to copy), Ship Image Manager, Custom Locations, Custom Patterns
-- Alert cooldown settings, Connection status
-- **Log Database** (v2.7): Browse/search/filter all known SC log patterns, add/edit/delete with inline regex tester, export/import JSON
-
-### Alert Window (`alert.html`)
-
-- Full-screen vignette + border flash effects for critical events
-- **Supported alerts**: `status` (death/suffocating), `zone` (armistice enter/leave), `fire` (🔥 engineering), `killed` (☠️ actor death), `vehicle_destroyed` (💥 ship lost), `vehicle_crippled` (⚠️ critical damage)
-
-### Overlay Safe Zones (DO NOT BLOCK)
-
-- **Top-left**: Quantum markers, mission waypoints
-- **Top-right**: Chat window, party list
-- **Bottom-left**: Player status (health, O2)
-- **Bottom-right**: Ship HUD, weapons
-- **Safe**: Top-center (Flight Deck), Middle-right (lists/feed)
-
----
-
-## 🐛 Known Issues & Gotchas
-
-### Fixed (2026-02-20 — v2.7.1)
-
-1. **Hue Settings Persistence wiped**: Initial load of the dashboard saved blank config items over existing Philips Hue config. **Fix**: `config.json` is broadcasted immediately on `did-finish-load` via `settings:updated` IPC, populating the UI before any settings can be overridden.
-2. **Log Stream scrolling disrupted**: **Fix**: Changed from `.prepend` to `.appendChild` and introduced an auto-scroll anchor that respects active scrolling.
-3. **Unknown Log batching delay**: **Fix**: Switched to emit unknown logs immediately on the first occurrence instead of batching them.
-4. **Fast Log Drops (Gun Triggers failing)**: Rapidly written logs were split midpoint by `fs.watchFile` streams, invalidating regex sequences mid-line. **Fix**: Added a persistent `this.tailBuffer` in `log-watcher.js` to hold incomplete line fragments between polling intervals.
-5. **Outpost & Bunker detection failing**: Outposts didn't map cleanly via the `Location[]` variables. **Fix**: Hooked the `LoadingPlatformManager` regex to grab location hints, and overhauled `cleanLocationName()` to nicely format strings like `Pyro4_Outpost_col_m_trdpst_indy_001` to "Pyro Trading Post Outpost".
-6. **Custom Patterns not editable**: Users had to delete and recreate rules. **Fix**: Added inline "✏️ Edit" button to `dashboard.html` that repopulates the input form and executes an inline array update rather than appending.
-7. **App Startup Frozen/UI Blocked**: The app took several seconds to open. **Fix**: Identified `log-watcher.js` synchronously parsed 5,000 lines on boot. Refactored this to read via `fs.promises` and process lines in asynchronous chunks of 500, unblocking the event loop and allowing the UI to render instantly.
-
-## 🛠️ Modding & Extensibility
-
-### 1. Dashboard UI (`dashboard.html`)
-
-- Displays list of custom locations and a dropdown for setting an explicit **Zone Override** (`Auto`, `Armistice Zone`, `Open Space`).
-- Displays a list of built-in Regex patterns with toggle checkboxes, a regex override text box, and a **Delete (`×`)** soft-deletion mechanism.
-- Communicates with `main.js` via IPC to save JSON.
-
-### 2. Storage (`config.json`)
-
-- Saves to `~/.versecon-link/config.json`.
-- `customLocations`: Array of objects `{ name: "Base Name", zone: "Armistice Zone" }`.
-- `patternOverrides`: Object containing `deleted`, `disabled`, and custom `regex` strings.
-
-### 3. LogWatcher Injection (`log-watcher.js`)
-
-- Retrieves `patternOverrides` from `LogEngine` memory and applies `/(?!)/` dummy regexes to physically disable deleted/disabled patterns.
-
-### Fixed (2026-02-15 — v2.7)
-
-1. **Ship image not loading** — `broadcast()` was called BEFORE ship image resolution, so overlay never received `data.image`. **Fix**: Moved image lookup before broadcast + fuzzy matching + `file:///` protocol conversion.
-2. **Grab button broken** — Referenced wrong IDs (`new-loc-raw` → `new-loc-key`). **Fixed**.
-3. **Custom locations not syncing to overlay** — No listener existed. **Fix**: Added `settings:custom-locations-updated` IPC + `dataset.raw` tracking.
-4. **Full-screen alerts missing** — `alert.html` only handled status/zone. **Fix**: Added `HAZARD_FIRE`, `DEATH`, `VEHICLE_DESTRUCTION` alert configs.
-5. **Unknown log text unreadable** — `0.65rem`/dim color. **Fix**: `0.8rem`/`#bbb`.
-
-### Fixed (2026-02-14)
-
-1. **VOIP duplicate SHIP_ENTER** — 3+ log lines per join. **Fix**: `SHUDEvent_OnNotification` filter + 5s dedup.
-2. **False "Exited Vehicle"** — ClearDriver = left seat, not ship. **Fix**: `🪑 Left Pilot Seat` + `(Aboard)`.
-3. **"Hangar Opendible"** — Raw state names displayed. **Fix**: `hangar.js` single source with readable labels.
-4. **Session timer frozen** — Needed `SESSION_START`. **Fix**: Auto-starts on load.
-5. **Shard display** — Wrong numeric ID. **Fix**: `USE1B-110` format.
-6. **IP not shown** — Wrong element ID. **Fixed**.
-7. **Missing overlay events** — Added: `DEATH`, `VEHICLE_DESTRUCTION`, `MISSION_*`.
-
-### Fixed (2026-02-20 — v2.7.2)
-
-1. **Fire false positives (CRITICAL)** — Matched 1,000+ Background Simulation lines and ambient fires going on anywhere in the remote server. **Fix**: Explicitly look for `<Fire Client - Snapshot Request>.*Similarity: [\d.]+ dB`. The `Similarity` and `Minimum` values appended to the snapshot request specifically delineate fires burning on the local player's authority.
-2. **Missing Terminal & Interaction Tracking** — Added new `gamestate` tracking for:
-   - **ASOP Terminal**: `[Notice] <CEntityComponentShipListProvider::FetchShipData... [ASOP]` -> Emits `STATUS` `FLEET TERMINAL ACCESSED`
-   - **Medical Respawn**: `DropoffLocation_BP[Destination]` -> Emits `STATUS` `RESPAWN SET`
-   - **CrimeStat**: `CrimeStat Rating (Increased|Decreased)` -> Emits `CRIME_UPDATE`
-   - **UEC Fines**: `Fined [amount] UEC` -> Emits `STATUS` warning
-3. **New Parser Modules (v2.7.2)** — Added 6 new tracking features:
-   - **💰 Insurance Claims**: `CWallet::ProcessClaimToNextStep` → `INSURANCE CLAIM FILED` / `COMPLETE`
-   - **🛒 Shop Terminals**: `CEntityComponentShoppingProvider::OnGainedAuthority` → `SHOP TERMINAL ACCESSED`
-   - **📋 Mission Lifecycle**: `CSubsumptionMissionComponent` create/stop → `MISSION_ENGINE` events
-   - **🔄 Server Transitions**: `Change Server Start/End` + `Context Establisher Done` → `SERVER TRANSFER` alerts
-   - **🎮 Inventory Management**: `<InventoryManagement>` equip/unequip → `INVENTORY` events
-   - **📡 Channel/VOIP**: `Channel Created/Destroyed/Connected/Disconnected` → `VOIP` events
-4. **Log Database now shows ALL patterns** — `getBuiltinPatterns()` in `main.js` injects all 75 built-in patterns from 9 parsers into the Log Database tab. Search, filter by category, and export all patterns (built-in + user) via 📤 Export button.
-5. **Fire message simplified** — Changed from `Fire in Room_RN-005` to `Fire onboard!`
-6. **Location Overwrite False Positive**: Mission logs (`<GenerateLocationProperty>`) were overwriting the physical location on the HUD (e.g., `CRU L1` -> `Daymar Cave`). **Fix**: Modified `navigation.js` to emit generated POIs as `NEW_LOCATION` for mapping without forcing a HUD update.
-7. **Armistice Zone Toggling Spam**: Leaving a station would fight the custom "Armistice Zone" mapping for that station. **Fix**: Wrapped the Zone Override logic in `navigation.js` to only fire when the raw physical location string explicitly changes (initial arrival checks).
-8. **ShipElevator ASOP Spam**: A new logging format in Star Citizen (`Platform manager 'LoadingPlatformManager_ShipElevator_HangarLargeFront...`) was slipping through the `loading_platform` filter and overwriting the physical location on the HUD. **Fix**: Updated the `loading_platform` Regex in `navigation.js` to catch both variations of this log string and explicitly discard them.
-9. **Stanton Sub-Region Identification**: When arriving at deep space stations (e.g. `RR_CRU_L1`), the system tracker would fail because the word "Stanton" is missing from the ID. **Fix**: Explicitly mapped acronyms like `CRU_`, `HUR_`, `ARC_`, `MIC_` and major planetary cities to trigger the `Stanton` system state natively in `navigation.js`.
-
-### Log Research: Jump Points & System Transitions
-
-Based on analysis of `Game.log` during a Stanton-to-Magnus-to-Nyx transition:
-
-1. **Jump Point Grid Entrance**: Transition begins when the physics proxy moves coordinates. There is no specific "wormhole bubble" log; rather, it appears as a standard physics grid transition to `OOC_JumpPoint...`.
-   - **Regex**: `/CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid \((OOC_JumpPoint_[^)]+)\)/i`
-   - **Example**: `CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid (OOC_JumpPoint_stanton_magnus)`
-
-2. **Context Establisher (Loading new System)**: Major loading events trigger a `Context Establisher` sequence. The client transitioning to `eCVS_InGame` signals the loading screen is dropping.
-   - **Regex**: `/establisher="Network".*taskname="WaitRemoteState"\s+state=eCVS_InGame.*status="Finished"/i`
-   - *(Note: This log arrives immediately when the player gains control in the new system.)*
-
-3. **Target System Names**: The Nyx system does not appear to use the `OOC_Nyx` nomenclature. Instead, planetary bodies and zones in the destination load in under standard object containers like `pyro1`, `pyro5e`, `pyro6`, etc., before the player establishes an inventory connection to the specific destination point.
-
-4. **VFX Resumption (System Ready)**: A highly reliable trailing indicator of loading completion into the new system is the sudden influx of `Fire Client` logs for the interior rooms of the player's ship. This occurs when the simulation "catches up" to real-time.
-   - **Regex**: `/<Fire Client \- Background Simulation Skipped> Fire Area '([^']+)' received a snapshot ahead of the current simulation/i`
-
-5. **Arrival Verification**: The most solid proof of arrival at the new system is the player's connection to the local station's inventory service.
-   - **Regex**: `/<RequestLocationInventory>\s+Player\[[^\]]+\]\s+requested inventory for Location\[(RR_JP_[^\]]+)\]/i`
-   - **Example**: `<RequestLocationInventory> Player[TypicallyBrit_ish] requested inventory for Location[RR_JP_NyxCastra]`
-
-### Scheduled for Next Agent / Sprint
-
-1. **🎯 Party Sharing / Squad Tactical HUD** (Priority 0):
-   - Each party member installs VerseCon Link
-   - One person hosts (existing Express server on `0.0.0.0`)
-   - Others connect via host IP → WebSocket relay
-   - Each client broadcasts: **Location**, **Ship**, **Dead/Alive**, **Fire/Under Attack**, **Server Transfer**
-   - Overlay party panel shows real-time squad telemetry for 20+ players
-   - All data sources are already tracked by existing parsers
-
-2. **Additional Tracking Enhancements** (Priority 1):
-   - Quantum Travel destination extraction
-   - Landing Pad assignment display on HUD
-   - Insurance claim timer estimation
-   - ~~Player proximity counter~~ (Blocked: `<SubscribeToPlayerSocial>` logging severely degraded in SC 3.23+/3.24)
-
-### Persistent Issues
-
-1. **No `SetDriver` in SC 4.6** — Ship entry uses VOIP, exit uses ClearDriver
-2. **Mining/Salvage/Engineering** — 100% speculative, never found in real logs
-3. **Zone parser disabled** — `zone.js` commented out, `navigation.js` handles zones
-4. **Cannot detect incoming damage** — Game.log doesn't log "player taking hits", only results (death, fire, vehicle destroyed)
-5. **Discover Groups button** — Links to non-existent `versecon.space/groups`
-6. **Log extraction** — Only extracts locations from log clicks, not other events
-7. **NetworkWatcher** — TCP polling only works on Windows
-8. **Shard migration** — SC may reassign shards after initial `Join PU`
-
 ---
 
 ## 📦 Dependencies
 
 | Package | Purpose |
-| ------- | ------- |
-| `electron` ^28.1.0 | Desktop framework |
-| `tail` ^2.2.6 | File tailing for Game.log |
-| `chokidar` ^3.5.3 | File system watching |
-| `axios` ^1.6.5 | HTTP client for VerseCon API |
-| `socket.io-client` ^4.7.4 | Real-time VerseCon connection |
-| `obs-websocket-js` ^5.0.5 | OBS integration |
+|---------|---------|
+| `electron` ^28 | Desktop framework |
+| `chokidar` ^3.5 | File watching (Game.log tail) |
+| `axios` ^1.6 | HTTP client for VerseCon API |
+| `socket.io-client` ^4.7 | Real-time VerseCon connection |
+| `ws` | WebSocket client (Twitch IRC) |
+| `express` | Local HTTP server (Remote Access) |
+| `obs-websocket-js` ^5 | OBS integration |
 
 ---
 
 ## 🧪 Quick Commands
 
 ```bash
-npm start                    # Launch app in Electron
-npm run dist                 # Build distributable (electron-builder)
-./fetch-log.sh               # Pull latest Game.log from Windows PC
-node -c src/main/parsers/combat.js  # Syntax check any parser
+npm start                               # Launch app in Electron dev mode
+npm run dist                            # Build distributable
+./fetch-log.sh                          # Pull latest Game.log from Windows PC
+node -c src/main/parsers/combat.js      # Syntax check any parser
+grep -in "Mantis" Game.log              # Debug interdiction ship fire areas  
+grep -in "Jump Drive" Game.log          # Debug quantum state tracking
+grep -in "RequestLocationInventory" Game.log | tail -20  # Recent locations
 ```
-
-**Sample logs**: `src/Game.log` (latest), `src/Game (2).log` (Prowler session snapshot)
 
 ---
 
-## 📦 Log Pattern Database (`known-patterns.json`)
+## 📋 Changelog
 
-A JSON catalog of all known/verified SC log patterns. Managed via:
+### v2.10.44 (2026-02-22)
 
-- **Dashboard**: Log Database tab (search, filter, add/edit, inline regex tester)
-- **Agent**: Edit `known-patterns.json` directly
-- **Export**: Dashboard → 📤 Export → saves `.json` file
-- **Import**: Dashboard → 📥 Import → merges by pattern ID (no duplicates)
+- **⚠️ Interdiction Ship Detection**: `proximity_fire` regex detects interdictor ships by their fire area room snapshots in the simulation bubble
+- **Quantum State Tracking**: `CombatParser` self-tracks `inQuantum` from jump drive logs to gate interdiction alerts
+- **Configurable Detection Mode**: "Quantum Only" (default) vs "Always On" toggle in Settings
+- **Expandable Ship List**: UI panel in Settings for managing interdictor ship fragments (add/remove instantly, no restart)
+- **TACTICAL_PROXIMITY event**: TTS voice alert + tray notification + alert window on interdictor detection
 
-Each pattern has: `id`, `category`, `name`, `status` (verified/research), `regex`, `example`, `event`, `notes`, `addedBy`, `addedDate`.
+### v2.10.x (2026-02-20 → 2026-02-22)
 
-IPC channels: `patterns:load`, `patterns:save`, `patterns:add`, `patterns:update`, `patterns:delete`, `patterns:export`, `patterns:import`.
+- **Pyro/Stanton misidentification fix**: Pyro system detection now takes priority. Jump point transit strings excluded from system identification
+- **Wormhole Transit zone**: Correctly emits `ZONE: Wormhole Transit` during jump point traversal
+- **Stanton sub-region fallbacks**: `CRU_`, `HUR_`, `ARC_`, `MIC_` prefixes mapped to Stanton (fixes space stations like `RR_CRU_L1`)
+
+### v2.10 (2026-02-16 → 2026-02-20)
+
+- **Voice Alerts (TTS)**: SpeechSynthesis for critical game events. Volume, voice selection, test button
+- **Stream Chat HUD**: Twitch IRC WebSocket + YouTube polling integration in overlay
+- **HUD Accent Colors**: 5 color presets + custom hex picker
+- **Overlay UI Toggles**: Each HUD module independently togglable in Settings
+- **Log Performance Mode**: Disables raw log feed UI to reduce CPU usage. Configurable log history limit
+- **Custom Locations v2**: System assignment (Stanton/Pyro), expanded zone types, improved auto-system detection
+- **Stream Deck support**: REST API endpoints for hardware button integration
+- **Hue Reactions**: Philips Hue light color responses to game events (fire, death, armistice, etc.)
+
+### v2.7.2 (2026-02-20)
+
+- Fire false positive fix (Background Simulation vs Snapshot Request)
+- ShipElevator ASOP spam fix
+- Stanton sub-region identification
+- CrimeStat, Medical Respawn, ASOP tracking added
+- Log Database now shows all 75+ built-in patterns
+
+### v2.7.0 (2026-02-15)
+
+- Ship image fuzzy matching + `file:///` protocol fix
+- Custom location zone overrides
+- Location overwrite false positive fix (GenerateLocationProperty)
+- Armistice zone toggle spam fix
+- Full-screen alert system (fire, death, vehicle destruction)
