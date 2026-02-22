@@ -308,6 +308,7 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 6. **Location Overwrite False Positive**: Mission logs (`<GenerateLocationProperty>`) were overwriting the physical location on the HUD (e.g., `CRU L1` -> `Daymar Cave`). **Fix**: Modified `navigation.js` to emit generated POIs as `NEW_LOCATION` for mapping without forcing a HUD update.
 7. **Armistice Zone Toggling Spam**: Leaving a station would fight the custom "Armistice Zone" mapping for that station. **Fix**: Wrapped the Zone Override logic in `navigation.js` to only fire when the raw physical location string explicitly changes (initial arrival checks).
 8. **ShipElevator ASOP Spam**: A new logging format in Star Citizen (`Platform manager 'LoadingPlatformManager_ShipElevator_HangarLargeFront...`) was slipping through the `loading_platform` filter and overwriting the physical location on the HUD. **Fix**: Updated the `loading_platform` Regex in `navigation.js` to catch both variations of this log string and explicitly discard them.
+9. **Stanton Sub-Region Identification**: When arriving at deep space stations (e.g. `RR_CRU_L1`), the system tracker would fail because the word "Stanton" is missing from the ID. **Fix**: Explicitly mapped acronyms like `CRU_`, `HUR_`, `ARC_`, `MIC_` and major planetary cities to trigger the `Stanton` system state natively in `navigation.js`.
 
 ### Log Research: Jump Points & System Transitions
 

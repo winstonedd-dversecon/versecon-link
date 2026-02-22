@@ -288,7 +288,12 @@ class NavigationParser extends BaseParser {
 
             // Detect and emit systemic changes explicitly so UI can track what system the user is in
             const lowerRaw = rawName ? rawName.toLowerCase() : '';
-            if (lowerRaw.includes('stanton')) {
+            if (lowerRaw.includes('stanton') ||
+                lowerRaw.includes('cru_') || lowerRaw.includes('hur_') || lowerRaw.includes('arc_') || lowerRaw.includes('mic_') ||
+                lowerRaw.includes('grimhex') || lowerRaw.includes('kareah') || lowerRaw.includes('portolisar') || lowerRaw.includes('seraphim') ||
+                lowerRaw.includes('everus') || lowerRaw.includes('baijini') || lowerRaw.includes('tressler') ||
+                lowerRaw.includes('orison') || lowerRaw.includes('lorville') || lowerRaw.includes('area18') || lowerRaw.includes('newbabbage')
+            ) {
                 this.emit('gamestate', { type: 'SYSTEM', value: 'Stanton' });
             } else if (lowerRaw.includes('pyro') || lowerRaw.includes('pext')) {
                 // Internal assets sometimes use PeXt for Pyro Exterior/Outposts

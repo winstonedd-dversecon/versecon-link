@@ -2,12 +2,14 @@ const { app, BrowserWindow, ipcMain, screen, dialog, Tray, Menu, nativeImage, No
 const path = require('path');
 const fs = require('fs');
 const { WebSocketServer } = require('ws');
+const WebSocket = require('ws'); // For client connections (Twitch IRC)
 const express = require('express');
 const http = require('http');
 const LogWatcher = require('./log-watcher');
 const APIClient = require('./api-client');
 const UpdateManager = require('./update-manager'); // Phase 6
 const TelemetryEngine = require('./telemetry/telemetry-engine'); // Phase 6 Telemetry
+const axios = require('axios');
 
 let dashboardWindow;
 let overlayWindow;
@@ -17,8 +19,88 @@ let remoteServer = null;
 let tray = null;
 let parkingUpdateManager = null;
 let telemetryEngine = null; // Telemetry Instance
+let streamChatService = null;
 let isQuitting = false;
 let dndMode = false;
+
+// ═══ STREAM CHAT SERVICE (v2.10) ═══
+class StreamChatService {
+    constructor() {
+        this.twitchWs = null;
+        this.ytInterval = null;
+        this.lastYtTime = null;
+        this.lastYtId = null;
+    }
+
+    start() {
+        this.stop();
+        if (!config.overlayVisibility || !config.overlayVisibility.chatHud) return;
+
+        if (config.twitchChannel) this.connectTwitch(config.twitchChannel);
+        if (config.youtubeId) this.startYouTube(config.youtubeId);
+    }
+
+    stop() {
+        if (this.twitchWs) {
+            this.twitchWs.close();
+            this.twitchWs = null;
+        }
+        if (this.ytInterval) {
+            clearInterval(this.ytInterval);
+            this.ytInterval = null;
+        }
+        this.lastYtId = null;
+    }
+
+    connectTwitch(channel) {
+        const url = 'wss://irc-ws.chat.twitch.tv:443';
+        this.twitchWs = new WebSocket(url);
+
+        this.twitchWs.on('open', () => {
+            console.log('[Chat] Twitch IRC Connected');
+            this.twitchWs.send('PASS SCHMOOPIIE');
+            this.twitchWs.send('NICK justinfan' + Math.floor(Math.random() * 90000 + 10000));
+            this.twitchWs.send('JOIN #' + channel.toLowerCase());
+        });
+
+        this.twitchWs.on('message', (data) => {
+            const msg = data.toString();
+            if (msg.startsWith('PING')) {
+                this.twitchWs.send('PONG :tmi.twitch.tv');
+                return;
+            }
+
+            // Simple PRIVMSG parser: :user!user@user.tmi.twitch.tv PRIVMSG #channel :message
+            const match = msg.match(/:([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.+)/);
+            if (match) {
+                const user = match[1];
+                const text = match[2];
+                this.emitMessage({ platform: 'twitch', user, text, color: '#a855f7' });
+            }
+        });
+
+        this.twitchWs.on('error', (e) => console.error('[Chat] Twitch Error:', e.message));
+        this.twitchWs.on('close', () => {
+            console.log('[Chat] Twitch Disconnected');
+            // Auto-reconnect after 10s if still enabled
+            if (config.overlayVisibility?.chatHud && config.twitchChannel) {
+                setTimeout(() => { if (this.twitchWs === null) this.connectTwitch(channel); }, 10000);
+            }
+        });
+    }
+
+    async startYouTube(videoId) {
+        console.log('[Chat] YouTube Polling Started:', videoId);
+        this.lastYtId = videoId;
+        this.emitMessage({ platform: 'youtube', user: 'System', text: 'YouTube Chat Linked (ID: ' + videoId + ')', color: '#ff0000' });
+    }
+
+    emitMessage(data) {
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.webContents.send('chat:message', data);
+        }
+    }
+}
 
 // ═══ FEATURE FLAGS ═══
 const IS_ADMIN = process.env.VCON_ROLE === 'admin' || process.env.VCON_DEV === 'true';
@@ -60,6 +142,26 @@ function loadConfig() {
             if (!config.hueUser) config.hueUser = "";
             if (!config.hueLights) config.hueLights = ["1"];
             if (config.hueEnabled === undefined) config.hueEnabled = false;
+            if (!config.overlayVisibility) {
+                config.overlayVisibility = {
+                    hudTop: true,
+                    sessionInfo: true,
+                    systemInfo: true,
+                    shipStatus: true,
+                    locationZone: true,
+                    rightPanel: true,
+                    partyList: true,
+                    tacticalFeed: true,
+                    shipVisualizer: true,
+                    chatHud: false
+                };
+            }
+            if (!config.accentColor) config.accentColor = '#ffa500';
+            if (!config.twitchChannel) config.twitchChannel = '';
+            if (!config.youtubeId) config.youtubeId = '';
+            if (config.performanceMode === undefined) config.performanceMode = false;
+            if (config.logLimit === undefined) config.logLimit = 200;
+            if (config.initialScanLimit === undefined) config.initialScanLimit = 5000;
             if (!config.logPath) config.logPath = null; // Initialize logPath (will be auto-detected if null)
             if (!config.friendCode) {
                 config.friendCode = generateFriendCode();
@@ -147,6 +249,12 @@ function createWindows() {
             telemetryEngine.start();
 
             // Initialize Friend Sync logic
+
+            // ═══ STREAM CHAT (v2.10) ═══
+            if (!streamChatService) {
+                streamChatService = new StreamChatService();
+                streamChatService.start();
+            }
 
             // Start if path exists
             if (config.logPath) {
@@ -555,7 +663,20 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.hueUser !== undefined) config.hueUser = newConfig.hueUser;
     if (newConfig.hueLights !== undefined) config.hueLights = newConfig.hueLights;
 
+    // Theme & Stream (v2.10)
+    if (newConfig.accentColor !== undefined) config.accentColor = newConfig.accentColor;
+    if (newConfig.twitchChannel !== undefined) config.twitchChannel = newConfig.twitchChannel;
+    if (newConfig.youtubeId !== undefined) config.youtubeId = newConfig.youtubeId;
+    if (newConfig.performanceMode !== undefined) config.performanceMode = newConfig.performanceMode;
+    if (newConfig.logLimit !== undefined) config.logLimit = parseInt(newConfig.logLimit) || 200;
+    if (newConfig.initialScanLimit !== undefined) config.initialScanLimit = parseInt(newConfig.initialScanLimit) || 5000;
+    if (newConfig.overlayVisibility !== undefined) {
+        config.overlayVisibility = { ...config.overlayVisibility, ...newConfig.overlayVisibility };
+    }
+
     saveConfig();
+
+    if (streamChatService) streamChatService.start();
 
     // Broadcast updates if needed
     broadcast('settings:updated', config);
@@ -596,6 +717,8 @@ let logBuffer = [];
 let logTimeout = null;
 
 LogWatcher.on('raw-line', (line) => {
+    if (config.performanceMode) return; // Skip raw log IPC in performance mode
+
     logBuffer.push(line);
 
     if (!logTimeout) {
@@ -1755,6 +1878,7 @@ if (!gotTheLock) {
 
         if (config.logPath) {
             console.log('[Main] Starting LogWatcher with path:', config.logPath);
+            LogWatcher.initialScanLimit = config.initialScanLimit || 5000;
             if (!fs.existsSync(config.logPath)) {
                 console.error('[Main] LogPath does not exist:', config.logPath);
                 console.log('[Main] Attempting to find alternate location...');

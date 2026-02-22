@@ -773,6 +773,30 @@
                 </div>
             </div>
 
+            <!-- Theme & Personalization (v2.10) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Theme & Personalization</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Select your preferred HUD accent
+                    color.</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="color" id="config-accent-color" value="#ffa500" onchange="saveConfig()"
+                        style="width: 40px; height: 40px; border: none; background: transparent; cursor: pointer;">
+                    <div style="display: flex; gap: 5px;">
+                        <button class="cyber-btn small" onclick="setAccent('#ffa500')"
+                            style="background:#ffa500; color:black; width:auto; margin:0;">VCON</button>
+                        <button class="cyber-btn small" onclick="setAccent('#00c8ff')"
+                            style="background:#00c8ff; color:black; width:auto; margin:0;">CYAN</button>
+                        <button class="cyber-btn small" onclick="setAccent('#ff4444')"
+                            style="background:#ff4444; color:white; width:auto; margin:0;">RED</button>
+                        <button class="cyber-btn small" onclick="setAccent('#00ff88')"
+                            style="background:#00ff88; color:black; width:auto; margin:0;">GREN</button>
+                        <button class="cyber-btn small" onclick="setAccent('#a855f7')"
+                            style="background:#a855f7; color:white; width:auto; margin:0;">PURP</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Sound Settings -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -791,6 +815,102 @@
                     <span style="color: var(--text-dim);">HUD Warnings</span>
                     <label style="cursor: pointer;"><input type="checkbox" id="hud-warnings-enabled" checked>
                         Enabled</label>
+                </div>
+            </div>
+
+            <!-- Overlay Visibility Toggles -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Overlay Element Toggles</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
+                    Select which elements should be visible on your HUD overlay.
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-hudTop" checked onchange="saveConfig()"> Main HUD (Top)
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-sessionInfo" checked onchange="saveConfig()"> Session Info
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-systemInfo" checked onchange="saveConfig()"> System Info
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-shipStatus" checked onchange="saveConfig()"> Ship Status
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-locationZone" checked onchange="saveConfig()"> Location & Zone
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-rightPanel" checked onchange="saveConfig()"> Right Panel (All)
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-partyList" checked onchange="saveConfig()"> Party List HUD
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-tacticalFeed" checked onchange="saveConfig()"> Tactical Feed
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-shipVisualizer" checked onchange="saveConfig()"> Ship Visuals
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-chatHud" onchange="saveConfig()"> Stream Chat HUD
+                    </label>
+                </div>
+            </div>
+
+            <!-- Stream Integration (v2.10) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Stream Integration</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Link your channels to display chat on
+                    the HUD.</div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 80px; font-size: 0.8rem; color: #a855f7;">Twitch</span>
+                        <input type="text" id="config-twitch-channel" class="modern-input" placeholder="Channel Name"
+                            style="margin:0; flex:1;" onchange="saveConfig()">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 80px; font-size: 0.8rem; color: #ff4444;">YouTube</span>
+                        <input type="text" id="config-youtube-id" class="modern-input" placeholder="Live Video ID / URL"
+                            style="margin:0; flex:1;" onchange="saveConfig()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance & Optimization (v2.10) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Performance & Optimization</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Optimize application for low-spec PCs
+                    or long sessions.</div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Performance Mode</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-perf-mode"
+                            onchange="saveConfig()"> Enabled</label>
+                </div>
+                <div style="font-size: 0.65rem; color: #555; margin-left: 20px; margin-bottom: 10px;">
+                    (Disables raw log feed UI to save CPU/Memory)
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Log History Limit</span>
+                    <input type="range" id="config-log-limit" min="50" max="1000" step="50" value="200"
+                        style="width: 100px;" oninput="updateLogLimitLabel(this.value)" onchange="saveConfig()">
+                    <span id="log-limit-val"
+                        style="font-size: 0.8rem; color: var(--accent); min-width: 40px;">200</span>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Initial Scan Depth</span>
+                    <input type="range" id="config-scan-limit" min="1000" max="20000" step="1000" value="5000"
+                        style="width: 100px;" oninput="updateScanLimitLabel(this.value)" onchange="saveConfig()">
+                    <span id="scan-limit-val"
+                        style="font-size: 0.8rem; color: var(--accent); min-width: 40px;">5000</span>
+                </div>
+                <div style="margin-top: 10px; text-align: right;">
+                    <button class="cyber-btn small" onclick="clearRawLogs()" style="width: auto; margin:0;">🗑️ Clear
+                        Feed</button>
                 </div>
             </div>
 
@@ -1546,7 +1666,25 @@
                 hueEnabled: document.getElementById('config-hue-enabled')?.checked,
                 hueBridge: document.getElementById('config-hue-bridge')?.value,
                 hueUser: document.getElementById('config-hue-user')?.value,
-                hueLights: document.getElementById('config-hue-lights')?.value ? document.getElementById('config-hue-lights').value.split(',').map(l => l.trim()) : undefined
+                hueLights: document.getElementById('config-hue-lights')?.value ? document.getElementById('config-hue-lights').value.split(',').map(l => l.trim()) : undefined,
+                overlayVisibility: {
+                    hudTop: document.getElementById('vis-hudTop').checked,
+                    sessionInfo: document.getElementById('vis-sessionInfo').checked,
+                    systemInfo: document.getElementById('vis-systemInfo').checked,
+                    shipStatus: document.getElementById('vis-shipStatus').checked,
+                    locationZone: document.getElementById('vis-locationZone').checked,
+                    rightPanel: document.getElementById('vis-rightPanel').checked,
+                    partyList: document.getElementById('vis-partyList').checked,
+                    tacticalFeed: document.getElementById('vis-tacticalFeed').checked,
+                    shipVisualizer: document.getElementById('vis-shipVisualizer').checked,
+                    chatHud: document.getElementById('vis-chatHud').checked
+                },
+                accentColor: document.getElementById('config-accent-color').value,
+                twitchChannel: document.getElementById('config-twitch-channel').value,
+                youtubeId: document.getElementById('config-youtube-id').value,
+                performanceMode: document.getElementById('config-perf-mode').checked,
+                logLimit: document.getElementById('config-log-limit').value,
+                initialScanLimit: document.getElementById('config-scan-limit').value
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
@@ -1580,6 +1718,34 @@
             if (config.hueLights !== undefined && Array.isArray(config.hueLights)) {
                 const hueLightsEl = document.getElementById('config-hue-lights');
                 if (hueLightsEl) hueLightsEl.value = config.hueLights.join(', ');
+            }
+
+            // Overlay Visibility
+            if (config.overlayVisibility) {
+                const ov = config.overlayVisibility;
+                if (ov.hudTop !== undefined) document.getElementById('vis-hudTop').checked = ov.hudTop;
+                if (ov.sessionInfo !== undefined) document.getElementById('vis-sessionInfo').checked = ov.sessionInfo;
+                if (ov.systemInfo !== undefined) document.getElementById('vis-systemInfo').checked = ov.systemInfo;
+                if (ov.shipStatus !== undefined) document.getElementById('vis-shipStatus').checked = ov.shipStatus;
+                if (ov.locationZone !== undefined) document.getElementById('vis-locationZone').checked = ov.locationZone;
+                if (ov.rightPanel !== undefined) document.getElementById('vis-rightPanel').checked = ov.rightPanel;
+                if (ov.partyList !== undefined) document.getElementById('vis-partyList').checked = ov.partyList;
+                if (ov.tacticalFeed !== undefined) document.getElementById('vis-tacticalFeed').checked = ov.tacticalFeed;
+                if (ov.shipVisualizer !== undefined) document.getElementById('vis-shipVisualizer').checked = ov.shipVisualizer;
+                if (ov.chatHud !== undefined) document.getElementById('vis-chatHud').checked = ov.chatHud;
+            }
+
+            if (config.accentColor) document.getElementById('config-accent-color').value = config.accentColor;
+            if (config.twitchChannel) document.getElementById('config-twitch-channel').value = config.twitchChannel;
+            if (config.youtubeId) document.getElementById('config-youtube-id').value = config.youtubeId;
+            if (config.performanceMode !== undefined) document.getElementById('config-perf-mode').checked = config.performanceMode;
+            if (config.logLimit !== undefined) {
+                document.getElementById('config-log-limit').value = config.logLimit;
+                document.getElementById('log-limit-val').textContent = config.logLimit;
+            }
+            if (config.initialScanLimit !== undefined) {
+                document.getElementById('config-scan-limit').value = config.initialScanLimit;
+                document.getElementById('scan-limit-val').textContent = config.initialScanLimit;
             }
 
             // Update local state
@@ -2786,7 +2952,11 @@
 
             const isAtBottom = rawFeed.scrollHeight - rawFeed.clientHeight <= rawFeed.scrollTop + 50;
             rawFeed.appendChild(div);
-            if (rawFeed.children.length > 200) rawFeed.firstElementChild.remove();
+
+            const limit = config.logLimit || 200;
+            while (rawFeed.children.length > limit) {
+                rawFeed.firstElementChild.remove();
+            }
             if (isAtBottom) rawFeed.scrollTop = rawFeed.scrollHeight;
         }
 
@@ -3562,6 +3732,24 @@
         loadCustomLocationList();
         loadPatternDB();
         updateTeamUIs();
+        function setAccent(color) {
+            document.getElementById('config-accent-color').value = color;
+            saveConfig();
+        }
+
+        function updateLogLimitLabel(val) {
+            document.getElementById('log-limit-val').textContent = val;
+        }
+
+        function updateScanLimitLabel(val) {
+            document.getElementById('scan-limit-val').textContent = val;
+        }
+
+        function clearRawLogs() {
+            const rawFeed = document.getElementById('raw-log-list');
+            if (rawFeed) rawFeed.innerHTML = '';
+            addDashItem('🗑️', 'Log feed cleared');
+        }
     </script>
 </body>
 

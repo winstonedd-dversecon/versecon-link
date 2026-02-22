@@ -43,6 +43,7 @@ class LogWatcher extends EventEmitter {
         this.unknownGroups = new Map();
         this.unknownIgnored = new Set();
         this.captureUnknowns = true;
+        this.initialScanLimit = 5000;
 
         // Noise patterns (unchanged from v2.2)
         this.noisePatterns = [
@@ -276,7 +277,7 @@ class LogWatcher extends EventEmitter {
         setTimeout(async () => {
             try {
                 const content = await fs.promises.readFile(this.filePath, 'utf-8');
-                const lines = content.split('\n').slice(-5000);
+                const lines = content.split('\n').slice(-this.initialScanLimit);
                 console.log(`[LogWatcher] Initial scan processing ${lines.length} lines asynchronously.`);
 
                 // Process in batches of 500 to yield event loop
