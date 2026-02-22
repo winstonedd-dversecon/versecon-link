@@ -307,6 +307,28 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
 5. **Fire message simplified** — Changed from `Fire in Room_RN-005` to `Fire onboard!`
 6. **Location Overwrite False Positive**: Mission logs (`<GenerateLocationProperty>`) were overwriting the physical location on the HUD (e.g., `CRU L1` -> `Daymar Cave`). **Fix**: Modified `navigation.js` to emit generated POIs as `NEW_LOCATION` for mapping without forcing a HUD update.
 7. **Armistice Zone Toggling Spam**: Leaving a station would fight the custom "Armistice Zone" mapping for that station. **Fix**: Wrapped the Zone Override logic in `navigation.js` to only fire when the raw physical location string explicitly changes (initial arrival checks).
+8. **ShipElevator ASOP Spam**: A new logging format in Star Citizen (`Platform manager 'LoadingPlatformManager_ShipElevator_HangarLargeFront...`) was slipping through the `loading_platform` filter and overwriting the physical location on the HUD. **Fix**: Updated the `loading_platform` Regex in `navigation.js` to catch both variations of this log string and explicitly discard them.
+
+### Log Research: Jump Points & System Transitions
+
+Based on analysis of `Game.log` during a Stanton-to-Magnus-to-Nyx transition:
+
+1. **Jump Point Grid Entrance**: Transition begins when the physics proxy moves coordinates. There is no specific "wormhole bubble" log; rather, it appears as a standard physics grid transition to `OOC_JumpPoint...`.
+   - **Regex**: `/CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid \((OOC_JumpPoint_[^)]+)\)/i`
+   - **Example**: `CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid (OOC_JumpPoint_stanton_magnus)`
+
+2. **Context Establisher (Loading new System)**: Major loading events trigger a `Context Establisher` sequence. The client transitioning to `eCVS_InGame` signals the loading screen is dropping.
+   - **Regex**: `/establisher="Network".*taskname="WaitRemoteState"\s+state=eCVS_InGame.*status="Finished"/i`
+   - *(Note: This log arrives immediately when the player gains control in the new system.)*
+
+3. **Target System Names**: The Nyx system does not appear to use the `OOC_Nyx` nomenclature. Instead, planetary bodies and zones in the destination load in under standard object containers like `pyro1`, `pyro5e`, `pyro6`, etc., before the player establishes an inventory connection to the specific destination point.
+
+4. **VFX Resumption (System Ready)**: A highly reliable trailing indicator of loading completion into the new system is the sudden influx of `Fire Client` logs for the interior rooms of the player's ship. This occurs when the simulation "catches up" to real-time.
+   - **Regex**: `/<Fire Client \- Background Simulation Skipped> Fire Area '([^']+)' received a snapshot ahead of the current simulation/i`
+
+5. **Arrival Verification**: The most solid proof of arrival at the new system is the player's connection to the local station's inventory service.
+   - **Regex**: `/<RequestLocationInventory>\s+Player\[[^\]]+\]\s+requested inventory for Location\[(RR_JP_[^\]]+)\]/i`
+   - **Example**: `<RequestLocationInventory> Player[TypicallyBrit_ish] requested inventory for Location[RR_JP_NyxCastra]`
 
 ### Scheduled for Next Agent / Sprint
 

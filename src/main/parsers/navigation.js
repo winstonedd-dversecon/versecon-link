@@ -51,11 +51,17 @@ class NavigationParser extends BaseParser {
             interdiction: /Interdiction/i,
 
             // Freight Elevator (Outpost hints)
-            loading_platform: /\[LoadingPlatformManager_([^\]]+)\]\s+Platform state changed/i,
+            // Can be: [LoadingPlatformManager_...] Platform state changed
+            // Or: Platform manager 'LoadingPlatformManager_...'
+            loading_platform: /(?:\[LoadingPlatformManager_([^\]]+)\]\s+Platform state changed|Platform manager 'LoadingPlatformManager_([^']+)')/i,
 
             // OCS (Object Container Selection) hints
             // Proximity sensor [Door] is creating a local helper... Master zone is [StreamingSOC_util_cmpd_wrhse_lge_001_rund_c...]
             ocs_master_zone: /Master zone is \[([^\]]+)\]/i,
+
+            // Jump Point Grid Entrance
+            // CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid (OOC_JumpPoint_stanton_magnus)
+            jump_point: /position in the grid \((OOC_JumpPoint_[^)]+)\)/i,
         };
         this.lastLocationHint = null;
         this.lastLocation = null;
@@ -139,7 +145,7 @@ class NavigationParser extends BaseParser {
         // ── 4.5 Loading Platform (Outpost/Facility Hint) ──
         const platformMatch = line.match(this.patterns.loading_platform);
         if (platformMatch) {
-            const rawVal = platformMatch[1];
+            const rawVal = platformMatch[1] || platformMatch[2]; // fallback to group 2 if group 1 is undefined or empty
 
             // Filter out internal/generic SC 3.23+ elevators
             if (!rawVal.toLowerCase().includes('elevator') && !rawVal.toLowerCase().includes('kiosk')) {
@@ -190,6 +196,17 @@ class NavigationParser extends BaseParser {
             if (cleanVal && cleanVal !== this.lastLocationHint) {
                 this.lastLocationHint = cleanVal;
                 this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+                handled = true;
+            }
+        }
+
+        // ── 7.5 Jump Point Transit ──
+        const jumpMatch = line.match(this.patterns.jump_point);
+        if (jumpMatch) {
+            const rawVal = jumpMatch[1]; // e.g. OOC_JumpPoint_stanton_magnus
+            if (rawVal !== this.lastLocationHint) {
+                this.lastLocationHint = rawVal;
+                this.emitLocation('Wormhole Transit', rawVal);
                 handled = true;
             }
         }
@@ -270,10 +287,16 @@ class NavigationParser extends BaseParser {
             this.emit('gamestate', { type: 'LOCATION', value: finalName, raw: rawName });
 
             // Detect and emit systemic changes explicitly so UI can track what system the user is in
-            if (rawName && rawName.toLowerCase().includes('stanton')) {
+            const lowerRaw = rawName ? rawName.toLowerCase() : '';
+            if (lowerRaw.includes('stanton')) {
                 this.emit('gamestate', { type: 'SYSTEM', value: 'Stanton' });
-            } else if (rawName && rawName.toLowerCase().includes('pyro')) {
+            } else if (lowerRaw.includes('pyro') || lowerRaw.includes('pext')) {
+                // Internal assets sometimes use PeXt for Pyro Exterior/Outposts
                 this.emit('gamestate', { type: 'SYSTEM', value: 'Pyro' });
+            } else if (lowerRaw.includes('nyx')) {
+                this.emit('gamestate', { type: 'SYSTEM', value: 'Nyx' });
+            } else if (lowerRaw.includes('magnus')) {
+                this.emit('gamestate', { type: 'SYSTEM', value: 'Magnus' });
             }
 
             // Check if this is a completely new/unmapped location
