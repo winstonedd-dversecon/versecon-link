@@ -305,6 +305,8 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
    - **📡 Channel/VOIP**: `Channel Created/Destroyed/Connected/Disconnected` → `VOIP` events
 4. **Log Database now shows ALL patterns** — `getBuiltinPatterns()` in `main.js` injects all 75 built-in patterns from 9 parsers into the Log Database tab. Search, filter by category, and export all patterns (built-in + user) via 📤 Export button.
 5. **Fire message simplified** — Changed from `Fire in Room_RN-005` to `Fire onboard!`
+6. **Location Overwrite False Positive**: Mission logs (`<GenerateLocationProperty>`) were overwriting the physical location on the HUD (e.g., `CRU L1` -> `Daymar Cave`). **Fix**: Modified `navigation.js` to emit generated POIs as `NEW_LOCATION` for mapping without forcing a HUD update.
+7. **Armistice Zone Toggling Spam**: Leaving a station would fight the custom "Armistice Zone" mapping for that station. **Fix**: Wrapped the Zone Override logic in `navigation.js` to only fire when the raw physical location string explicitly changes (initial arrival checks).
 
 ### Scheduled for Next Agent / Sprint
 
@@ -320,7 +322,7 @@ advanced from destroy level 0 to 1 caused by 'Attacker' [id]
    - Quantum Travel destination extraction
    - Landing Pad assignment display on HUD
    - Insurance claim timer estimation
-   - Player proximity counter (nearby players)
+   - ~~Player proximity counter~~ (Blocked: `<SubscribeToPlayerSocial>` logging severely degraded in SC 3.23+/3.24)
 
 ### Persistent Issues
 
