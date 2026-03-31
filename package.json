@@ -32,6 +32,9 @@
   "build": {
     "appId": "com.versecon.link",
     "productName": "VerseCon Link",
+    "asarUnpack": [
+      "node_modules/screenshot-desktop"
+    ],
     "publish": {
       "provider": "github",
       "owner": "winstonedd-dversecon",
