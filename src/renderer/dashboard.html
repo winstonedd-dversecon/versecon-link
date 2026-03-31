@@ -543,6 +543,9 @@
             <span>⚙️</span> Settings
             <span class="badge" id="unknown-badge" style="display:none;">0</span>
         </div>
+        <div class="menu-item no-drag" id="nav-ocr" onclick="switchTab('ocr')">
+            <span>🔍</span> OCR Scanner
+        </div>
         <div class="menu-item no-drag" id="nav-players" onclick="switchTab('players')">
             <span>👥</span> Players
         </div>
@@ -1396,6 +1399,55 @@
         </div>
     </div>
 
+    <!-- ═══════════ OCR SCANNER VIEW (NEW) ═══════════ -->
+    <div id="view-ocr" class="view">
+        <div class="header">
+            <div>
+                <h2>OCR Scanner</h2>
+                <div class="subtitle">Extract text from screen for party sharing</div>
+            </div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; border: 1px solid var(--accent); display:flex; flex-direction:column; gap:15px;">
+                <div style="font-size: 0.9rem; color: #ccc;">
+                    Use this tool to capture a region of your screen (e.g., party lists, mission logs) and convert it
+                    to text.
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="cyber-btn" onclick="captureScreenForOCR()">📸 Capture Screen</button>
+                    <button class="cyber-btn" onclick="processOCR()" id="btn-run-ocr" disabled>🔍 Run OCR</button>
+                </div>
+
+                <div id="ocr-preview-container"
+                    style="display:none; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; position: relative; max-height: 400px; background: #000;">
+                    <canvas id="ocr-canvas" style="max-width: 100%; height: auto; cursor: crosshair;"></canvas>
+                    <div id="ocr-selection-box"
+                        style="position: absolute; border: 1px solid var(--accent); background: rgba(255,165,0,0.1); pointer-events: none; display:none;">
+                    </div>
+                </div>
+
+                <div style="font-size: 0.7rem; color: #666;" id="ocr-instructions" style="display:none;">
+                    Drag on the image to select the area you want to scan.
+                </div>
+            </div>
+
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); flex:1; display:flex; flex-direction:column; gap:10px;">
+                <div class="section-title" style="margin:0;">OCR Result</div>
+                <textarea id="ocr-result-text" class="modern-input"
+                    style="flex:1; font-family: monospace; font-size: 0.85rem; resize: none;"
+                    placeholder="Result will appear here..."></textarea>
+                <div style="display:flex; gap:10px; justify-content: flex-end;">
+                    <button class="cyber-btn small" onclick="copyOCRResult()">📋 Copy</button>
+                    <button class="cyber-btn small success" onclick="shareOCRResult()">📡 Share with Squadron</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══════════ PLAYERS VIEW (Phase 10) ═══════════ -->
     <div id="view-players" class="view">
         <div
@@ -1702,6 +1754,7 @@
         const { ipcRenderer } = require('electron');
 
         // ═══ STATE ═══
+        let config = { teamNames: ['Alpha', 'Bravo', 'Charlie', 'Delta'] }; // Fix: Missing global config
         let soundEnabled = true;
         let soundVolume = 0.7;
         let unknownCount = 0;
@@ -1721,6 +1774,7 @@
                 'vcon': ['VerseCon Feed', 'Platform-wide contracts, beacons and trades'],
                 'command': ['Command Console', 'Battlefield C2 and quick orders'],
                 'config': ['Settings', 'Application configuration and log patterns'],
+                'ocr': ['OCR Scanner', 'Extract text from screen for party sharing'],
                 'players': ['Social Hub', 'Manage friends and shared telemetry'],
                 'logdb': ['Log Database', 'Known Star Citizen log patterns — browse, edit, export']
             };
@@ -1762,7 +1816,7 @@
 
         // ═══ CONFIG MANAGEMENT ═══
         function saveConfig() {
-            const config = {
+            const newConfig = { // Fix: Renamed local to avoid TDZ circular reference
                 logPath: document.getElementById('config-log-path').value,
                 volume: document.getElementById('sound-volume').value,
                 soundEnabled: document.getElementById('sound-enabled').checked,
@@ -1784,9 +1838,9 @@
                     shipVisualizer: document.getElementById('vis-shipVisualizer').checked,
                     chatHud: document.getElementById('vis-chatHud').checked
                 },
-                accentColor: document.getElementById('config-accent-color').value,
-                twitchChannel: document.getElementById('config-twitch-channel').value,
-                youtubeId: document.getElementById('config-youtube-id').value,
+                accentColor: document.getElementById('config-accent-color')?.value,
+                twitchChannel: document.getElementById('config-twitch-channel')?.value,
+                youtubeId: document.getElementById('config-youtube-id')?.value,
                 performanceMode: document.getElementById('config-perf-mode').checked,
                 logLimit: document.getElementById('config-log-limit').value,
                 initialScanLimit: document.getElementById('config-scan-limit').value,
@@ -1796,19 +1850,20 @@
                 interdictionShips: Array.from(document.querySelectorAll('.interdiction-ship-tag')).map(el => el.dataset.ship),
                 interdictionQuantumOnly: document.getElementById('config-interdiction-quantum-only').checked,
                 teamNames: config.teamNames || ['Alpha', 'Bravo', 'Charlie', 'Delta'],
-                userTeam: document.getElementById('config-user-team').value
+                userTeam: document.getElementById('config-user-team')?.value
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
-            if (overlayEl) config.overlayEnabled = overlayEl.checked;
+            if (overlayEl) newConfig.overlayEnabled = overlayEl.checked;
 
             const autoCleanEl = document.getElementById('config-auto-clean');
-            if (autoCleanEl) config.autoCleanMissions = autoCleanEl.checked;
+            if (autoCleanEl) newConfig.autoCleanMissions = autoCleanEl.checked;
 
-            ipcRenderer.send('settings:save', config);
+            ipcRenderer.send('settings:save', newConfig);
         }
 
-        ipcRenderer.on('settings:updated', (e, config) => {
+        ipcRenderer.on('settings:updated', (e, updatedConfig) => {
+            config = updatedConfig; // Update global state
             // Update UI from config
             if (config.volume) document.getElementById('sound-volume').value = config.volume;
             if (config.soundEnabled !== undefined) document.getElementById('sound-enabled').checked = config.soundEnabled;
@@ -3983,6 +4038,136 @@
             console.log('[TTS] Speaking:', text);
             speak(text);
         });
+
+        // ═══ OCR SCANNER LOGIC ═══
+        let ocrImage = null;
+        let isSelecting = false;
+        let startX, startY;
+        let selectionRect = { x: 0, y: 0, w: 0, h: 0 };
+
+        function captureScreenForOCR() {
+            addDashItem('🔍', 'Capturing screen... Please wait.');
+            ipcRenderer.invoke('ocr:capture-screen').then(dataUrl => {
+                if (!dataUrl) return;
+
+                const canvas = document.getElementById('ocr-canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    ocrImage = img;
+                    document.getElementById('ocr-preview-container').style.display = 'block';
+                    document.getElementById('ocr-instructions').style.display = 'block';
+                    document.getElementById('btn-run-ocr').disabled = true;
+                    addDashItem('📸', 'Screen captured. Select an area to scan.');
+                };
+                img.src = dataUrl;
+            }).catch(err => {
+                addDashItem('❌', 'Capture failed: ' + err.message);
+            });
+        }
+
+        const ocrCanvas = document.getElementById('ocr-canvas');
+        const ocrBox = document.getElementById('ocr-selection-box');
+
+        if (ocrCanvas) {
+            ocrCanvas.addEventListener('mousedown', e => {
+                if (!ocrImage) return;
+                isSelecting = true;
+                const rect = ocrCanvas.getBoundingClientRect();
+                const scaleX = ocrCanvas.width / rect.width;
+                const scaleY = ocrCanvas.height / rect.height;
+                startX = (e.clientX - rect.left) * scaleX;
+                startY = (e.clientY - rect.top) * scaleY;
+
+                ocrBox.style.display = 'block';
+                updateOcrBox(e);
+            });
+
+            window.addEventListener('mousemove', e => {
+                if (!isSelecting) return;
+                updateOcrBox(e);
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (!isSelecting) return;
+                isSelecting = false;
+                document.getElementById('btn-run-ocr').disabled = false;
+            });
+        }
+
+        function updateOcrBox(e) {
+            const rect = ocrCanvas.getBoundingClientRect();
+            const scaleX = ocrCanvas.width / rect.width;
+            const scaleY = ocrCanvas.height / rect.height;
+            const curX = Math.max(0, Math.min(ocrCanvas.width, (e.clientX - rect.left) * scaleX));
+            const curY = Math.max(0, Math.min(ocrCanvas.height, (e.clientY - rect.top) * scaleY));
+
+            selectionRect.x = Math.min(startX, curX);
+            selectionRect.y = Math.min(startY, curY);
+            selectionRect.w = Math.abs(curX - startX);
+            selectionRect.h = Math.abs(curY - startY);
+
+            // Position box relative to container
+            ocrBox.style.left = (selectionRect.x / scaleX) + 'px';
+            ocrBox.style.top = (selectionRect.y / scaleY) + 'px';
+            ocrBox.style.width = (selectionRect.w / scaleX) + 'px';
+            ocrBox.style.height = (selectionRect.h / scaleY) + 'px';
+        }
+
+        function processOCR() {
+            if (!ocrImage || selectionRect.w < 5 || selectionRect.h < 5) {
+                alert('Please select a valid area first.');
+                return;
+            }
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = selectionRect.w;
+            tempCanvas.height = selectionRect.h;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.drawImage(ocrImage, selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h, 0, 0, selectionRect.w, selectionRect.h);
+
+            const croppedDataUrl = tempCanvas.toDataURL('image/png');
+
+            addDashItem('🔍', 'Running OCR analysis...');
+            document.getElementById('btn-run-ocr').disabled = true;
+            document.getElementById('ocr-result-text').value = 'Processing...';
+
+            ipcRenderer.invoke('ocr:process', croppedDataUrl).then(text => {
+                document.getElementById('ocr-result-text').value = text || 'No text detected.';
+                document.getElementById('btn-run-ocr').disabled = false;
+                addDashItem('✅', 'OCR Complete.');
+            }).catch(err => {
+                document.getElementById('ocr-result-text').value = 'Error: ' + err.message;
+                document.getElementById('btn-run-ocr').disabled = false;
+                addDashItem('❌', 'OCR Failed: ' + err.message);
+            });
+        }
+
+        function copyOCRResult() {
+            const text = document.getElementById('ocr-result-text').value;
+            if (text && text !== 'Processing...') {
+                navigator.clipboard.writeText(text);
+                addDashItem('📋', 'Result copied to clipboard.');
+            }
+        }
+
+        function shareOCRResult() {
+            const text = document.getElementById('ocr-result-text').value;
+            if (!text || text === 'Processing...') return;
+            // Send as a custom command for broadcast
+            ipcRenderer.send('command:send', {
+                text: "[OCR SCAN] " + text,
+                target: 'ALL',
+                fromTeam: config.userTeam || 'Alpha',
+                broadcast: true,
+                timestamp: Date.now()
+            });
+            addDashItem('📡', 'OCR result shared with squadron.');
+        }
+
     </script>
 </body>
 

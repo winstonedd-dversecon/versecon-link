@@ -10,6 +10,8 @@ const APIClient = require('./api-client');
 const UpdateManager = require('./update-manager'); // Phase 6
 const TelemetryEngine = require('./telemetry/telemetry-engine'); // Phase 6 Telemetry
 const axios = require('axios');
+const Tesseract = require('tesseract.js');
+const screenshot = require('screenshot-desktop');
 
 let dashboardWindow;
 let overlayWindow;
@@ -517,6 +519,36 @@ ipcMain.handle('app:select-ship-image', async () => {
         return result.filePaths[0];
     }
     return null;
+});
+
+// ═══ OCR SCANNER IPC (NEW) ═══
+ipcMain.handle('ocr:capture-screen', async () => {
+    try {
+        console.log('[OCR] Capturing screen...');
+        const img = await screenshot({ format: 'png' });
+        return `data:image/png;base64,${img.toString('base64')}`;
+    } catch (err) {
+        console.error('[OCR] Capture failed:', err);
+        throw err;
+    }
+});
+
+ipcMain.handle('ocr:process', async (event, dataUrl) => {
+    try {
+        console.log('[OCR] Starting analysis...');
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+
+        const { data: { text } } = await Tesseract.recognize(imageBuffer, 'eng', {
+            // logger: m => console.log('[OCR Progress]', m.status, Math.round(m.progress * 100) + '%')
+        });
+
+        console.log('[OCR] Analysis complete.');
+        return text.trim();
+    } catch (err) {
+        console.error('[OCR] Processing failed:', err);
+        throw err;
+    }
 });
 
 // Alert window control

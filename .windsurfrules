@@ -1,0 +1,9 @@
+# Global Project Rules
+
+You MUST read and rigidly follow the system architecture rules before modifying any code.
+Failure to do so will break mission-critical dependencies.
+
+The master rules document is located at:
+C:\Users\DEVIL\Documents\projects\.gemini\GEMINI.md
+
+All architectural changes must strictly conform to these rules.

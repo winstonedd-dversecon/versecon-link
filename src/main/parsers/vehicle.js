@@ -80,6 +80,21 @@ class VehicleParser extends BaseParser {
      */
     getCleanShipName(raw) {
         if (!raw) return 'Unknown';
+
+        // 3.23+ / 4.0 Manual Overrides
+        const overrides = {
+            'SABR_Firebird': 'Aegis Sabre Firebird',
+            'RSI_Ursa_Medical': 'RSI Nursa',
+            'ARGO_ATLS': 'Argo ATLS',
+            'DRAK_Ironclad': 'Drake Ironclad',
+            'AEGS_Retaliator_Base': 'Aegis Retaliator',
+            'ANVL_Hornet_Mk2': 'Anvil Hornet Mk II'
+        };
+
+        for (const [key, val] of Object.entries(overrides)) {
+            if (raw.includes(key)) return val;
+        }
+
         // Strip trailing entity ID (long number after last underscore)
         let cleaned = raw.replace(/_\d{10,}$/, '');
         // Convert underscores to spaces

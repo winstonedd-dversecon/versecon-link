@@ -294,18 +294,18 @@ class NavigationParser extends BaseParser {
             const lowerRaw = rawName ? rawName.toLowerCase() : '';
             // Exclude jump point transits from system identification to prevent mid-jump misidentification
             if (!lowerRaw.includes('jumppoint')) {
-                if (lowerRaw.includes('pyro') || lowerRaw.includes('pext') || lowerRaw.includes('pyro-') || lowerRaw.startsWith('p_')) {
+                if (lowerRaw.includes('pyro') || lowerRaw.includes('pext') || lowerRaw.includes('p_')) {
                     this.emit('gamestate', { type: 'SYSTEM', value: 'Pyro' });
-                } else if (lowerRaw.includes('nyx') || lowerRaw.includes('nyx-')) {
+                } else if (lowerRaw.includes('nyx')) {
                     this.emit('gamestate', { type: 'SYSTEM', value: 'Nyx' });
-                } else if (lowerRaw.includes('magnus') || lowerRaw.includes('magnus-')) {
+                } else if (lowerRaw.includes('magnus')) {
                     this.emit('gamestate', { type: 'SYSTEM', value: 'Magnus' });
                 } else if (lowerRaw.includes('stanton') ||
                     lowerRaw.includes('cru_') || lowerRaw.includes('hur_') || lowerRaw.includes('arc_') || lowerRaw.includes('mic_') ||
                     lowerRaw.includes('grimhex') || lowerRaw.includes('kareah') || lowerRaw.includes('portolisar') || lowerRaw.includes('seraphim') ||
                     lowerRaw.includes('everus') || lowerRaw.includes('baijini') || lowerRaw.includes('tressler') ||
                     lowerRaw.includes('orison') || lowerRaw.includes('lorville') || lowerRaw.includes('area18') || lowerRaw.includes('newbabbage') ||
-                    lowerRaw.includes('stan-')
+                    lowerRaw.includes('stan-') || lowerRaw.includes('dist_')
                 ) {
                     this.emit('gamestate', { type: 'SYSTEM', value: 'Stanton' });
                 }
@@ -334,10 +334,22 @@ class NavigationParser extends BaseParser {
             'Stanton4_Microtech': 'Microtech',
             'Stanton4_NewBabbage': 'New Babbage',
             'Stanton_PortOlisar': 'Port Olisar',
+            'Stanton_SeraphimStation': 'Seraphim Station',
             'Stanton_EverusHarbor': 'Everus Harbor',
             'Stanton_PortTressler': 'Port Tressler',
             'Stanton_BaijiniPoint': 'Baijini Point',
             'Stanton_SeraphimStation': 'Seraphim Station',
+            // Distribution Centers (3.23)
+            'Stanton1_DC_Greycat_A': 'Covalex Hub G-A',
+            'Stanton1_DC_Hurston_B': 'Hurston DC-B',
+            'Stanton3_DC_ArcCorp_C': 'ArcCorp DC-C',
+            'Stanton4_DC_MicroTech_D': 'MicroTech DC-D',
+            // Pyro (4.0)
+            'Pyro1_Bloom': 'Bloom',
+            'Pyro2_Monolith': 'The Monolith',
+            'Pyro3_Checkpoint': 'Checkpoint',
+            'Pyro6_Starlight_Service': 'Starlight Service',
+            'Pyro_RuinStation': 'Ruin Station'
         };
     }
 
