@@ -525,11 +525,29 @@ ipcMain.handle('app:select-ship-image', async () => {
 ipcMain.handle('ocr:capture-screen', async () => {
     try {
         console.log('[OCR] Capturing screen...');
-        const img = await screenshot({ format: 'png' });
+        // Try capturing all displays and taking the first one (primary usually)
+        const displays = await screenshot.listDisplays();
+        if (!displays || displays.length === 0) {
+            throw new Error('No displays found for capture.');
+        }
+        
+        const img = await screenshot({ screen: displays[0].id, format: 'png' });
+        if (!img || img.length === 0) {
+            throw new Error('Capture returned an empty buffer.');
+        }
+        
+        console.log('[OCR] Screen captured successfully.');
         return `data:image/png;base64,${img.toString('base64')}`;
     } catch (err) {
         console.error('[OCR] Capture failed:', err);
-        throw err;
+        // Fallback to default capture if listDisplays fails or return null
+        try {
+            const img = await screenshot({ format: 'png' });
+            return `data:image/png;base64,${img.toString('base64')}`;
+        } catch (innerErr) {
+            console.error('[OCR] Fallback capture also failed:', innerErr);
+            throw innerErr;
+        }
     }
 });
 

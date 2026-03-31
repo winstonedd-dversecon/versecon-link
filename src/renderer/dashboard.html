@@ -860,6 +860,9 @@
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
                         <input type="checkbox" id="vis-chatHud" onchange="saveConfig()"> Stream Chat HUD
                     </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-nearbyPlayers" checked onchange="saveConfig()"> Nearby Players
+                    </label>
                 </div>
             </div>
 
@@ -1836,7 +1839,8 @@
                     partyList: document.getElementById('vis-partyList').checked,
                     tacticalFeed: document.getElementById('vis-tacticalFeed').checked,
                     shipVisualizer: document.getElementById('vis-shipVisualizer').checked,
-                    chatHud: document.getElementById('vis-chatHud').checked
+                    chatHud: document.getElementById('vis-chatHud').checked,
+                    nearbyPlayers: document.getElementById('vis-nearbyPlayers').checked
                 },
                 accentColor: document.getElementById('config-accent-color')?.value,
                 twitchChannel: document.getElementById('config-twitch-channel')?.value,
@@ -1917,6 +1921,10 @@
                 if (ov.tacticalFeed !== undefined) document.getElementById('vis-tacticalFeed').checked = ov.tacticalFeed;
                 if (ov.shipVisualizer !== undefined) document.getElementById('vis-shipVisualizer').checked = ov.shipVisualizer;
                 if (ov.chatHud !== undefined) document.getElementById('vis-chatHud').checked = ov.chatHud;
+                if (ov.nearbyPlayers !== undefined) {
+                    const el = document.getElementById('vis-nearbyPlayers');
+                    if (el) el.checked = ov.nearbyPlayers;
+                }
             }
 
             if (config.accentColor) document.getElementById('config-accent-color').value = config.accentColor;
@@ -4048,7 +4056,10 @@
         function captureScreenForOCR() {
             addDashItem('🔍', 'Capturing screen... Please wait.');
             ipcRenderer.invoke('ocr:capture-screen').then(dataUrl => {
-                if (!dataUrl) return;
+                if (!dataUrl) {
+                    addDashItem('⚠️', 'Capture returned no data.');
+                    return;
+                }
 
                 const canvas = document.getElementById('ocr-canvas');
                 const ctx = canvas.getContext('2d');
@@ -4063,8 +4074,13 @@
                     document.getElementById('btn-run-ocr').disabled = true;
                     addDashItem('📸', 'Screen captured. Select an area to scan.');
                 };
+                img.onerror = (e) => {
+                    console.error('[OCR] Image load error:', e);
+                    addDashItem('❌', 'Failed to load captured image into preview.');
+                };
                 img.src = dataUrl;
             }).catch(err => {
+                console.error('[OCR] Invoke error:', err);
                 addDashItem('❌', 'Capture failed: ' + err.message);
             });
         }
