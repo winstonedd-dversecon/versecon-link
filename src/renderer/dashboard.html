@@ -937,6 +937,7 @@
 
                     <div id="squad-host-container" style="display: none; flex-direction: column; gap: 5px;">
                         <span style="font-size: 0.75rem; color: var(--success);">Direct Sync Active (Port 55100)</span>
+                        <div style="font-size: 0.65rem; color: #888;">UPnP Status: <span id="squad-upnp-status" style="color: var(--accent);">None</span></div>
                         <div style="font-size: 0.65rem; color: #666;">Share your IP with squad members.</div>
                     </div>
 
@@ -4523,8 +4524,14 @@
         ipcRenderer.on('squad:status', (event, data) => {
             if (data.error) {
                 addDashItem('⚠️', 'Squad Error: ' + data.error);
-                // Switch back to join input if failed
                 setSquadMode('JOIN');
+            }
+            if (data.upnp) {
+                const upnpEl = document.getElementById('squad-upnp-status');
+                if (upnpEl) {
+                    upnpEl.innerText = data.upnp;
+                    upnpEl.style.color = data.upnp === 'Active' ? 'var(--success)' : '#ff4444';
+                }
             }
         });
 

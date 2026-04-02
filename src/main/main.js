@@ -28,13 +28,16 @@ let isQuitting = false;
 let dndMode = false;
 
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
+// ═══ SQUAD SYNC MANAGER (v2.8) ═══
 class SquadManager {
     constructor() {
         this.wss = null;
         this.ws = null;
+        this.upnpClient = null;
         this.role = 'OFF'; // OFF | HOST | JOIN
         this.peers = {}; // Map of user handle -> { health, pos, lastUpdate }
         this.hostIp = null;
+        this.upnpStatus = 'None';
     }
 
     host() {
@@ -42,6 +45,38 @@ class SquadManager {
         this.role = 'HOST';
         this.wss = new WebSocketServer({ port: 55100 });
         console.log('[Squad] Hosting Relay on port 55100');
+
+        // UPnP Auto-Port Forwarding
+        try {
+            this.upnpClient = require('nat-upnp').createClient();
+            this.upnpClient.portMapping({
+                public: 55100,
+                private: 55100,
+                ttl: 0,
+                description: 'VerseCon Squad Relay'
+            }, (err) => {
+                if (err) {
+                    console.error('[Squad] UPnP Mapping Failed:', err.message);
+                    this.upnpStatus = 'Failed (Manual Required)';
+                } else {
+                    console.log('[Squad] UPnP Mapping Successful (Port 55100)');
+                    this.upnpStatus = 'Active';
+                }
+                broadcast('squad:status', { upnp: this.upnpStatus });
+            });
+        } catch (e) {
+            console.error('[Squad] UPnP Init Error:', e.message);
+        }
+
+        // Add self to peers list so Commander appears on for themselves
+        const myHandle = (config.rsiHandle || 'Commander') + ' (Host)';
+        this.peers[myHandle] = {
+            handle: myHandle,
+            team: config.userTeam || 'Alpha',
+            health: 100,
+            lastUpdate: Date.now(),
+            isHost: true
+        };
 
         this.wss.on('connection', (socket, req) => {
             const ip = req.socket.remoteAddress;
@@ -115,7 +150,14 @@ class SquadManager {
             this.ws.close();
             this.ws = null;
         }
+        if (this.upnpClient) {
+            try {
+                this.upnpClient.portUnmapping({ public: 55100 });
+            } catch (e) {}
+            this.upnpClient = null;
+        }
         this.role = 'OFF';
+        this.upnpStatus = 'None';
         this.peers = {};
         this.broadcastSquad();
     }
@@ -154,7 +196,7 @@ class SquadManager {
             const myHandle = (config.rsiHandle || 'Commander') + ' (Host)';
             this.peers[myHandle] = {
                 handle: myHandle,
-                team: config.userTeam,
+                team: config.userTeam || 'Alpha',
                 health: healthVal,
                 lastUpdate: Date.now(),
                 isHost: true
