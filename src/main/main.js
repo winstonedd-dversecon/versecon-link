@@ -597,6 +597,13 @@ ipcMain.on('overlay:get-position', (event) => {
     }
 });
 
+// ═══ HEALTH MONITORING IPC (v2.10) ═══
+ipcMain.on('app:update-health', (event, healthVal) => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('player:health-update', healthVal);
+    }
+});
+
 // Alert cooldown settings
 ipcMain.on('alert:set-cooldown', (event, { alertType, cooldownMs }) => {
     LogWatcher.setAlertCooldown(alertType, cooldownMs);
