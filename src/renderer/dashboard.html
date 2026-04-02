@@ -1536,6 +1536,26 @@
                 <div style="font-size: 0.7rem; color: #666;" id="ocr-instructions" style="display:none;">
                     Drag on the image to select the area you want to scan.
                 </div>
+
+                <!-- v2.10.2 - Dynamic HUD Tracking Options -->
+                <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <div style="font-size: 0.65rem; color: var(--text-dim); margin-bottom: 2px;">ANCHOR CHARACTER</div>
+                        <input type="text" id="config-ocr-anchor" class="modern-input" style="width: 50px; text-align: center;" value="v" onchange="anchorChar = this.value; saveConfig();">
+                    </div>
+                    <div>
+                        <div style="font-size: 0.65rem; color: var(--text-dim); margin-bottom: 2px;">SCAN STRATEGY</div>
+                        <select id="config-ocr-strategy" class="modern-input" style="width: 140px;" onchange="scanStrategy = this.value; saveConfig();">
+                            <option value="bottom-most">Bottom-Most Numeric</option>
+                            <option value="top-most">Top-Most Numeric</option>
+                            <option value="anchor-relative">Closest to Anchor</option>
+                            <option value="first-found">First Found (Legacy)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; font-size: 0.7rem; color: #888;">
+                        💡 <strong>Cluster Mode:</strong> Select the entire status area. If the heart moves, these settings help the scanner follow it.
+                    </div>
+                </div>
             </div>
 
             <div
@@ -1861,6 +1881,9 @@
         let config = { teamNames: ['Alpha', 'Bravo', 'Charlie', 'Delta'], healthZone: null, monitorHealth: false, healthFreq: 5 };
         let healthMonitorInterval = null;
         let scanFailCount = 0; // v2.10.1 - Fail tracking for Signal Lost detection
+        let lastDetectedHealth = 100; // v2.10.2 - For nominal hide fallback
+        let anchorChar = 'v'; // Common heart misread
+        let scanStrategy = 'bottom-most'; // Default for SC 4.0 cluster
         let soundEnabled = true;
         let soundVolume = 0.7;
         let unknownCount = 0;
@@ -4443,49 +4466,88 @@
                     // v2.10.1 - Broadcast processed image to OCR Debug window
                     ipcRenderer.send('ocr:debug-update', processedUrl);
 
-                    const text = await ipcRenderer.invoke('ocr:process', processedUrl);
+                    // v2.10.2 - Structural OCR Scan
+                    const result = await ipcRenderer.invoke('ocr:process', processedUrl);
+                    const { text, words } = result || { text: '', words: [] };
                     
                     document.getElementById('health-last-scan').textContent = 'Last Scan: ' + new Date().toLocaleTimeString();
 
-                    if (text) {
-                        // Extract digits. Look for percentage format or just numbers.
-                        // v2.10.1 - Enhanced cleaning for common Tesseract misreads (B/8, S/5, etc)
-                        const cleanedText = text
-                            .replace(/[lI|]/g, '1')
-                            .replace(/[oOQ]/g, '0')
-                            .replace(/B/g, '8')
-                            .replace(/S/g, '5')
-                            .replace(/G/g, '6')
-                            .replace(/Z/g, '2')
-                            .replace(/z/g, '2')
-                            .replace(/T/g, '7');
-                            
-                        const match = cleanedText.match(/(\d+)/);
-                        if (match) {
-                            let healthVal = parseInt(match[0]);
-                            if (healthVal > 100) healthVal = 100;
-                            
-                            scanFailCount = 0; // Reset fail count on success
+                    if (words && words.length > 0) {
+                        let finalValue = null;
+                        
+                        // v2.10.2 - Pre-clean and Identify Numbers
+                        const candidates = words.map(w => {
+                            const cleaned = w.text
+                                .replace(/[lI|]/g, '1').replace(/[oOQ]/g, '0').replace(/B/g, '8')
+                                .replace(/S/g, '5').replace(/G/g, '6').replace(/Z/g, '2').replace(/T/g, '7');
+                            const valMatch = cleaned.match(/(\d+)/);
+                            return valMatch ? { val: parseInt(valMatch[0]), bbox: w.bbox, text: w.text } : null;
+                        }).filter(c => c !== null && c.val <= 100);
 
-                            ipcRenderer.send('app:update-health', healthVal);
-
-                            // Broadcast to Squad if enabled
-                            if (document.getElementById('config-share-health').checked) {
-                                ipcRenderer.send('app:share-health', { 
-                                    health: healthVal, 
-                                    location: currentLocation 
-                                });
-                            }
-
-                            document.getElementById('health-last-val').textContent = healthVal + '%';
-                            console.log('[HealthMonitor] Parsed:', healthVal, 'Raw text:', text);
-                        } else {
-                            handleOcrFailure(text);
+                        // Find Anchor (Character that looks like a heart)
+                        const anchor = words.find(w => w.text.toLowerCase().includes(anchorChar.toLowerCase()));
+                        
+                        if (scanStrategy === 'anchor-relative' && anchor && candidates.length > 0) {
+                            // Find numeric closest to anchor
+                            const ax = (anchor.bbox.x0 + anchor.bbox.x1) / 2;
+                            const ay = (anchor.bbox.y0 + anchor.bbox.y1) / 2;
+                            candidates.sort((a, b) => {
+                                const distA = Math.sqrt(Math.pow((a.bbox.x0 + a.bbox.x1)/2 - ax, 2) + Math.pow((a.bbox.y0 + a.bbox.y1)/2 - ay, 2));
+                                const distB = Math.sqrt(Math.pow((b.bbox.x0 + b.bbox.x1)/2 - ax, 2) + Math.pow((b.bbox.y0 + b.bbox.y1)/2 - ay, 2));
+                                return distA - distB;
+                            });
+                            finalValue = candidates[0].val;
+                        } else if (scanStrategy === 'bottom-most' && candidates.length > 0) {
+                            candidates.sort((a, b) => b.bbox.y1 - a.bbox.y1);
+                            finalValue = candidates[0].val;
+                        } else if (scanStrategy === 'top-most' && candidates.length > 0) {
+                            candidates.sort((a, b) => a.bbox.y0 - b.bbox.y0);
+                            finalValue = candidates[0].val;
+                        } else if (candidates.length > 0) {
+                            finalValue = candidates[0].val;
                         }
+
+                        if (finalValue !== null) {
+                            scanFailCount = 0;
+                            lastDetectedHealth = finalValue;
+                            updateHealthUI(finalValue);
+                        } else {
+                            handleOcrFailure(text || 'No Numbers');
+                        }
+
+                        // v2.10.2 - Broadcast word metadata for debug visualization
+                        ipcRenderer.send('ocr:debug-metadata', { 
+                            words: candidates, 
+                            anchor: anchor,
+                            finalValue: finalValue,
+                            strategy: scanStrategy
+                        });
                     } else {
-                        handleOcrFailure('No text');
+                        // v2.10.2 - Healthy Hide Fallback
+                        // If everything is gone, but we were just at 100%, assume we are still healthy
+                        if (lastDetectedHealth === 100) {
+                            updateHealthUI(100);
+                            scanFailCount = 0; 
+                        } else {
+                            handleOcrFailure('Empty Cluster');
+                        }
                     }
                 };
+
+        function updateHealthUI(healthVal) {
+            ipcRenderer.send('app:update-health', healthVal);
+
+            // Broadcast to Squad if enabled
+            if (document.getElementById('config-share-health').checked) {
+                ipcRenderer.send('app:share-health', { 
+                    health: healthVal, 
+                    location: currentLocation 
+                });
+            }
+
+            document.getElementById('health-last-val').textContent = healthVal + '%';
+            console.log('[HealthMonitor] Current Health:', healthVal);
+        }
                 img.src = dataUrl;
             } catch (err) {
                 console.error('[HealthMonitor] Scan failed:', err);

@@ -830,16 +830,24 @@ ipcMain.handle('ocr:capture-screen', async () => {
 
 ipcMain.handle('ocr:process', async (event, dataUrl) => {
     try {
-        console.log('[OCR] Starting analysis...');
+        console.log('[OCR] Starting structural analysis...');
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
 
-        const { data: { text } } = await Tesseract.recognize(imageBuffer, 'eng', {
-            // logger: m => console.log('[OCR Progress]', m.status, Math.round(m.progress * 100) + '%')
-        });
+        const { data } = await Tesseract.recognize(imageBuffer, 'eng');
+        
+        // v2.10.2 - Extract structural word data for anchor tracking
+        const words = data.words.map(w => ({
+            text: w.text,
+            confidence: w.confidence,
+            bbox: w.bbox // { x0, y0, x1, y1 }
+        }));
 
-        console.log('[OCR] Analysis complete.');
-        return text.trim();
+        console.log(`[OCR] Analysis complete. Found ${words.length} words.`);
+        return {
+            text: data.text.trim(),
+            words: words
+        };
     } catch (err) {
         console.error('[OCR] Processing failed:', err);
         throw err;
@@ -2521,5 +2529,11 @@ ipcMain.on('ocr:open-debug', () => createOcrDebugWindow());
 ipcMain.on('ocr:debug-update', (event, dataUrl) => {
     if (ocrDebugWindow && !ocrDebugWindow.isDestroyed()) {
         ocrDebugWindow.webContents.send('ocr:debug-update', dataUrl);
+    }
+});
+
+ipcMain.on('ocr:debug-metadata', (event, data) => {
+    if (ocrDebugWindow && !ocrDebugWindow.isDestroyed()) {
+        ocrDebugWindow.webContents.send('ocr:debug-metadata', data);
     }
 });

@@ -7,51 +7,157 @@
         body {
             margin: 0;
             padding: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: #00ff88;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             border: 1px solid #00ff88;
+            height: 100vh;
         }
         .header {
             font-size: 0.6rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            padding: 4px;
+            padding: 6px;
             background: rgba(0, 255, 136, 0.2);
             width: 100%;
             text-align: center;
             -webkit-app-region: drag;
+            display: flex;
+            justify-content: space-between;
+            box-sizing: border-box;
         }
-        img {
-            max-width: 100%;
-            max-height: calc(100% - 20px);
+        #canvas-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            overflow: auto;
+            background: #111;
+        }
+        canvas {
             image-rendering: pixelated;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin: 5px;
+            max-width: 100%;
+            max-height: 100%;
         }
-        .hint {
-            position: absolute;
-            bottom: 2px;
-            font-size: 0.5rem;
-            opacity: 0.5;
+        .footer {
+            background: rgba(0,0,0,0.5);
+            width: 100%;
+            padding: 4px;
+            font-size: 0.55rem;
+            text-align: center;
+            border-top: 1px solid rgba(0, 255, 136, 0.2);
         }
+        .close-btn {
+            -webkit-app-region: no-drag;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+        .close-btn:hover { color: #ff3333; }
     </style>
 </head>
 <body>
-    <div class="header">OCR LIVE FEED (HEALTH)</div>
-    <img id="debug-img" src="" alt="Waiting for scan...">
-    <div class="hint">High contrast required for Tesseract</div>
+    <div class="header">
+        <span>OCR CLUSTER TRACKER</span>
+        <span onclick="window.close()" class="close-btn">✕</span>
+    </div>
+    
+    <div id="canvas-container">
+        <canvas id="debug-canvas"></canvas>
+    </div>
+
+    <div class="footer" id="status-text">WAITING FOR CLUSTER SCAN...</div>
 
     <script>
         const { ipcRenderer } = require('electron');
-        ipcRenderer.on('ocr:debug-data', (event, dataUrl) => {
-            document.getElementById('debug-img').src = dataUrl;
+        const canvas = document.getElementById('debug-canvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('status-text');
+        
+        let lastImage = null;
+        let lastMetadata = null;
+
+        ipcRenderer.on('ocr:debug-update', (event, dataUrl) => {
+            const img = new Image();
+            img.onload = () => {
+                lastImage = img;
+                render();
+            };
+            img.src = dataUrl;
         });
+
+        ipcRenderer.on('ocr:debug-metadata', (event, data) => {
+            lastMetadata = data;
+            if (data.finalValue !== null) {
+                statusText.textContent = `TRACKING: ${data.finalValue}% (via ${data.strategy})`;
+                statusText.style.color = '#00ff88';
+            } else {
+                statusText.textContent = `SCAN FAILED (Strategy: ${data.strategy})`;
+                statusText.style.color = '#ff6666';
+            }
+            render();
+        });
+
+        function render() {
+            if (!lastImage) return;
+
+            // Sync canvas size to image
+            if (canvas.width !== lastImage.width || canvas.height !== lastImage.height) {
+                canvas.width = lastImage.width;
+                canvas.height = lastImage.height;
+            }
+
+            // Draw Base Image
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(lastImage, 0, 0);
+
+            if (lastMetadata) {
+                // Draw all numeric candidates (Red)
+                ctx.lineWidth = 1;
+                lastMetadata.words.forEach(w => {
+                    ctx.strokeStyle = 'rgba(255, 50, 50, 0.5)';
+                    ctx.strokeRect(w.bbox.x0, w.bbox.y0, w.bbox.x1 - w.bbox.x0, w.bbox.y1 - w.bbox.y0);
+                });
+
+                // Draw Anchor (Blue Crosshair)
+                if (lastMetadata.anchor) {
+                    const ax = (lastMetadata.anchor.bbox.x0 + lastMetadata.anchor.bbox.x1) / 2;
+                    const ay = (lastMetadata.anchor.bbox.y0 + lastMetadata.anchor.bbox.y1) / 2;
+                    
+                    ctx.strokeStyle = '#3399ff';
+                    ctx.setLineDash([2, 2]);
+                    ctx.beginPath();
+                    ctx.moveTo(ax, 0); ctx.lineTo(ax, canvas.height);
+                    ctx.moveTo(0, ay); ctx.lineTo(canvas.width, ay);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Box around anchor
+                    ctx.strokeRect(lastMetadata.anchor.bbox.x0, lastMetadata.anchor.bbox.y0, 
+                                   lastMetadata.anchor.bbox.x1 - lastMetadata.anchor.bbox.x0, 
+                                   lastMetadata.anchor.bbox.y1 - lastMetadata.anchor.bbox.y0);
+                    
+                    ctx.fillStyle = '#3399ff';
+                    ctx.font = '8px monospace';
+                    ctx.fillText('HEART ANCHOR', lastMetadata.anchor.bbox.x1 + 2, lastMetadata.anchor.bbox.y0 + 8);
+                }
+
+                // Draw Selected Value (Green)
+                const selected = lastMetadata.words.find(w => w.val === lastMetadata.finalValue);
+                if (selected) {
+                    ctx.strokeStyle = '#00ff88';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(selected.bbox.x0, selected.bbox.y0, 
+                                   selected.bbox.x1 - selected.bbox.x0, 
+                                   selected.bbox.y1 - selected.bbox.y0);
+                }
+            }
+        }
     </script>
 </body>
 </html>
