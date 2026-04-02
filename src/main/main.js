@@ -16,14 +16,169 @@ const screenshot = require('screenshot-desktop');
 let dashboardWindow;
 let overlayWindow;
 let alertWindow;
+let cncWindow; // v2.8 CNC Overlay
 let remoteApp = null;
 let remoteServer = null;
 let tray = null;
 let parkingUpdateManager = null;
 let telemetryEngine = null; // Telemetry Instance
 let streamChatService = null;
+let squadManager = null; // v2.8 Squad Sync
 let isQuitting = false;
 let dndMode = false;
+
+// ═══ SQUAD SYNC MANAGER (v2.8) ═══
+class SquadManager {
+    constructor() {
+        this.wss = null;
+        this.ws = null;
+        this.role = 'OFF'; // OFF | HOST | JOIN
+        this.peers = {}; // Map of user handle -> { health, pos, lastUpdate }
+        this.hostIp = null;
+    }
+
+    host() {
+        this.stop();
+        this.role = 'HOST';
+        this.wss = new WebSocketServer({ port: 55100 });
+        console.log('[Squad] Hosting Relay on port 55100');
+
+        this.wss.on('connection', (socket, req) => {
+            const ip = req.socket.remoteAddress;
+            console.log('[Squad] Peer connected from:', ip);
+
+            socket.on('message', (msg) => {
+                try {
+                    const data = JSON.parse(msg.toString());
+                    this.handleMessage(data, socket);
+                } catch (e) {
+                    console.error('[Squad] Invalid message:', e.message);
+                }
+            });
+
+            socket.on('close', () => {
+                // Find and remove peer
+                for (const [handle, peer] of Object.entries(this.peers)) {
+                    if (peer._ws === socket) {
+                        delete this.peers[handle];
+                        this.broadcastSquad();
+                        break;
+                    }
+                }
+            });
+        });
+
+        this.broadcastSquad();
+    }
+
+    join(hostIp) {
+        this.stop();
+        this.role = 'JOIN';
+        this.hostIp = hostIp;
+        const url = `ws://${hostIp}:55100`;
+        console.log('[Squad] Connecting to Host:', url);
+
+        try {
+            this.ws = new WebSocket(url);
+            this.ws.on('open', () => {
+                console.log('[Squad] Joined Squad Host');
+                // Identity handshake
+                this.send({ type: 'JOIN', handle: config.rsiHandle || 'Unknown Bear', team: config.userTeam });
+            });
+
+            this.ws.on('message', (msg) => {
+                try {
+                    const data = JSON.parse(msg.toString());
+                    if (data.type === 'SQUAD_LIST') {
+                        this.peers = data.peers;
+                        this.broadcastToCnc();
+                    }
+                } catch (e) { }
+            });
+
+            this.ws.on('error', (e) => {
+                console.error('[Squad] Join Error:', e.message);
+                this.role = 'OFF';
+                broadcast('squad:status', { error: 'Connection Failed: ' + e.message });
+            });
+        } catch (e) {
+            console.error('[Squad] Failed to create socket:', e.message);
+        }
+    }
+
+    stop() {
+        if (this.wss) {
+            this.wss.close();
+            this.wss = null;
+        }
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        this.role = 'OFF';
+        this.peers = {};
+        this.broadcastSquad();
+    }
+
+    handleMessage(data, socket) {
+        if (data.type === 'JOIN') {
+            this.peers[data.handle] = {
+                handle: data.handle,
+                team: data.team,
+                health: 100,
+                lastUpdate: Date.now(),
+                _ws: socket
+            };
+            this.broadcastSquad();
+        } else if (data.type === 'HEALTH') {
+            const peer = this.peers[data.handle];
+            if (peer) {
+                peer.health = data.value;
+                peer.lastUpdate = Date.now();
+                this.broadcastSquad();
+            }
+        }
+    }
+
+    send(data) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify(data));
+        }
+    }
+
+    shareHealth(healthVal) {
+        if (this.role === 'JOIN') {
+            this.send({ type: 'HEALTH', handle: config.rsiHandle || 'Unknown Bear', value: healthVal });
+        } else if (this.role === 'HOST') {
+            // As host, just record local health in peers map
+            const myHandle = (config.rsiHandle || 'Commander') + ' (Host)';
+            this.peers[myHandle] = {
+                handle: myHandle,
+                team: config.userTeam,
+                health: healthVal,
+                lastUpdate: Date.now(),
+                isHost: true
+            };
+            this.broadcastSquad();
+        }
+    }
+
+    broadcastSquad() {
+        // 1. Send SQUAD_LIST to all connected workers
+        if (this.role === 'HOST' && this.wss) {
+            const listMsg = JSON.stringify({ type: 'SQUAD_LIST', peers: this.peers });
+            this.wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) client.send(listMsg);
+            });
+        }
+        // 2. Transmit to global app listeners (CNC Overlay)
+        this.broadcastToCnc();
+    }
+
+    broadcastToCnc() {
+        broadcast('squad:update', { role: this.role, peers: this.peers });
+    }
+}
 
 // ═══ STREAM CHAT SERVICE (v2.10) ═══
 class StreamChatService {
@@ -796,6 +951,7 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.shareLocation !== undefined) config.shareLocation = newConfig.shareLocation; // Phase 5
     if (newConfig.teamNames !== undefined) config.teamNames = newConfig.teamNames;
     if (newConfig.userTeam !== undefined) config.userTeam = newConfig.userTeam;
+    if (newConfig.rsiHandle !== undefined) config.rsiHandle = newConfig.rsiHandle;
     if (newConfig.overlayPositions !== undefined) config.overlayPositions = newConfig.overlayPositions;
 
     // Philips Hue Settings
@@ -2034,6 +2190,9 @@ if (!gotTheLock) {
     app.whenReady().then(() => {
         loadConfig(); // Load saved config
         patternDatabase = loadPatternDB(); // Load pattern DB
+        
+        // Init Squad Sync (v2.8)
+        squadManager = new SquadManager();
 
         // Initialize NavigationParser with custom locations AFTER config is loaded
         if (config.customLocations) {
@@ -2194,3 +2353,47 @@ if (process.defaultApp) {
 } else {
     app.setAsDefaultProtocolClient('versecon-link');
 }
+// ═══ CNC OVERLAY LOGIC (v2.8) ═══
+function createCncWindow() {
+    if (cncWindow && !cncWindow.isDestroyed()) {
+        cncWindow.focus();
+        return;
+    }
+
+    cncWindow = new BrowserWindow({
+        width: 1000,
+        height: 700,
+        frame: false,
+        backgroundColor: '#000000',
+        title: 'VerseCon Command & Control',
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+
+    cncWindow.setMenuBarVisibility(false);
+    cncWindow.loadFile(path.join(__dirname, '../renderer/cnc.html'));
+
+    cncWindow.on('closed', () => { cncWindow = null; });
+}
+
+ipcMain.on('cnc:open', () => createCncWindow());
+
+ipcMain.on('squad:host', () => {
+    if (squadManager) squadManager.host();
+});
+
+ipcMain.on('squad:join', (event, hostIp) => {
+    if (squadManager) squadManager.join(hostIp);
+});
+
+ipcMain.on('squad:stop', () => {
+    if (squadManager) squadManager.stop();
+});
+
+ipcMain.on('app:share-health', (event, healthVal) => {
+    if (squadManager && config.shareHealth) {
+        squadManager.shareHealth(healthVal);
+    }
+});

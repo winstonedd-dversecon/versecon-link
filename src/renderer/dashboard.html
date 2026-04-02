@@ -907,6 +907,50 @@
                 </div>
             </div>
 
+            <!-- Squad Management (v2.8) -->
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Squad Management (Command & Control)</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Connect directly to your squad for real-time health monitoring.</div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 100px; font-size: 0.8rem; color: var(--text-dim);">RSI Handle</span>
+                        <input type="text" id="config-rsi-handle" class="modern-input" placeholder="Your Handle" style="margin:0; flex:1;" onchange="saveConfig()">
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="cyber-btn small" id="btn-squad-off" onclick="setSquadMode('OFF')" style="flex:1;">OFF</button>
+                        <button class="cyber-btn small" id="btn-squad-join" onclick="setSquadMode('JOIN')" style="flex:1;">JOIN</button>
+                        <button class="cyber-btn small" id="btn-squad-host" onclick="setSquadMode('HOST')" style="flex:1;">HOST</button>
+                    </div>
+
+                    <div id="squad-join-container" style="display: none; flex-direction: column; gap: 5px;">
+                        <span style="font-size: 0.75rem; color: #888;">Commander's IP/Code:</span>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="config-squad-host-ip" class="modern-input" placeholder="192.168.1..." style="margin:0; flex:1;">
+                            <button class="cyber-btn small success" onclick="joinSquad()">Connect</button>
+                        </div>
+                    </div>
+
+                    <div id="squad-host-container" style="display: none; flex-direction: column; gap: 5px;">
+                        <span style="font-size: 0.75rem; color: var(--success);">Direct Sync Active (Port 55100)</span>
+                        <div style="font-size: 0.65rem; color: #666;">Share your IP with squad members.</div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #333; padding-top: 10px;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.85rem; color: var(--text-dim);">Share Health with Squad</span>
+                            <span style="font-size: 0.65rem; color: #555;">Broadcast OCR health to your commander.</span>
+                        </div>
+                        <input type="checkbox" id="config-share-health" onchange="saveConfig()" style="width: 20px; height: 20px; cursor: pointer;">
+                    </div>
+
+                    <button class="cyber-btn" onclick="openCncOverlay()" style="width: 100%; font-weight: bold; margin-top: 5px;">
+                        📊 Open CNC Dashboard
+                    </button>
+                </div>
+            </div>
+
             <!-- Stream Integration (v2.10) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -2003,6 +2047,11 @@
             if (config.twitchChannel) document.getElementById('config-twitch-channel').value = config.twitchChannel;
             if (config.youtubeChannelId) document.getElementById('config-youtube-channel-id').value = config.youtubeChannelId;
             if (config.youtubeId) document.getElementById('config-youtube-id').value = config.youtubeId;
+            
+            if (config.rsiHandle) document.getElementById('config-rsi-handle').value = config.rsiHandle;
+            if (config.shareHealth !== undefined) document.getElementById('config-share-health').checked = config.shareHealth;
+            if (config.squadHostIp) document.getElementById('config-squad-host-ip').value = config.squadHostIp;
+
             if (config.performanceMode !== undefined) document.getElementById('config-perf-mode').checked = config.performanceMode;
             if (config.logLimit !== undefined) {
                 document.getElementById('config-log-limit').value = config.logLimit;
@@ -4379,6 +4428,12 @@
                             // Only update if it looks like a real health value (e.g., if heart was found)
                             // or if we aren't currently in a "Dead" state.
                             ipcRenderer.send('app:update-health', healthVal);
+
+                            // Broadcast to Squad if enabled (v2.8)
+                            if (document.getElementById('config-share-health').checked) {
+                                ipcRenderer.send('app:share-health', healthVal);
+                            }
+
                             document.getElementById('health-last-val').textContent = healthVal + '%';
                             console.log('[HealthMonitor] Parsed:', healthVal, 'Raw text:', text);
                         }
