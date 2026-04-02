@@ -22,6 +22,7 @@
     "chokidar": "^3.5.3",
     "electron-updater": "^6.1.7",
     "express": "^4.22.1",
+    "nat-upnp": "^1.1.1",
     "obs-websocket-js": "^5.0.5",
     "screenshot-desktop": "^1.15.3",
     "socket.io-client": "^4.7.4",
