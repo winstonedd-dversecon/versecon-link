@@ -939,6 +939,10 @@
                         <span style="font-size: 0.75rem; color: var(--success);">Direct Sync Active (Port 55100)</span>
                         <div style="font-size: 0.65rem; color: #888;">UPnP Status: <span id="squad-upnp-status" style="color: var(--accent);">None</span></div>
                         <div style="font-size: 0.65rem; color: #666;">Share your IP with squad members.</div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <button class="cyber-btn small warning" onclick="openCncOverlay()">Command & Control</button>
+                            <button class="cyber-btn small success" onclick="openSquadHud()">Squad HUD</button>
+                        </div>
                     </div>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #333; padding-top: 10px;">
@@ -1857,6 +1861,7 @@
         let soundEnabled = true;
         let soundVolume = 0.7;
         let unknownCount = 0;
+        let currentLocation = 'Searching...';
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         // ═══ TAB SWITCHING ═══
@@ -2083,6 +2088,15 @@
                 ipcRenderer.send('app:update-health', 0);
                 document.getElementById('health-last-val').textContent = 'DEAD';
                 addDashItem('💀', 'Actor death detected in logs.');
+            }
+            if (data.type === 'NEW_LOCATION') {
+                currentLocation = data.value || data.raw || 'Unknown Location';
+            }
+        });
+
+        ipcRenderer.on('gamestate', (e, data) => {
+            if (data.type === 'LOCATION' || data.type === 'ZONE') {
+                currentLocation = data.value;
             }
         });
 
@@ -4441,7 +4455,10 @@
 
                             // Broadcast to Squad if enabled (v2.8)
                             if (document.getElementById('config-share-health').checked) {
-                                ipcRenderer.send('app:share-health', healthVal);
+                                ipcRenderer.send('app:share-health', { 
+                                    health: healthVal, 
+                                    location: currentLocation 
+                                });
                             }
 
                             document.getElementById('health-last-val').textContent = healthVal + '%';
@@ -4518,6 +4535,11 @@
         function openCncOverlay() {
             ipcRenderer.send('cnc:open');
             addDashItem('📊', 'Opening CNC Dashboard...');
+        }
+
+        function openSquadHud() {
+            ipcRenderer.send('squad:open-hud');
+            addDashItem('📱', 'Opening Squad HUD...');
         }
 
         // Listen for squad status updates

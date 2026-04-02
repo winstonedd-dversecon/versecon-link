@@ -68,12 +68,13 @@ class SquadManager {
             console.error('[Squad] UPnP Init Error:', e.message);
         }
 
-        // Add self to peers list so Commander appears on for themselves
-        const myHandle = (config.rsiHandle || 'Commander') + ' (Host)';
+        // Add self to peers list immediately so Commander appears for themselves
+        const myHandle = config.rsiHandle || 'Commander';
         this.peers[myHandle] = {
             handle: myHandle,
             team: config.userTeam || 'Alpha',
             health: 100,
+            location: LogWatcher.cachedState.location || 'Unknown Orbit',
             lastUpdate: Date.now(),
             isHost: true
         };
@@ -168,6 +169,7 @@ class SquadManager {
                 handle: data.handle,
                 team: data.team,
                 health: 100,
+                location: data.location || 'Unknown',
                 lastUpdate: Date.now(),
                 _ws: socket
             };
@@ -176,6 +178,7 @@ class SquadManager {
             const peer = this.peers[data.handle];
             if (peer) {
                 peer.health = data.value;
+                peer.location = data.location || peer.location;
                 peer.lastUpdate = Date.now();
                 this.broadcastSquad();
             }
@@ -188,19 +191,18 @@ class SquadManager {
         }
     }
 
-    shareHealth(healthVal) {
+    shareHealth(healthVal, location) {
         if (this.role === 'JOIN') {
-            this.send({ type: 'HEALTH', handle: config.rsiHandle || 'Unknown Bear', value: healthVal });
+            this.send({ type: 'HEALTH', handle: config.rsiHandle || 'Unknown Bear', value: healthVal, location: location });
         } else if (this.role === 'HOST') {
             // As host, just record local health in peers map
-            const myHandle = (config.rsiHandle || 'Commander') + ' (Host)';
-            this.peers[myHandle] = {
-                handle: myHandle,
-                team: config.userTeam || 'Alpha',
-                health: healthVal,
-                lastUpdate: Date.now(),
-                isHost: true
-            };
+            const myHandle = config.rsiHandle || 'Commander';
+            if (!this.peers[myHandle]) {
+                this.peers[myHandle] = { handle: myHandle, team: config.userTeam || 'Alpha', isHost: true };
+            }
+            this.peers[myHandle].health = healthVal;
+            this.peers[myHandle].location = location || LogWatcher.cachedState.location || 'Unknown';
+            this.peers[myHandle].lastUpdate = Date.now();
             this.broadcastSquad();
         }
     }
@@ -2434,8 +2436,38 @@ ipcMain.on('squad:stop', () => {
     if (squadManager) squadManager.stop();
 });
 
-ipcMain.on('app:share-health', (event, healthVal) => {
+ipcMain.on('app:share-health', (event, { health, location }) => {
     if (squadManager && config.shareHealth) {
-        squadManager.shareHealth(healthVal);
+        squadManager.shareHealth(health, location);
     }
 });
+
+// ═══ SQUAD HUD LOGIC (v2.8) ═══
+function createSquadHudWindow() {
+    if (squadHudWindow && !squadHudWindow.isDestroyed()) {
+        squadHudWindow.focus();
+        return;
+    }
+
+    squadHudWindow = new BrowserWindow({
+        width: 320,
+        height: 600,
+        x: 20, // Far left
+        y: 100,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        resizable: true,
+        skipTaskbar: true,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+
+    squadHudWindow.setIgnoreMouseEvents(false); // Allow clicking for now, can be toggled
+    squadHudWindow.loadFile(path.join(__dirname, '../renderer/squad-hud.html'));
+    squadHudWindow.on('closed', () => { squadHudWindow = null; });
+}
+
+ipcMain.on('squad:open-hud', () => createSquadHudWindow());
