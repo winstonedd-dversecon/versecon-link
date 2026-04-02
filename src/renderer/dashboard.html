@@ -894,13 +894,15 @@
                     <!-- New Debug Preview -->
                     <div id="health-debug-container" style="display: none; border-top: 1px solid var(--border); padding-top: 10px;">
                         <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px;">LIVE OCR CROP & FILTERS (DEBUG):</div>
-                        <div style="background: #000; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 48px;">
+                        <div style="background: #000; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 48px; position: relative;">
                             <canvas id="health-debug-canvas" style="max-width: 100%; border: 1px solid #333; image-rendering: pixelated;"></canvas>
+                            <div id="health-anchor-dot" style="position: absolute; width: 6px; height: 6px; background: #00ff00; border-radius: 50%; display: none; box-shadow: 0 0 5px #00ff00; pointer-events: none;"></div>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">
                             <span id="health-last-scan">Last Scan: Never</span>
                             <span id="health-last-val" style="color: var(--accent);">--%</span>
                         </div>
+                        <div id="health-status-hint" style="font-size: 0.65rem; color: #555; margin-top: 2px;">Tip: Select a larger area including all status icons for anchor-mode.</div>
                     </div>
                 </div>
             </div>
@@ -2014,6 +2016,15 @@
             // Update local state
             soundVolume = (config.volume || 70) / 100;
             soundEnabled = config.soundEnabled !== false;
+        });
+
+        ipcRenderer.on('log:update', (e, data) => {
+            if (data.type === 'DEATH') {
+                console.log('[Dashboard] Actor death detected, resetting health.');
+                ipcRenderer.send('app:update-health', 0);
+                document.getElementById('health-last-val').textContent = 'DEAD';
+                addDashItem('💀', 'Actor death detected in logs.');
+            }
         });
 
         // Request initial config?
@@ -4282,18 +4293,68 @@
                     const ctx = tempCanvas.getContext('2d');
                     ctx.drawImage(img, config.healthZone.x, config.healthZone.y, config.healthZone.w, config.healthZone.h, 0, 0, config.healthZone.w, config.healthZone.h);
 
+                    // ═══ Heart Anchor Detection (Star Citizen 4.0+) ═══
+                    // The heart icon usually has a specific color or shape.
+                    // We search for the "Heart" color (Cyan/White/Red) in the raw crop.
+                    const rawData = ctx.getImageData(0, 0, config.healthZone.w, config.healthZone.h).data;
+                    let anchorX = -1, anchorY = -1;
+                    
+                    // Look for Cyan/LightBlue Heart (SC default) or Red (Damaged)
+                    // Cyan: R:0-100, G:200-255, B:150-255
+                    // Red: R:200-255, G:0-100, B:0-100
+                    for (let y = 0; y < config.healthZone.h; y += 2) {
+                        for (let x = 0; x < config.healthZone.w; x += 2) {
+                            const i = (y * config.healthZone.w + x) * 4;
+                            const r = rawData[i], g = rawData[i+1], b = rawData[i+2];
+                            
+                            const isCyan = (r < 150 && g > 180 && b > 180);
+                            const isRed = (r > 180 && g < 100 && b < 100);
+                            
+                            if (isCyan || isRed) {
+                                // Found potential heart pixel
+                                anchorX = x; anchorY = y;
+                                break;
+                            }
+                        }
+                        if (anchorX !== -1) break;
+                    }
+
+                    const dot = document.getElementById('health-anchor-dot');
+                    if (anchorX !== -1) {
+                        if (dot) {
+                            dot.style.display = 'block';
+                            dot.style.left = `calc(${anchorX / config.healthZone.w * 100}% - 3px)`;
+                            dot.style.top = `calc(${anchorY / config.healthZone.h * 100}% - 3px)`;
+                        }
+                        console.log('[HealthMonitor] Heart anchor found at:', anchorX, anchorY);
+                    } else {
+                        if (dot) dot.style.display = 'none';
+                        // Fallback: If heart not found, just use the center or original logic
+                    }
+
                     // ═══ Preprocessing for OCR ═══
                     const debugCanvas = document.getElementById('health-debug-canvas');
                     const dctx = debugCanvas.getContext('2d');
-                    debugCanvas.width = config.healthZone.w;
-                    debugCanvas.height = config.healthZone.h;
+                    
+                    // If we found an anchor, crop the area NEXT to it (usually to the right)
+                    // The percentage is typically 10-60 pixels to the right.
+                    let targetX = 0, targetY = 0, targetW = config.healthZone.w, targetH = config.healthZone.h;
+                    if (anchorX !== -1) {
+                        targetX = Math.max(0, anchorX - 5); // Start slightly before the icon
+                        targetW = 80; // Typically enough for "100%"
+                        targetH = 25; 
+                        targetY = Math.max(0, anchorY - 10);
+                    }
+
+                    debugCanvas.width = targetW;
+                    debugCanvas.height = targetH;
                     
                     // 1. Grayscale & Contrast
                     dctx.filter = 'grayscale(1) contrast(2) brightness(1.2) invert(1)';
-                    dctx.drawImage(tempCanvas, 0, 0);
+                    dctx.drawImage(tempCanvas, targetX, targetY, targetW, targetH, 0, 0, targetW, targetH);
                     
                     // 2. Thresholding
-                    const imageData = dctx.getImageData(0, 0, debugCanvas.width, debugCanvas.height);
+                    const imageData = dctx.getImageData(0, 0, targetW, targetH);
                     const data = imageData.data;
                     for (let i = 0; i < data.length; i += 4) {
                         const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
@@ -4309,13 +4370,16 @@
 
                     if (text) {
                         // Extract digits. Look for percentage format or just numbers.
-                        // Common OCR errors: 100% -> l00, 1Q0, etc.
                         const cleanedText = text.replace(/[lI|]/g, '1').replace(/[oOQ]/g, '0');
                         const match = cleanedText.match(/(\d+)/);
                         if (match) {
                             let healthVal = parseInt(match[0]);
-                            if (healthVal > 100) healthVal = 100; // Cap at 100
+                            if (healthVal > 100) healthVal = 100;
+                            
+                            // Only update if it looks like a real health value (e.g., if heart was found)
+                            // or if we aren't currently in a "Dead" state.
                             ipcRenderer.send('app:update-health', healthVal);
+                            document.getElementById('health-last-val').textContent = healthVal + '%';
                             console.log('[HealthMonitor] Parsed:', healthVal, 'Raw text:', text);
                         }
                     }

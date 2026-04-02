@@ -1288,15 +1288,36 @@
             setTimeout(() => el.classList.add('hidden'), 5000);
         }
 
+        let lastDeathTime = 0;
+
+        ipcRenderer.on('log:update', (event, data) => {
+            if (data.type === 'DEATH') {
+                lastDeathTime = Date.now();
+                const valEl = document.getElementById('val-health');
+                const barEl = document.getElementById('bar-health');
+                if (valEl) valEl.textContent = '0%';
+                if (barEl) {
+                    barEl.style.width = '0%';
+                    barEl.style.background = 'var(--danger)';
+                }
+            }
+        });
+
         // Health Updates (v2.10)
         ipcRenderer.on('player:health-update', (event, healthVal) => {
+            // Ignore OCR updates for 5 seconds after a log-detected death
+            // to prevent "ghosting" from old frames or loading screens.
+            if (Date.now() - lastDeathTime < 5000 && healthVal > 0) {
+                console.log('[Overlay] Ignoring health update due to recent death cooldown.');
+                return;
+            }
+
             const valEl = document.getElementById('val-health');
             const barEl = document.getElementById('bar-health');
             if (valEl) valEl.textContent = healthVal + '%';
             if (barEl) {
                 barEl.style.width = healthVal + '%';
                 // Color mapping
-                if (healthVal < 30) barEl.style.color = 'var(--danger)'; // Wait, barEl is a div, I should change its background
                 if (healthVal < 30) barEl.style.background = 'var(--danger)';
                 else if (healthVal < 60) barEl.style.background = 'var(--accent)';
                 else barEl.style.background = 'var(--success)';
