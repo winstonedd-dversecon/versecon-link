@@ -2,364 +2,404 @@
   "player": "TypicallyBrit_ish",
   "attachments": [
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "srvl_armor_heavy_arms_02_01_01_9480450765389",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "srvl_armor_heavy_arms_02_01_01_9783944225348",
       "archetype": "srvl_armor_heavy_arms_02_01_01",
-      "numericId": "9480450765389",
+      "numericId": "9783944225348",
       "port": "Armor_Arms",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[srvl_armor_heavy_arms_02_01_01_9480450765389, srvl_armor_heavy_arms_02_01_01, 9480450765389] Status[persistent] Port[Armor_Arms] Elapsed[6722.007812] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[srvl_armor_heavy_arms_02_01_01_9783944225348, srvl_armor_heavy_arms_02_01_01, 9783944225348] Status[persistent] Port[Armor_Arms] Elapsed[24710.453125] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "rsi_odyssey_undersuit_helmet_01_01_01_200000000747",
-      "archetype": "rsi_odyssey_undersuit_helmet_01_01_01",
-      "numericId": "200000000747",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "ccc_combat_heavy_helmet_01_01_01_9783944225360",
+      "archetype": "ccc_combat_heavy_helmet_01_01_01",
+      "numericId": "9783944225360",
       "port": "Armor_Helmet",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[rsi_odyssey_undersuit_helmet_01_01_01_200000000747, rsi_odyssey_undersuit_helmet_01_01_01, 200000000747] Status[persistent] Port[Armor_Helmet] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[ccc_combat_heavy_helmet_01_01_01_9783944225360, ccc_combat_heavy_helmet_01_01_01, 9783944225360] Status[persistent] Port[Armor_Helmet] Elapsed[24710.453125] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "srvl_armor_heavy_legs_02_01_01_9480450765390",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "srvl_armor_heavy_legs_02_01_01_9783944225349",
       "archetype": "srvl_armor_heavy_legs_02_01_01",
-      "numericId": "9480450765390",
+      "numericId": "9783944225349",
       "port": "Armor_Legs",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[srvl_armor_heavy_legs_02_01_01_9480450765390, srvl_armor_heavy_legs_02_01_01, 9480450765390] Status[persistent] Port[Armor_Legs] Elapsed[6722.007812] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[srvl_armor_heavy_legs_02_01_01_9783944225349, srvl_armor_heavy_legs_02_01_01, 9783944225349] Status[persistent] Port[Armor_Legs] Elapsed[24710.453125] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "srvl_armor_heavy_core_02_01_01_9480450765372",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "srvl_armor_heavy_core_02_01_01_9783944225329",
       "archetype": "srvl_armor_heavy_core_02_01_01",
-      "numericId": "9480450765372",
+      "numericId": "9783944225329",
       "port": "Armor_Torso",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[srvl_armor_heavy_core_02_01_01_9480450765372, srvl_armor_heavy_core_02_01_01, 9480450765372] Status[persistent] Port[Armor_Torso] Elapsed[0.000085] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[srvl_armor_heavy_core_02_01_01_9783944225329, srvl_armor_heavy_core_02_01_01, 9783944225329] Status[persistent] Port[Armor_Torso] Elapsed[0.000253] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "rsi_odyssey_undersuit_01_01_01_200000000746",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "rsi_odyssey_undersuit_01_01_01_9783944225328",
       "archetype": "rsi_odyssey_undersuit_01_01_01",
-      "numericId": "200000000746",
+      "numericId": "9783944225328",
       "port": "Armor_Undersuit",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[rsi_odyssey_undersuit_01_01_01_200000000746, rsi_odyssey_undersuit_01_01_01, 200000000746] Status[persistent] Port[Armor_Undersuit] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[rsi_odyssey_undersuit_01_01_01_9783944225328, rsi_odyssey_undersuit_01_01_01, 9783944225328] Status[persistent] Port[Armor_Undersuit] Elapsed[24710.453125] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "rrs_combat_heavy_backpack_01_01_10_9480450765381",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "rrs_combat_heavy_backpack_01_01_10_9783944225338",
       "archetype": "rrs_combat_heavy_backpack_01_01_10",
-      "numericId": "9480450765381",
+      "numericId": "9783944225338",
       "port": "backpack",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[rrs_combat_heavy_backpack_01_01_10_9480450765381, rrs_combat_heavy_backpack_01_01_10, 9480450765381] Status[persistent] Port[backpack] Elapsed[0.000014] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[rrs_combat_heavy_backpack_01_01_10_9783944225338, rrs_combat_heavy_backpack_01_01_10, 9783944225338] Status[persistent] Port[backpack] Elapsed[0.000027] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "arma_barrel_comp_s2_firerats01_9480450765385",
-      "archetype": "arma_barrel_comp_s2_firerats01",
-      "numericId": "9480450765385",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "arma_barrel_supp_s2_9783944225342",
+      "archetype": "arma_barrel_supp_s2",
+      "numericId": "9783944225342",
       "port": "barrel_attach",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[arma_barrel_comp_s2_firerats01_9480450765385, arma_barrel_comp_s2_firerats01, 9480450765385] Status[persistent] Port[barrel_attach] Elapsed[0.000051] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[arma_barrel_supp_s2_9783944225342, arma_barrel_supp_s2, 9783944225342] Status[persistent] Port[barrel_attach] Elapsed[0.000105] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "facial_hair_001_9334022692905",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "facial_hair_001_9730553759733",
       "archetype": "facial_hair_001",
-      "numericId": "9334022692905",
+      "numericId": "9730553759733",
       "port": "Beard_ItemPort",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[facial_hair_001_9334022692905, facial_hair_001, 9334022692905] Status[persistent] Port[Beard_ItemPort] Elapsed[0.000187] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[facial_hair_001_9730553759733, facial_hair_001, 9730553759733] Status[persistent] Port[Beard_ItemPort] Elapsed[0.000281] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "body_01_noMagicPocket_200000000745",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "body_01_noMagicPocket_9731435729892",
       "archetype": "body_01_noMagicPocket",
-      "numericId": "200000000745",
+      "numericId": "9731435729892",
       "port": "Body_ItemPort",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[body_01_noMagicPocket_200000000745, body_01_noMagicPocket, 200000000745] Status[persistent] Port[Body_ItemPort] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[body_01_noMagicPocket_9731435729892, body_01_noMagicPocket, 9731435729892] Status[persistent] Port[Body_ItemPort] Elapsed[24710.451172] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "grin_multitool_resource_salvage_repair_01_filled_9480450765394",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_multitool_resource_salvage_repair_01_filled_9783944225358",
       "archetype": "grin_multitool_resource_salvage_repair_01_filled",
-      "numericId": "9480450765394",
+      "numericId": "9783944225358",
       "port": "canister_attach",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_resource_salvage_repair_01_filled_9480450765394, grin_multitool_resource_salvage_repair_01_filled, 9480450765394] Status[persistent] Port[canister_attach] Elapsed[0.000057] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_resource_salvage_repair_01_filled_9783944225358, grin_multitool_resource_salvage_repair_01_filled, 9783944225358] Status[persistent] Port[canister_attach] Elapsed[0.000225] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "brows_001_200000000761",
-      "archetype": "brows_001",
-      "numericId": "200000000761",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "scu_goggles_01_01_01_9738247636512",
+      "archetype": "scu_goggles_01_01_01",
+      "numericId": "9738247636512",
+      "port": "Eye_Accessories_ItemPort",
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[scu_goggles_01_01_01_9738247636512, scu_goggles_01_01_01, 9738247636512] Status[persistent] Port[Eye_Accessories_ItemPort] Elapsed[0.000241] [Team_CoreGameplayFeatures][Inventory]\r"
+    },
+    {
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "brows_002_9730553759732",
+      "archetype": "brows_002",
+      "numericId": "9730553759732",
       "port": "Eyebrow_ItemPort",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[brows_001_200000000761, brows_001, 200000000761] Status[persistent] Port[Eyebrow_ItemPort] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[brows_002_9730553759732, brows_002, 9730553759732] Status[persistent] Port[Eyebrow_ItemPort] Elapsed[0.000296] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "Head_Eyedetail_200000000760",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "Head_Eyedetail_9731435729907",
       "archetype": "Head_Eyedetail",
-      "numericId": "200000000760",
+      "numericId": "9731435729907",
       "port": "Eyedetail_ItemPort",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Head_Eyedetail_200000000760, Head_Eyedetail, 200000000760] Status[persistent] Port[Eyedetail_ItemPort] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Head_Eyedetail_9731435729907, Head_Eyedetail, 9731435729907] Status[persistent] Port[Eyedetail_ItemPort] Elapsed[0.000311] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "Head_Eyelashes_200000000759",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "Head_Eyelashes_9731435729906",
       "archetype": "Head_Eyelashes",
-      "numericId": "200000000759",
+      "numericId": "9731435729906",
       "port": "Eyelashes_ItemPort",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Head_Eyelashes_200000000759, Head_Eyelashes, 200000000759] Status[persistent] Port[Eyelashes_ItemPort] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Head_Eyelashes_9731435729906, Head_Eyelashes, 9731435729906] Status[persistent] Port[Eyelashes_ItemPort] Elapsed[0.000324] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "Head_Eyes_Brown_03_200000000756",
-      "archetype": "Head_Eyes_Brown_03",
-      "numericId": "200000000756",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "PU_Head_Eyes_White_CharacterCustomizer_9730553759731",
+      "archetype": "PU_Head_Eyes_White_CharacterCustomizer",
+      "numericId": "9730553759731",
       "port": "Eyes_ItemPort",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Head_Eyes_Brown_03_200000000756, Head_Eyes_Brown_03, 200000000756] Status[persistent] Port[Eyes_ItemPort] Elapsed[9290.803711] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[PU_Head_Eyes_White_CharacterCustomizer_9730553759731, PU_Head_Eyes_White_CharacterCustomizer, 9730553759731] Status[persistent] Port[Eyes_ItemPort] Elapsed[0.000337] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "hair_02_200000000758",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "hair_02_9731435729905",
       "archetype": "hair_02",
-      "numericId": "200000000758",
+      "numericId": "9731435729905",
       "port": "Hair_ItemPort",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[hair_02_200000000758, hair_02, 200000000758] Status[persistent] Port[Hair_ItemPort] Elapsed[9290.803711] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[hair_02_9731435729905, hair_02, 9731435729905] Status[persistent] Port[Hair_ItemPort] Elapsed[0.000381] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "PU_Protos_Head_200000000754",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "PU_Protos_Head_9731435729901",
       "archetype": "PU_Protos_Head",
-      "numericId": "200000000754",
+      "numericId": "9731435729901",
       "port": "Head_ItemPort",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[PU_Protos_Head_200000000754, PU_Protos_Head, 200000000754] Status[persistent] Port[Head_ItemPort] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[PU_Protos_Head_9731435729901, PU_Protos_Head, 9731435729901] Status[persistent] Port[Head_ItemPort] Elapsed[0.000229] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "FP_Visor_200000000764",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "FP_Visor_9783944225361",
       "archetype": "FP_Visor",
-      "numericId": "200000000764",
+      "numericId": "9783944225361",
       "port": "helmet_visor",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[FP_Visor_200000000764, FP_Visor, 200000000764] Status[persistent] Port[helmet_visor] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[FP_Visor_9783944225361, FP_Visor, 9783944225361] Status[persistent] Port[helmet_visor] Elapsed[24710.453125] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "LegacyMobiGlas_200000000753",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "LegacyMobiGlas_9731435729900",
       "archetype": "LegacyMobiGlas",
-      "numericId": "200000000753",
+      "numericId": "9731435729900",
       "port": "legacy_mobiglas_screen_attach",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[LegacyMobiGlas_200000000753, LegacyMobiGlas, 200000000753] Status[persistent] Port[legacy_mobiglas_screen_attach] Elapsed[9290.803711] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[LegacyMobiGlas_9731435729900, LegacyMobiGlas, 9731435729900] Status[persistent] Port[legacy_mobiglas_screen_attach] Elapsed[0.000404] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "Default_LensDisplay_PU_200000000757",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "Default_LensDisplay_PU_9730553759734",
       "archetype": "Default_LensDisplay_PU",
-      "numericId": "200000000757",
+      "numericId": "9730553759734",
       "port": "Lens_ItemPort",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Default_LensDisplay_PU_200000000757, Default_LensDisplay_PU, 200000000757] Status[persistent] Port[Lens_ItemPort] Elapsed[9290.803711] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Default_LensDisplay_PU_9730553759734, Default_LensDisplay_PU, 9730553759734] Status[persistent] Port[Lens_ItemPort] Elapsed[0.000352] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "klwe_pistol_energy_01_mag_200000000766",
-      "archetype": "klwe_pistol_energy_01_mag",
-      "numericId": "200000000766",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "weapon_underbarrel_light_narrow_9783944225344",
+      "archetype": "weapon_underbarrel_light_narrow",
+      "numericId": "9783944225344",
+      "port": "light_1",
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[weapon_underbarrel_light_narrow_9783944225344, weapon_underbarrel_light_narrow, 9783944225344] Status[persistent] Port[light_1] Elapsed[0.000095] [Team_CoreGameplayFeatures][Inventory]\r"
+    },
+    {
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "weapon_underbarrel_light_wide_9783944225345",
+      "archetype": "weapon_underbarrel_light_wide",
+      "numericId": "9783944225345",
+      "port": "light_2",
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[weapon_underbarrel_light_wide_9783944225345, weapon_underbarrel_light_wide, 9783944225345] Status[persistent] Port[light_2] Elapsed[0.000086] [Team_CoreGameplayFeatures][Inventory]\r"
+    },
+    {
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "gmni_sniper_ballistic_01_mag_9783944225340",
+      "archetype": "gmni_sniper_ballistic_01_mag",
+      "numericId": "9783944225340",
       "port": "magazine_attach",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_pistol_energy_01_mag_200000000766, klwe_pistol_energy_01_mag, 200000000766] Status[persistent] Port[magazine_attach] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[gmni_sniper_ballistic_01_mag_9783944225340, gmni_sniper_ballistic_01_mag, 9783944225340] Status[persistent] Port[magazine_attach] Elapsed[0.000124] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "klwe_pistol_energy_01_mag_200000000750",
-      "archetype": "klwe_pistol_energy_01_mag",
-      "numericId": "200000000750",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_tool_resource_salvage_repair_01_filled_9783944225330",
+      "archetype": "grin_tool_resource_salvage_repair_01_filled",
+      "numericId": "9783944225330",
       "port": "magazine_attach_1",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_pistol_energy_01_mag_200000000750, klwe_pistol_energy_01_mag, 200000000750] Status[persistent] Port[magazine_attach_1] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_tool_resource_salvage_repair_01_filled_9783944225330, grin_tool_resource_salvage_repair_01_filled, 9783944225330] Status[persistent] Port[magazine_attach_1] Elapsed[0.000206] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "gmni_lmg_ballistic_01_mag_9480450765374",
-      "archetype": "gmni_lmg_ballistic_01_mag",
-      "numericId": "9480450765374",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_multitool_resource_salvage_repair_01_filled_9783944225331",
+      "archetype": "grin_multitool_resource_salvage_repair_01_filled",
+      "numericId": "9783944225331",
       "port": "magazine_attach_2",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[gmni_lmg_ballistic_01_mag_9480450765374, gmni_lmg_ballistic_01_mag, 9480450765374] Status[persistent] Port[magazine_attach_2] Elapsed[0.000134] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_resource_salvage_repair_01_filled_9783944225331, grin_multitool_resource_salvage_repair_01_filled, 9783944225331] Status[persistent] Port[magazine_attach_2] Elapsed[0.000195] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "klwe_sniper_energy_01_mag_9480450765375",
-      "archetype": "klwe_sniper_energy_01_mag",
-      "numericId": "9480450765375",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_multitool_resource_salvage_repair_01_filled_9783944225332",
+      "archetype": "grin_multitool_resource_salvage_repair_01_filled",
+      "numericId": "9783944225332",
       "port": "magazine_attach_3",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_sniper_energy_01_mag_9480450765375, klwe_sniper_energy_01_mag, 9480450765375] Status[persistent] Port[magazine_attach_3] Elapsed[0.000126] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_resource_salvage_repair_01_filled_9783944225332, grin_multitool_resource_salvage_repair_01_filled, 9783944225332] Status[persistent] Port[magazine_attach_3] Elapsed[0.000184] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "klwe_sniper_energy_01_mag_9480450765376",
-      "archetype": "klwe_sniper_energy_01_mag",
-      "numericId": "9480450765376",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_multitool_resource_salvage_repair_01_filled_9783944225333",
+      "archetype": "grin_multitool_resource_salvage_repair_01_filled",
+      "numericId": "9783944225333",
       "port": "magazine_attach_4",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_sniper_energy_01_mag_9480450765376, klwe_sniper_energy_01_mag, 9480450765376] Status[persistent] Port[magazine_attach_4] Elapsed[0.000114] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_resource_salvage_repair_01_filled_9783944225333, grin_multitool_resource_salvage_repair_01_filled, 9783944225333] Status[persistent] Port[magazine_attach_4] Elapsed[0.000172] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "ksar_sniper_ballistic_01_mag_9480450765377",
-      "archetype": "ksar_sniper_ballistic_01_mag",
-      "numericId": "9480450765377",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_tool_resource_salvage_repair_01_filled_9783944225334",
+      "archetype": "grin_tool_resource_salvage_repair_01_filled",
+      "numericId": "9783944225334",
       "port": "magazine_attach_5",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[ksar_sniper_ballistic_01_mag_9480450765377, ksar_sniper_ballistic_01_mag, 9480450765377] Status[persistent] Port[magazine_attach_5] Elapsed[0.000105] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_tool_resource_salvage_repair_01_filled_9783944225334, grin_tool_resource_salvage_repair_01_filled, 9783944225334] Status[persistent] Port[magazine_attach_5] Elapsed[0.000163] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "ksar_sniper_ballistic_01_mag_9480450765378",
-      "archetype": "ksar_sniper_ballistic_01_mag",
-      "numericId": "9480450765378",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_tool_resource_salvage_repair_01_filled_9783944225335",
+      "archetype": "grin_tool_resource_salvage_repair_01_filled",
+      "numericId": "9783944225335",
       "port": "magazine_attach_6",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[ksar_sniper_ballistic_01_mag_9480450765378, ksar_sniper_ballistic_01_mag, 9480450765378] Status[persistent] Port[magazine_attach_6] Elapsed[0.000096] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_tool_resource_salvage_repair_01_filled_9783944225335, grin_tool_resource_salvage_repair_01_filled, 9783944225335] Status[persistent] Port[magazine_attach_6] Elapsed[0.000153] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "none_lmg_ballistic_01_mag_9480450765379",
-      "archetype": "none_lmg_ballistic_01_mag",
-      "numericId": "9480450765379",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "volt_rifle_energy_01_mag_9783944225336",
+      "archetype": "volt_rifle_energy_01_mag",
+      "numericId": "9783944225336",
       "port": "magazine_attach_7",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[none_lmg_ballistic_01_mag_9480450765379, none_lmg_ballistic_01_mag, 9480450765379] Status[persistent] Port[magazine_attach_7] Elapsed[0.000087] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[volt_rifle_energy_01_mag_9783944225336, volt_rifle_energy_01_mag, 9783944225336] Status[persistent] Port[magazine_attach_7] Elapsed[0.000142] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "klwe_sniper_energy_01_mag_9480450765380",
-      "archetype": "klwe_sniper_energy_01_mag",
-      "numericId": "9480450765380",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "volt_rifle_energy_01_mag_9783944225337",
+      "archetype": "volt_rifle_energy_01_mag",
+      "numericId": "9783944225337",
       "port": "magazine_attach_8",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_sniper_energy_01_mag_9480450765380, klwe_sniper_energy_01_mag, 9480450765380] Status[persistent] Port[magazine_attach_8] Elapsed[0.000078] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[volt_rifle_energy_01_mag_9783944225337, volt_rifle_energy_01_mag, 9783944225337] Status[persistent] Port[magazine_attach_8] Elapsed[0.000133] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "crlf_consumable_healing_01_200000000748",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "crlf_consumable_healing_01_9783944225350",
       "archetype": "crlf_consumable_healing_01",
-      "numericId": "200000000748",
+      "numericId": "9783944225350",
       "port": "medPen_attach_1",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[crlf_consumable_healing_01_200000000748, crlf_consumable_healing_01, 200000000748] Status[persistent] Port[medPen_attach_1] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[crlf_consumable_healing_01_9783944225350, crlf_consumable_healing_01, 9783944225350] Status[persistent] Port[medPen_attach_1] Elapsed[0.000167] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "MobiGlas_200000000751",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "crlf_consumable_healing_01_9783944225351",
+      "archetype": "crlf_consumable_healing_01",
+      "numericId": "9783944225351",
+      "port": "medPen_attach_2",
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[crlf_consumable_healing_01_9783944225351, crlf_consumable_healing_01, 9783944225351] Status[persistent] Port[medPen_attach_2] Elapsed[0.000152] [Team_CoreGameplayFeatures][Inventory]\r"
+    },
+    {
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "MobiGlas_9731435729898",
       "archetype": "MobiGlas",
-      "numericId": "200000000751",
+      "numericId": "9731435729898",
       "port": "mobiglas_attach",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[MobiGlas_200000000751, MobiGlas, 200000000751] Status[persistent] Port[mobiglas_attach] Elapsed[9290.803711] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[MobiGlas_9731435729898, MobiGlas, 9731435729898] Status[persistent] Port[mobiglas_attach] Elapsed[0.000394] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "PersonalMobiGlas_PU_200000000752",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "PersonalMobiGlas_PU_9731435729899",
       "archetype": "PersonalMobiGlas_PU",
-      "numericId": "200000000752",
+      "numericId": "9731435729899",
       "port": "mobiglas_screen_attach",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[PersonalMobiGlas_PU_200000000752, PersonalMobiGlas_PU, 200000000752] Status[persistent] Port[mobiglas_screen_attach] Elapsed[9290.803711] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[PersonalMobiGlas_PU_9731435729899, PersonalMobiGlas_PU, 9731435729899] Status[persistent] Port[mobiglas_screen_attach] Elapsed[0.000416] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "grin_multitool_01_salvage_repair_9480450765393",
-      "archetype": "grin_multitool_01_salvage_repair",
-      "numericId": "9480450765393",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_multitool_01_mining_9783944225357",
+      "archetype": "grin_multitool_01_mining",
+      "numericId": "9783944225357",
       "port": "module_attach",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_01_salvage_repair_9480450765393, grin_multitool_01_salvage_repair, 9480450765393] Status[persistent] Port[module_attach] Elapsed[0.000066] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_01_mining_9783944225357, grin_multitool_01_mining, 9783944225357] Status[persistent] Port[module_attach] Elapsed[0.000234] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "nvtc_optics_tsco_x4_s2_9480450765384",
-      "archetype": "nvtc_optics_tsco_x4_s2",
-      "numericId": "9480450765384",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "gmni_optics_tsco_x8_s3_9783944225341",
+      "archetype": "gmni_optics_tsco_x8_s3",
+      "numericId": "9783944225341",
       "port": "optics_attach",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[nvtc_optics_tsco_x4_s2_9480450765384, nvtc_optics_tsco_x4_s2, 9480450765384] Status[persistent] Port[optics_attach] Elapsed[0.000059] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[gmni_optics_tsco_x8_s3_9783944225341, gmni_optics_tsco_x8_s3, 9783944225341] Status[persistent] Port[optics_attach] Elapsed[0.000115] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.680Z",
-      "attachmentId": "FPS_DefaultRadar_Lens_200000000768",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "crlf_consumable_healing_01_9783944225359",
+      "archetype": "crlf_consumable_healing_01",
+      "numericId": "9783944225359",
+      "port": "oxyPen_attach_2",
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[crlf_consumable_healing_01_9783944225359, crlf_consumable_healing_01, 9783944225359] Status[persistent] Port[oxyPen_attach_2] Elapsed[0.000131] [Team_CoreGameplayFeatures][Inventory]\r"
+    },
+    {
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "FPS_DefaultRadar_Lens_9730553759735",
       "archetype": "FPS_DefaultRadar_Lens",
-      "numericId": "200000000768",
+      "numericId": "9730553759735",
       "port": "radar",
-      "raw": "<2026-02-19T02:20:19.680Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[FPS_DefaultRadar_Lens_200000000768, FPS_DefaultRadar_Lens, 200000000768] Status[persistent] Port[radar] Elapsed[9290.803711] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[FPS_DefaultRadar_Lens_9730553759735, FPS_DefaultRadar_Lens, 9730553759735] Status[persistent] Port[radar] Elapsed[0.000362] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "Head_Teeth_200000000755",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "Head_Teeth_9731435729902",
       "archetype": "Head_Teeth",
-      "numericId": "200000000755",
+      "numericId": "9731435729902",
       "port": "Teeth_ItemPort",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Head_Teeth_200000000755, Head_Teeth, 200000000755] Status[persistent] Port[Teeth_ItemPort] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Head_Teeth_9731435729902, Head_Teeth, 9731435729902] Status[persistent] Port[Teeth_ItemPort] Elapsed[0.000255] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "klwe_ubarrel_lasr_s1_02_9480450765386",
-      "archetype": "klwe_ubarrel_lasr_s1_02",
-      "numericId": "9480450765386",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "nvtc_ubarrel_flsh_s1_9783944225343",
+      "archetype": "nvtc_ubarrel_flsh_s1",
+      "numericId": "9783944225343",
       "port": "underbarrel_attach",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_ubarrel_lasr_s1_02_9480450765386, klwe_ubarrel_lasr_s1_02, 9480450765386] Status[persistent] Port[underbarrel_attach] Elapsed[0.000041] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[nvtc_ubarrel_flsh_s1_9783944225343, nvtc_ubarrel_flsh_s1, 9783944225343] Status[persistent] Port[underbarrel_attach] Elapsed[0.000075] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "universal_necksock_01_200000000763",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "universal_necksock_01_9783944225362",
       "archetype": "universal_necksock_01",
-      "numericId": "200000000763",
+      "numericId": "9783944225362",
       "port": "universal_necksock",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[universal_necksock_01_200000000763, universal_necksock_01, 200000000763] Status[persistent] Port[universal_necksock] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[universal_necksock_01_9783944225362, universal_necksock_01, 9783944225362] Status[persistent] Port[universal_necksock] Elapsed[24710.453125] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "universal_necksock_undersuit_01_200000000762",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "universal_necksock_undersuit_01_9783944225363",
       "archetype": "universal_necksock_undersuit_01",
-      "numericId": "200000000762",
+      "numericId": "9783944225363",
       "port": "universal_necksock_undersuit",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[universal_necksock_undersuit_01_200000000762, universal_necksock_undersuit_01, 200000000762] Status[persistent] Port[universal_necksock_undersuit] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[universal_necksock_undersuit_01_9783944225363, universal_necksock_undersuit_01, 9783944225363] Status[persistent] Port[universal_necksock_undersuit] Elapsed[0.000219] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "Shared_Scalp_Unified_200000000767",
+      "timestamp": "2026-04-02T21:00:44.250Z",
+      "attachmentId": "Shared_Scalp_Unified_9731435729913",
       "archetype": "Shared_Scalp_Unified",
-      "numericId": "200000000767",
+      "numericId": "9731435729913",
       "port": "Universal_Scalp_ItemPort",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Shared_Scalp_Unified_200000000767, Shared_Scalp_Unified, 200000000767] Status[persistent] Port[Universal_Scalp_ItemPort] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.250Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[Shared_Scalp_Unified_9731435729913, Shared_Scalp_Unified, 9731435729913] Status[persistent] Port[Universal_Scalp_ItemPort] Elapsed[0.000266] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "grin_multitool_01_9480450765391",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_multitool_01_9783944225352",
       "archetype": "grin_multitool_01",
-      "numericId": "9480450765391",
+      "numericId": "9783944225352",
       "port": "utility_attach_1",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_01_9480450765391, grin_multitool_01, 9480450765391] Status[persistent] Port[utility_attach_1] Elapsed[0.000048] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_01_9783944225352, grin_multitool_01, 9783944225352] Status[persistent] Port[utility_attach_1] Elapsed[0.000180] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:08:34.096Z",
-      "attachmentId": "grin_multitool_01_9477893104168",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "grin_multitool_01_9783944225355",
       "archetype": "grin_multitool_01",
-      "numericId": "9477893104168",
+      "numericId": "9783944225355",
       "port": "utility_attach_2",
-      "raw": "<2026-02-19T01:08:34.096Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_01_9477893104168, grin_multitool_01, 9477893104168] Status[persistent] Port[utility_attach_2] Elapsed[903.248657] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_01_9783944225355, grin_multitool_01, 9783944225355] Status[persistent] Port[utility_attach_2] Elapsed[0.000215] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:12:15.966Z",
-      "attachmentId": "behr_rifle_ballistic_02_civilian_9477893104155",
-      "archetype": "behr_rifle_ballistic_02_civilian",
-      "numericId": "9477893104155",
+      "timestamp": "2026-04-02T18:07:21.502Z",
+      "attachmentId": "grin_multitool_01_9783944225352",
+      "archetype": "grin_multitool_01",
+      "numericId": "9783944225352",
       "port": "weapon_attach_hand_right",
-      "raw": "<2026-02-19T01:12:15.966Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[behr_rifle_ballistic_02_civilian_9477893104155, behr_rifle_ballistic_02_civilian, 9477893104155] Status[persistent] Port[weapon_attach_hand_right] Elapsed[147.091812] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T18:07:21.502Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[grin_multitool_01_9783944225352, grin_multitool_01, 9783944225352] Status[persistent] Port[weapon_attach_hand_right] Elapsed[566.935974] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T02:20:19.679Z",
-      "attachmentId": "klwe_pistol_energy_01_200000000749",
+      "timestamp": "2026-04-02T20:59:43.802Z",
+      "attachmentId": "klwe_pistol_energy_01_200000001003",
       "archetype": "klwe_pistol_energy_01",
-      "numericId": "200000000749",
+      "numericId": "200000001003",
       "port": "wep_sidearm",
-      "raw": "<2026-02-19T02:20:19.679Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_pistol_energy_01_200000000749, klwe_pistol_energy_01, 200000000749] Status[persistent] Port[wep_sidearm] Elapsed[9290.802734] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T20:59:43.802Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[klwe_pistol_energy_01_200000001003, klwe_pistol_energy_01, 200000001003] Status[persistent] Port[wep_sidearm] Elapsed[24650.005859] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "behr_rifle_ballistic_02_civilian_9480450765382",
-      "archetype": "behr_rifle_ballistic_02_civilian",
-      "numericId": "9480450765382",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "gmni_sniper_ballistic_01_arctic01_9783944225339",
+      "archetype": "gmni_sniper_ballistic_01_arctic01",
+      "numericId": "9783944225339",
       "port": "wep_stocked_2",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[behr_rifle_ballistic_02_civilian_9480450765382, behr_rifle_ballistic_02_civilian, 9480450765382] Status[persistent] Port[wep_stocked_2] Elapsed[0.000032] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[gmni_sniper_ballistic_01_arctic01_9783944225339, gmni_sniper_ballistic_01_arctic01, 9783944225339] Status[persistent] Port[wep_stocked_2] Elapsed[0.000063] [Team_CoreGameplayFeatures][Inventory]\r"
     },
     {
-      "timestamp": "2026-02-19T01:37:30.885Z",
-      "attachmentId": "none_special_ballistic_01_9480450765387",
-      "archetype": "none_special_ballistic_01",
-      "numericId": "9480450765387",
+      "timestamp": "2026-04-02T21:00:44.249Z",
+      "attachmentId": "volt_rifle_energy_01_tint01_9783944225346",
+      "archetype": "volt_rifle_energy_01_tint01",
+      "numericId": "9783944225346",
       "port": "wep_stocked_3",
-      "raw": "<2026-02-19T01:37:30.885Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[none_special_ballistic_01_9480450765387, none_special_ballistic_01, 9480450765387] Status[persistent] Port[wep_stocked_3] Elapsed[0.000013] [Team_CoreGameplayFeatures][Inventory]\r"
+      "raw": "<2026-04-02T21:00:44.249Z> [Notice] <AttachmentReceived> Player[TypicallyBrit_ish] Attachment[volt_rifle_energy_01_tint01_9783944225346, volt_rifle_energy_01_tint01, 9783944225346] Status[persistent] Port[wep_stocked_3] Elapsed[0.000031] [Team_CoreGameplayFeatures][Inventory]\r"
     }
   ]
 }

@@ -528,7 +528,10 @@
 
 <body>
     <div class="sidebar title-bar-drag">
-        <div class="brand">VerseCon <span style="color:white; font-weight:300;">Link</span></div>
+        <div class="brand">
+            VerseCon <span style="color:white; font-weight:300;">Link</span>
+            <div style="font-size: 0.6rem; opacity: 0.5; margin-top: -5px; font-weight: 400;">v2.8.0</div>
+        </div>
 
         <div class="menu-item active no-drag" id="nav-dashboard" onclick="switchTab('dashboard')">
             <span>📊</span> Dashboard
@@ -1942,6 +1945,12 @@
                 performanceMode: document.getElementById('config-perf-mode').checked,
                 logLimit: document.getElementById('config-log-limit').value,
                 initialScanLimit: document.getElementById('config-scan-limit').value,
+                
+                // Squad Settings (v2.8)
+                rsiHandle: document.getElementById('config-rsi-handle').value,
+                shareHealth: document.getElementById('config-share-health').checked,
+                squadHostIp: document.getElementById('config-squad-host-ip').value,
+
                 ttsEnabled: document.getElementById('config-tts-enabled').checked,
                 ttsVolume: document.getElementById('config-tts-volume').value,
                 ttsVoice: document.getElementById('config-tts-voice').value,
@@ -4466,6 +4475,58 @@
             });
             addDashItem('📡', 'OCR result shared with squadron.');
         }
+
+        // ═══ SQUAD MANAGEMENT (v2.8) ═══
+        function setSquadMode(mode) {
+            // UI Toggle
+            document.getElementById('btn-squad-off').classList.remove('active');
+            document.getElementById('btn-squad-join').classList.remove('active');
+            document.getElementById('btn-squad-host').classList.remove('active');
+            
+            document.getElementById('squad-join-container').style.display = 'none';
+            document.getElementById('squad-host-container').style.display = 'none';
+
+            if (mode === 'OFF') {
+                document.getElementById('btn-squad-off').classList.add('active');
+                ipcRenderer.send('squad:stop');
+                addDashItem('📡', 'Squad Sync Disabled.');
+            } else if (mode === 'JOIN') {
+                document.getElementById('btn-squad-join').classList.add('active');
+                document.getElementById('squad-join-container').style.display = 'flex';
+                addDashItem('📡', 'Ready to join squad...');
+            } else if (mode === 'HOST') {
+                document.getElementById('btn-squad-host').classList.add('active');
+                document.getElementById('squad-host-container').style.display = 'flex';
+                ipcRenderer.send('squad:host');
+                addDashItem('📡', 'Hosting Squad Relay (Port 55100).');
+            }
+            saveConfig();
+        }
+
+        function joinSquad() {
+            const hostIp = document.getElementById('config-squad-host-ip').value;
+            if (!hostIp) {
+                addDashItem('⚠️', 'Please enter the Commander\'s IP/Code.');
+                return;
+            }
+            ipcRenderer.send('squad:join', hostIp);
+            addDashItem('📡', 'Attempting to join ' + hostIp + '...');
+            saveConfig();
+        }
+
+        function openCncOverlay() {
+            ipcRenderer.send('cnc:open');
+            addDashItem('📊', 'Opening CNC Dashboard...');
+        }
+
+        // Listen for squad status updates
+        ipcRenderer.on('squad:status', (event, data) => {
+            if (data.error) {
+                addDashItem('⚠️', 'Squad Error: ' + data.error);
+                // Switch back to join input if failed
+                setSquadMode('JOIN');
+            }
+        });
 
     </script>
 </body>
