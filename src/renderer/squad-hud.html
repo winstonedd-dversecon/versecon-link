@@ -162,25 +162,42 @@
                 const p = peers[handle];
                 const now = Date.now();
                 const diff = (now - p.lastUpdate) / 1000;
-                const isMia = diff > 20;
-                const isDead = p.health <= 5;
+                
+                const isLost = p.health === null || p.health === undefined;
+                const isMia = !isLost && diff > 20;
+                const isDead = !isLost && p.health !== null && p.health <= 5;
                 
                 const box = document.createElement('div');
-                box.className = `unit-box ${isMia ? 'mia' : ''} ${isDead ? 'dead' : ''}`;
+                box.className = `unit-box ${isMia ? 'mia' : ''} ${isDead ? 'dead' : ''} ${isLost ? 'lost' : ''}`;
                 box.dataset.handle = handle;
                 
                 let healthColor = 'var(--accent)';
-                if (isDead) healthColor = 'var(--danger)';
-                else if (p.health < 40) healthColor = 'var(--warning)';
+                let healthText = `${p.health}%`;
+                let healthWidth = `${p.health}%`;
+
+                if (isLost) {
+                    healthColor = 'var(--warning)';
+                    healthText = '---%';
+                    healthWidth = '0%';
+                } else if (isDead) {
+                    healthColor = 'var(--danger)';
+                } else if (p.health < 40) {
+                    healthColor = 'var(--warning)';
+                }
+
+                let statusLabel = '';
+                if (isLost) statusLabel = 'SIGNAL LOST';
+                else if (isDead) statusLabel = 'KIA';
+                else if (isMia) statusLabel = 'MIA';
 
                 box.innerHTML = `
-                    <div class="status-tag">${isDead ? 'KIA' : (isMia ? 'MIA' : '')}</div>
+                    <div class="status-tag" style="display: ${statusLabel ? 'block' : 'none'}; background: ${isLost ? 'var(--warning)' : (isDead ? 'var(--danger)' : '#666')}">${statusLabel}</div>
                     <div class="unit-header">
-                        <div class="unit-name">${handle}</div>
-                        <div class="unit-health-text" style="color: ${healthColor}">${p.health}%</div>
+                        <div class="unit-name">${handle} ${p.isHost ? '<span style="color:var(--accent); font-size:0.6rem;">(CMD)</span>' : ''}</div>
+                        <div class="unit-health-text" style="color: ${healthColor}">${healthText}</div>
                     </div>
                     <div class="health-bar-container">
-                        <div class="health-bar-fill" style="width: ${p.health}%; background: ${healthColor}"></div>
+                        <div class="health-bar-fill" style="width: ${healthWidth}; background: ${healthColor}"></div>
                     </div>
                     <div class="unit-location">${p.location || 'Unknown Orbit'}</div>
                 `;

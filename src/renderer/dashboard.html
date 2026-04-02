@@ -1521,6 +1521,8 @@
                     <button class="cyber-btn" onclick="processOCR()" id="btn-run-ocr" disabled>🔍 Run OCR</button>
                     <button class="cyber-btn" onclick="saveAsHealthZone()" id="btn-save-health-zone" disabled
                         style="border-color: #00ff88; color: #00ff88;">📍 Set as Health Monitoring Zone</button>
+                    <button class="cyber-btn" onclick="openOcrDebug()" id="btn-ocr-debug"
+                        style="border-color: #aa64ff; color: #aa64ff;">🔬 Open OCR Debugger</button>
                 </div>
 
                 <div id="ocr-preview-container"
@@ -1858,6 +1860,7 @@
         // ═══ STATE ═══
         let config = { teamNames: ['Alpha', 'Bravo', 'Charlie', 'Delta'], healthZone: null, monitorHealth: false, healthFreq: 5 };
         let healthMonitorInterval = null;
+        let scanFailCount = 0; // v2.10.1 - Fail tracking for Signal Lost detection
         let soundEnabled = true;
         let soundVolume = 0.7;
         let unknownCount = 0;
@@ -4437,23 +4440,36 @@
                     dctx.putImageData(imageData, 0, 0);
 
                     const processedUrl = debugCanvas.toDataURL('image/png');
+                    // v2.10.1 - Broadcast processed image to OCR Debug window
+                    ipcRenderer.send('ocr:debug-update', processedUrl);
+
                     const text = await ipcRenderer.invoke('ocr:process', processedUrl);
                     
                     document.getElementById('health-last-scan').textContent = 'Last Scan: ' + new Date().toLocaleTimeString();
 
                     if (text) {
                         // Extract digits. Look for percentage format or just numbers.
-                        const cleanedText = text.replace(/[lI|]/g, '1').replace(/[oOQ]/g, '0');
+                        // v2.10.1 - Enhanced cleaning for common Tesseract misreads (B/8, S/5, etc)
+                        const cleanedText = text
+                            .replace(/[lI|]/g, '1')
+                            .replace(/[oOQ]/g, '0')
+                            .replace(/B/g, '8')
+                            .replace(/S/g, '5')
+                            .replace(/G/g, '6')
+                            .replace(/Z/g, '2')
+                            .replace(/z/g, '2')
+                            .replace(/T/g, '7');
+                            
                         const match = cleanedText.match(/(\d+)/);
                         if (match) {
                             let healthVal = parseInt(match[0]);
                             if (healthVal > 100) healthVal = 100;
                             
-                            // Only update if it looks like a real health value (e.g., if heart was found)
-                            // or if we aren't currently in a "Dead" state.
+                            scanFailCount = 0; // Reset fail count on success
+
                             ipcRenderer.send('app:update-health', healthVal);
 
-                            // Broadcast to Squad if enabled (v2.8)
+                            // Broadcast to Squad if enabled
                             if (document.getElementById('config-share-health').checked) {
                                 ipcRenderer.send('app:share-health', { 
                                     health: healthVal, 
@@ -4463,7 +4479,11 @@
 
                             document.getElementById('health-last-val').textContent = healthVal + '%';
                             console.log('[HealthMonitor] Parsed:', healthVal, 'Raw text:', text);
+                        } else {
+                            handleOcrFailure(text);
                         }
+                    } else {
+                        handleOcrFailure('No text');
                     }
                 };
                 img.src = dataUrl;
@@ -4540,6 +4560,28 @@
         function openSquadHud() {
             ipcRenderer.send('squad:open-hud');
             addDashItem('📱', 'Opening Squad HUD...');
+        }
+
+        function openOcrDebug() {
+            ipcRenderer.send('ocr:open-debug');
+            addDashItem('🔬', 'Opening OCR Debugger Window...');
+        }
+
+        function handleOcrFailure(rawText) {
+            scanFailCount++;
+            console.warn(`[HealthMonitor] OCR Failed (${scanFailCount}/3). Raw: "${rawText}"`);
+            
+            if (scanFailCount >= 3) {
+                document.getElementById('health-last-val').textContent = '--- (Signal Lost)';
+                
+                // Broadcast "Signal Lost" to squadron
+                if (document.getElementById('config-share-health').checked) {
+                    ipcRenderer.send('app:share-health', { 
+                        health: null, // null signal for Signal Lost
+                        location: currentLocation 
+                    });
+                }
+            }
         }
 
         // Listen for squad status updates

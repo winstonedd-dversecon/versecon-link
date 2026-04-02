@@ -18,6 +18,7 @@ let overlayWindow;
 let alertWindow;
 let cncWindow; // v2.8 CNC Overlay
 let squadHudWindow; // v2.10 Squad HUD
+let ocrDebugWindow; // v2.10.2 OCR Debug
 let remoteApp = null;
 let remoteServer = null;
 let tray = null;
@@ -2490,3 +2491,35 @@ function createSquadHudWindow() {
 }
 
 ipcMain.on('squad:open-hud', () => createSquadHudWindow());
+
+// ═══ OCR DEBUG LOGIC (v2.10.2) ═══
+function createOcrDebugWindow() {
+    if (ocrDebugWindow && !ocrDebugWindow.isDestroyed()) {
+        ocrDebugWindow.focus();
+        return;
+    }
+
+    ocrDebugWindow = new BrowserWindow({
+        width: 250,
+        height: 150,
+        frame: false,
+        alwaysOnTop: true,
+        transparent: true,
+        resizable: true,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+
+    ocrDebugWindow.loadFile(path.join(__dirname, '../renderer/ocr-debug.html'));
+    ocrDebugWindow.on('closed', () => { ocrDebugWindow = null; });
+}
+
+ipcMain.on('ocr:open-debug', () => createOcrDebugWindow());
+
+ipcMain.on('ocr:debug-update', (event, dataUrl) => {
+    if (ocrDebugWindow && !ocrDebugWindow.isDestroyed()) {
+        ocrDebugWindow.webContents.send('ocr:debug-update', dataUrl);
+    }
+});

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OCR DEBUG VIEW</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff88;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #00ff88;
+        }
+        .header {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px;
+            background: rgba(0, 255, 136, 0.2);
+            width: 100%;
+            text-align: center;
+            -webkit-app-region: drag;
+        }
+        img {
+            max-width: 100%;
+            max-height: calc(100% - 20px);
+            image-rendering: pixelated;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 5px;
+        }
+        .hint {
+            position: absolute;
+            bottom: 2px;
+            font-size: 0.5rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">OCR LIVE FEED (HEALTH)</div>
+    <img id="debug-img" src="" alt="Waiting for scan...">
+    <div class="hint">High contrast required for Tesseract</div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('ocr:debug-data', (event, dataUrl) => {
+            document.getElementById('debug-img').src = dataUrl;
+        });
+    </script>
+</body>
+</html>
