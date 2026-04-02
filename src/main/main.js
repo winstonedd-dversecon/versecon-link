@@ -74,12 +74,14 @@ class StreamChatService {
                 return;
             }
 
-            // Simple PRIVMSG parser: :user!user@user.tmi.twitch.tv PRIVMSG #channel :message
+            // Robust PRIVMSG parser: :user!user@user.tmi.twitch.tv PRIVMSG #channel :message
             const match = msg.match(/:([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.+)/);
             if (match) {
                 const user = match[1];
                 const text = match[2];
-                this.emitMessage({ platform: 'twitch', user, text, color: '#a855f7' });
+                // Clean up IRC control characters if any
+                const cleanText = text.replace(/[\x01-\x1F\x7F-\x9F]/g, "").trim();
+                this.emitMessage({ platform: 'twitch', user, text: cleanText, color: '#a855f7' });
             }
         });
 
@@ -93,10 +95,74 @@ class StreamChatService {
         });
     }
 
-    async startYouTube(videoId) {
-        console.log('[Chat] YouTube Polling Started:', videoId);
+    async startYouTube(id) {
+        this.stopYouTube();
+        if (!id) return;
+        
+        console.log('[Chat] YouTube Linking:', id);
+        
+        // Resolve Video ID from Channel ID if needed (e.g., UC...)
+        let videoId = id;
+        if (id.startsWith('UC')) {
+            try {
+                const res = await axios.get(`https://www.youtube.com/channel/${id}/live`, { maxRedirects: 5 });
+                const match = res.data.match(/\"videoId\":\"([^\"]+)\"/);
+                if (match) {
+                    videoId = match[1];
+                    console.log('[Chat] Auto-discovered Live Video ID:', videoId);
+                }
+            } catch (e) {
+                console.warn('[Chat] Failed to auto-discover Live ID:', e.message);
+            }
+        }
+
         this.lastYtId = videoId;
-        this.emitMessage({ platform: 'youtube', user: 'System', text: 'YouTube Chat Linked (ID: ' + videoId + ')', color: '#ff0000' });
+        this.emitMessage({ platform: 'youtube', user: 'System', text: 'YouTube Chat Linked (Live ID: ' + videoId + ')', color: '#ff0000' });
+
+        // Polling loop (every 10s)
+        this.ytInterval = setInterval(async () => {
+            try {
+                const chatUrl = `https://www.youtube.com/live_chat?v=${videoId}`;
+                const res = await axios.get(chatUrl, {
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+                });
+                
+                // Extract ytInitialData
+                const dataMatch = res.data.match(/window\[\"ytInitialData\"\] = ({.*?});/);
+                if (!dataMatch) return;
+                
+                const data = JSON.parse(dataMatch[1]);
+                const actions = data?.contents?.liveChatRenderer?.actions || [];
+                
+                actions.forEach(action => {
+                    const item = action?.addChatItemAction?.item?.liveChatTextMessageRenderer;
+                    if (!item) return;
+
+                    const msgId = item.id;
+                    const timestamp = parseInt(item.timestampUsec) / 1000;
+                    
+                    // Only new messages within last 15s to avoid initial flood
+                    if (this.lastYtTime && timestamp <= this.lastYtTime) return;
+
+                    const user = item.authorName?.simpleText || 'Unknown';
+                    const text = item.message?.runs?.map(r => r.text).join('') || '';
+                    
+                    this.emitMessage({ platform: 'youtube', user, text, color: '#f87171' });
+                });
+
+                this.lastYtTime = Date.now() - 5000; // Overlap slightly to catch late arrivals
+            } catch (err) {
+                console.error('[Chat] YouTube Poll Error:', err.message);
+            }
+        }, 10000);
+    }
+
+    stopYouTube() {
+        if (this.ytInterval) {
+            clearInterval(this.ytInterval);
+            this.ytInterval = null;
+        }
+        this.lastYtId = null;
     }
 
     emitMessage(data) {
@@ -530,29 +596,33 @@ ipcMain.handle('app:select-ship-image', async () => {
 // ═══ OCR SCANNER IPC (NEW) ═══
 ipcMain.handle('ocr:capture-screen', async () => {
     try {
-        console.log('[OCR] Capturing screen...');
-        // Try capturing all displays and taking the first one (primary usually)
+        console.log('[OCR] Listing displays...');
         const displays = await screenshot.listDisplays();
+        console.log('[OCR] Found displays:', displays.map(d => ({ id: d.id, name: d.name })));
+        
         if (!displays || displays.length === 0) {
-            throw new Error('No displays found for capture.');
+            throw new Error('No displays detected. Check permissions or monitor connections.');
         }
         
-        const img = await screenshot({ screen: displays[0].id, format: 'png' });
+        // Take primary screen (usually id 0 or first in list)
+        const primary = displays.find(d => d.primary) || displays[0];
+        console.log('[OCR] Attempting capture on screen:', primary.id);
+        
+        const img = await screenshot({ screen: primary.id, format: 'png' });
         if (!img || img.length === 0) {
-            throw new Error('Capture returned an empty buffer.');
+            throw new Error('Capture returned an empty image buffer.');
         }
         
-        console.log('[OCR] Screen captured successfully.');
         return `data:image/png;base64,${img.toString('base64')}`;
     } catch (err) {
-        console.error('[OCR] Capture failed:', err);
-        // Fallback to default capture if listDisplays fails or return null
+        console.error('[OCR] Primary capture failed:', err.message);
         try {
+            console.log('[OCR] Attempting generic fallback capture...');
             const img = await screenshot({ format: 'png' });
             return `data:image/png;base64,${img.toString('base64')}`;
         } catch (innerErr) {
-            console.error('[OCR] Fallback capture also failed:', innerErr);
-            throw innerErr;
+            console.error('[OCR] Global capture failed:', innerErr.message);
+            throw new Error(`Screen capture failed: ${err.message}. (Fallback: ${innerErr.message})`);
         }
     }
 });

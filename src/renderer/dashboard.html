@@ -890,6 +890,18 @@
                             style="width: 100%; height: 6px; cursor: pointer;"
                             oninput="updateHealthFreqLabel(this.value)" onchange="saveConfig()">
                     </div>
+
+                    <!-- New Debug Preview -->
+                    <div id="health-debug-container" style="display: none; border-top: 1px solid var(--border); padding-top: 10px;">
+                        <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px;">LIVE OCR CROP & FILTERS (DEBUG):</div>
+                        <div style="background: #000; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 48px;">
+                            <canvas id="health-debug-canvas" style="max-width: 100%; border: 1px solid #333; image-rendering: pixelated;"></canvas>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">
+                            <span id="health-last-scan">Last Scan: Never</span>
+                            <span id="health-last-val" style="color: var(--accent);">--%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -907,8 +919,12 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="width: 80px; font-size: 0.8rem; color: #ff4444;">YouTube</span>
-                        <input type="text" id="config-youtube-id" class="modern-input" placeholder="Live Video ID / URL"
-                            style="margin:0; flex:1;" onchange="saveConfig()">
+                        <div style="flex:1; display: flex; flex-direction: column; gap: 5px;">
+                            <input type="text" id="config-youtube-channel-id" class="modern-input" placeholder="Channel ID (UC...)"
+                                style="margin:0; width: 100%;" onchange="saveConfig()">
+                            <input type="text" id="config-youtube-id" class="modern-input" placeholder="Live Video ID (Alternative)"
+                                style="margin:0; width: 100%;" onchange="saveConfig()">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1875,6 +1891,7 @@
                 },
                 accentColor: document.getElementById('config-accent-color')?.value,
                 twitchChannel: document.getElementById('config-twitch-channel')?.value,
+                youtubeChannelId: document.getElementById('config-youtube-channel-id')?.value,
                 youtubeId: document.getElementById('config-youtube-id')?.value,
                 performanceMode: document.getElementById('config-perf-mode').checked,
                 logLimit: document.getElementById('config-log-limit').value,
@@ -1982,6 +1999,7 @@
 
             if (config.accentColor) document.getElementById('config-accent-color').value = config.accentColor;
             if (config.twitchChannel) document.getElementById('config-twitch-channel').value = config.twitchChannel;
+            if (config.youtubeChannelId) document.getElementById('config-youtube-channel-id').value = config.youtubeChannelId;
             if (config.youtubeId) document.getElementById('config-youtube-id').value = config.youtubeId;
             if (config.performanceMode !== undefined) document.getElementById('config-perf-mode').checked = config.performanceMode;
             if (config.logLimit !== undefined) {
@@ -4253,7 +4271,6 @@
             if (!config.healthZone || !document.getElementById('config-health-monitor').checked) return;
 
             try {
-                // We use the same capture-screen but then we crop it using the saved zone
                 const dataUrl = await ipcRenderer.invoke('ocr:capture-screen');
                 if (!dataUrl) return;
 
@@ -4265,16 +4282,41 @@
                     const ctx = tempCanvas.getContext('2d');
                     ctx.drawImage(img, config.healthZone.x, config.healthZone.y, config.healthZone.w, config.healthZone.h, 0, 0, config.healthZone.w, config.healthZone.h);
 
-                    const croppedUrl = tempCanvas.toDataURL('image/png');
-                    const text = await ipcRenderer.invoke('ocr:process', croppedUrl);
+                    // ═══ Preprocessing for OCR ═══
+                    const debugCanvas = document.getElementById('health-debug-canvas');
+                    const dctx = debugCanvas.getContext('2d');
+                    debugCanvas.width = config.healthZone.w;
+                    debugCanvas.height = config.healthZone.h;
                     
+                    // 1. Grayscale & Contrast
+                    dctx.filter = 'grayscale(1) contrast(2) brightness(1.2) invert(1)';
+                    dctx.drawImage(tempCanvas, 0, 0);
+                    
+                    // 2. Thresholding
+                    const imageData = dctx.getImageData(0, 0, debugCanvas.width, debugCanvas.height);
+                    const data = imageData.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                        const val = avg > 128 ? 255 : 0;
+                        data[i] = data[i+1] = data[i+2] = val;
+                    }
+                    dctx.putImageData(imageData, 0, 0);
+
+                    const processedUrl = debugCanvas.toDataURL('image/png');
+                    const text = await ipcRenderer.invoke('ocr:process', processedUrl);
+                    
+                    document.getElementById('health-last-scan').textContent = 'Last Scan: ' + new Date().toLocaleTimeString();
+
                     if (text) {
-                        // Extract digits
-                        const match = text.match(/\d+/);
+                        // Extract digits. Look for percentage format or just numbers.
+                        // Common OCR errors: 100% -> l00, 1Q0, etc.
+                        const cleanedText = text.replace(/[lI|]/g, '1').replace(/[oOQ]/g, '0');
+                        const match = cleanedText.match(/(\d+)/);
                         if (match) {
-                            const healthVal = parseInt(match[0]);
+                            let healthVal = parseInt(match[0]);
+                            if (healthVal > 100) healthVal = 100; // Cap at 100
                             ipcRenderer.send('app:update-health', healthVal);
-                            console.log('[HealthMonitor] Parsed:', healthVal);
+                            console.log('[HealthMonitor] Parsed:', healthVal, 'Raw text:', text);
                         }
                     }
                 };

@@ -874,9 +874,12 @@
             const list = document.getElementById('chat-list');
             if (!list) return;
 
+            const platformTag = data.platform === 'twitch' ? '[T]' : data.platform === 'youtube' ? '[Y]' : '';
+            const platformColor = data.platform === 'twitch' ? '#a855f7' : data.platform === 'youtube' ? '#ff4444' : 'var(--accent)';
+
             const div = document.createElement('div');
             div.className = 'chat-message';
-            div.innerHTML = `<span class="chat-user" style="color: ${data.color || 'var(--accent)'}">${data.user}:</span> <span class="chat-text">${data.text}</span>`;
+            div.innerHTML = `<span style="color: ${platformColor}; font-weight: bold; margin-right: 4px;">${platformTag}</span><span class="chat-user" style="color: ${data.color || 'var(--accent)'}">${data.user}:</span> <span class="chat-text">${data.text}</span>`;
 
             list.insertBefore(div, list.firstChild);
 
