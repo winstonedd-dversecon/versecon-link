@@ -17,6 +17,7 @@ let dashboardWindow;
 let overlayWindow;
 let alertWindow;
 let cncWindow; // v2.8 CNC Overlay
+let squadHudWindow; // v2.10 Squad HUD
 let remoteApp = null;
 let remoteServer = null;
 let tray = null;
@@ -1411,6 +1412,24 @@ LogWatcher.on('gamestate', (data) => {
                     message: data.message,
                     value: data.value
                 });
+            }
+        }
+    }
+
+    // Death Detection & Squad Sync (v2.10.1)
+    if (data.type === 'DEATH') {
+        const victim = data.details?.victim;
+        const myHandle = config.rsiHandle || 'Commander';
+        
+        // If victim matches us, or if it's a generic death event without specific victim (scented from <Actor Death>)
+        if (!victim || victim.toLowerCase() === myHandle.toLowerCase()) {
+            console.log('[Main] Player death detected in logs. Syncing 0% health to squad.');
+            if (squadManager && config.shareHealth) {
+                squadManager.shareHealth(0, LogWatcher.cachedState.location || 'Unknown');
+            }
+            // Also notify local dashboard to update its UI
+            if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+                dashboardWindow.webContents.send('log:update', { type: 'DEATH', details: data.details });
             }
         }
     }
