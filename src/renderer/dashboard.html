@@ -863,6 +863,9 @@
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
                         <input type="checkbox" id="vis-nearbyPlayers" checked onchange="saveConfig()"> Nearby Players
                     </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-healthMonitor" checked onchange="saveConfig()"> Health Monitor HUD
+                    </label>
                 </div>
             </div>
             
@@ -1867,7 +1870,8 @@
                     tacticalFeed: document.getElementById('vis-tacticalFeed').checked,
                     shipVisualizer: document.getElementById('vis-shipVisualizer').checked,
                     chatHud: document.getElementById('vis-chatHud').checked,
-                    nearbyPlayers: document.getElementById('vis-nearbyPlayers').checked
+                    nearbyPlayers: document.getElementById('vis-nearbyPlayers').checked,
+                    healthMonitor: document.getElementById('vis-healthMonitor').checked
                 },
                 accentColor: document.getElementById('config-accent-color')?.value,
                 twitchChannel: document.getElementById('config-twitch-channel')?.value,
@@ -1955,6 +1959,25 @@
                     const el = document.getElementById('vis-nearbyPlayers');
                     if (el) el.checked = ov.nearbyPlayers;
                 }
+                if (ov.healthMonitor !== undefined) {
+                    const el = document.getElementById('vis-healthMonitor');
+                    if (el) el.checked = ov.healthMonitor;
+                }
+            }
+
+            if (config.monitorHealth !== undefined) {
+                const el = document.getElementById('config-health-monitor');
+                if (el) el.checked = config.monitorHealth;
+            }
+            if (config.healthFreq !== undefined) {
+                const el = document.getElementById('config-health-freq');
+                if (el) {
+                    el.value = config.healthFreq;
+                    updateHealthFreqLabel(config.healthFreq);
+                }
+            }
+            if (config.healthZone !== undefined) {
+                config.healthZone = config.healthZone; // Sync hidden state
             }
 
             if (config.accentColor) document.getElementById('config-accent-color').value = config.accentColor;

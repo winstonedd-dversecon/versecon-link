@@ -146,6 +146,12 @@ function loadConfig() {
             if (!config.hueUser) config.hueUser = "";
             if (!config.hueLights) config.hueLights = ["1"];
             if (config.hueEnabled === undefined) config.hueEnabled = false;
+            
+            // Health Monitoring (v2.10)
+            if (!config.healthZone) config.healthZone = null;
+            if (config.monitorHealth === undefined) config.monitorHealth = false;
+            if (config.healthFreq === undefined) config.healthFreq = 5;
+
             if (!config.overlayVisibility) {
                 config.overlayVisibility = {
                     hudTop: true,
@@ -741,6 +747,11 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.ttsEnabled !== undefined) config.ttsEnabled = newConfig.ttsEnabled;
     if (newConfig.ttsVolume !== undefined) config.ttsVolume = newConfig.ttsVolume;
     if (newConfig.ttsVoice !== undefined) config.ttsVoice = newConfig.ttsVoice;
+
+    // Health Monitoring (v2.10)
+    if (newConfig.healthZone !== undefined) config.healthZone = newConfig.healthZone;
+    if (newConfig.monitorHealth !== undefined) config.monitorHealth = newConfig.monitorHealth;
+    if (newConfig.healthFreq !== undefined) config.healthFreq = newConfig.healthFreq;
 
     // Interdiction Ship Detection (v2.10.44)
     if (newConfig.interdictionShips !== undefined) {
