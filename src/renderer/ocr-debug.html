@@ -94,13 +94,55 @@
         ipcRenderer.on('ocr:debug-metadata', (event, data) => {
             lastMetadata = data;
             if (data.finalValue !== null) {
-                statusText.textContent = `TRACKING: ${data.finalValue}% (via ${data.strategy})`;
+                statusText.textContent = `TRACKING: ${data.finalValue}% (Strategy: ${data.strategy})`;
                 statusText.style.color = '#00ff88';
             } else {
-                statusText.textContent = `SCAN FAILED (Strategy: ${data.strategy})`;
+                statusText.textContent = `SCAN FAILED (Check debugger labels)`;
                 statusText.style.color = '#ff6666';
             }
             render();
+        });
+
+        // v2.10.4 - Manual Calibration via Click
+        canvas.addEventListener('click', (e) => {
+            if (!lastMetadata || !lastImage) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            // 1. Check if we clicked on a candidate number
+            const clickedNumber = lastMetadata.words.find(w => 
+                x >= w.bbox.x0 && x <= w.bbox.x1 && y >= w.bbox.y0 && y <= w.bbox.y1
+            );
+
+            if (clickedNumber && lastMetadata.anchor) {
+                console.log('[Debug] Manual Health Selected:', clickedNumber.val);
+                ipcRenderer.send('ocr:manual-calibrate', {
+                    type: 'HEALTH',
+                    val: clickedNumber.val,
+                    x: (clickedNumber.bbox.x0 + clickedNumber.bbox.x1) / 2,
+                    y: (clickedNumber.bbox.y0 + clickedNumber.bbox.y1) / 2,
+                    anchor: lastMetadata.anchor
+                });
+                return;
+            }
+
+            // 2. Check if we clicked on an anchor char (from allWords)
+            if (lastMetadata.allWords) {
+                const clickedAnchor = lastMetadata.allWords.find(w => 
+                    x >= w.bbox.x0 && x <= w.bbox.x1 && y >= w.bbox.y0 && y <= w.bbox.y1
+                );
+                if (clickedAnchor) {
+                    console.log('[Debug] Manual Anchor Selected:', clickedAnchor.text);
+                    ipcRenderer.send('ocr:manual-calibrate', {
+                        type: 'ANCHOR',
+                        text: clickedAnchor.text
+                    });
+                }
+            }
         });
 
         function render() {
@@ -117,6 +159,15 @@
             ctx.drawImage(lastImage, 0, 0);
 
             if (lastMetadata) {
+                // v2.10.3 - Draw all detected text (Raw Diagnostic)
+                if (lastMetadata.allWords) {
+                    ctx.font = '7px sans-serif';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    lastMetadata.allWords.forEach(w => {
+                        ctx.fillText(w.text, w.bbox.x0, w.bbox.y0 - 2);
+                    });
+                }
+
                 // Draw all numeric candidates (Red)
                 ctx.lineWidth = 1;
                 lastMetadata.words.forEach(w => {
@@ -143,8 +194,8 @@
                                    lastMetadata.anchor.bbox.y1 - lastMetadata.anchor.bbox.y0);
                     
                     ctx.fillStyle = '#3399ff';
-                    ctx.font = '8px monospace';
-                    ctx.fillText('HEART ANCHOR', lastMetadata.anchor.bbox.x1 + 2, lastMetadata.anchor.bbox.y0 + 8);
+                    ctx.font = 'bold 8px monospace';
+                    ctx.fillText(`ANCHOR: "${lastMetadata.anchor.text}"`, lastMetadata.anchor.bbox.x1 + 2, lastMetadata.anchor.bbox.y0 + 8);
                 }
 
                 // Draw Selected Value (Green)

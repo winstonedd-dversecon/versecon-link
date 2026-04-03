@@ -1005,8 +1005,9 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.shareLocation !== undefined) config.shareLocation = newConfig.shareLocation; // Phase 5
     if (newConfig.teamNames !== undefined) config.teamNames = newConfig.teamNames;
     if (newConfig.userTeam !== undefined) config.userTeam = newConfig.userTeam;
-    if (newConfig.rsiHandle !== undefined) config.rsiHandle = newConfig.rsiHandle;
     if (newConfig.overlayPositions !== undefined) config.overlayPositions = newConfig.overlayPositions;
+    if (newConfig.shareHealth !== undefined) config.shareHealth = newConfig.shareHealth;
+    if (newConfig.rsiHandle !== undefined) config.rsiHandle = newConfig.rsiHandle;
 
     // Philips Hue Settings
     if (newConfig.hueEnabled !== undefined) config.hueEnabled = newConfig.hueEnabled;

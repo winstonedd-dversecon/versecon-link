@@ -46,7 +46,10 @@ class CombatParser extends BaseParser {
             // Medical Dropoff Generation
             medical_dropoff: /DropoffLocation_BP\[Destination\],\s+locations:\s+\(([^\]]+)\s+\[([^\]]+)\]\)/i,
 
-
+            // v2.10.3 - SC 4.0 Local Death Fallbacks
+            simple_actor_death: /Actor\s+death/i,
+            player_died: /Local\s+player\s+died/i,
+            revive_triggered: /Player\s+Revive\s+Triggered/i,
 
             // Vehicle Destruction (destroy levels 0→1=crippled, 1→2=destroyed)
             vehicle_destruction: /<Vehicle Destruction>/,

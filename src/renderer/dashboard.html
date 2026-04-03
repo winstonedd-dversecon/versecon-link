@@ -4392,67 +4392,48 @@
                     const ctx = tempCanvas.getContext('2d');
                     ctx.drawImage(img, config.healthZone.x, config.healthZone.y, config.healthZone.w, config.healthZone.h, 0, 0, config.healthZone.w, config.healthZone.h);
 
-                    // ═══ Heart Anchor Detection (Star Citizen 4.0+) ═══
-                    // The heart icon usually has a specific color or shape.
-                    // We search for the "Heart" color (Cyan/White/Red) in the raw crop.
                     const rawData = ctx.getImageData(0, 0, config.healthZone.w, config.healthZone.h).data;
                     let anchorX = -1, anchorY = -1;
                     
-                    // Look for Cyan/LightBlue Heart (SC default) or Red (Damaged)
-                    // Cyan: R:0-100, G:200-255, B:150-255
-                    // Red: R:200-255, G:0-100, B:0-100
                     for (let y = 0; y < config.healthZone.h; y += 2) {
                         for (let x = 0; x < config.healthZone.w; x += 2) {
                             const i = (y * config.healthZone.w + x) * 4;
                             const r = rawData[i], g = rawData[i+1], b = rawData[i+2];
-                            
                             const isCyan = (r < 150 && g > 180 && b > 180);
                             const isRed = (r > 180 && g < 100 && b < 100);
-                            
-                            if (isCyan || isRed) {
-                                // Found potential heart pixel
-                                anchorX = x; anchorY = y;
-                                break;
-                            }
+                            if (isCyan || isRed) { anchorX = x; anchorY = y; break; }
                         }
                         if (anchorX !== -1) break;
                     }
 
                     const dot = document.getElementById('health-anchor-dot');
-                    if (anchorX !== -1) {
-                        if (dot) {
-                            dot.style.display = 'block';
-                            dot.style.left = `calc(${anchorX / config.healthZone.w * 100}% - 3px)`;
-                            dot.style.top = `calc(${anchorY / config.healthZone.h * 100}% - 3px)`;
-                        }
-                        console.log('[HealthMonitor] Heart anchor found at:', anchorX, anchorY);
-                    } else {
-                        if (dot) dot.style.display = 'none';
-                        // Fallback: If heart not found, just use the center or original logic
+                    if (anchorX !== -1 && dot) {
+                        dot.style.display = 'block';
+                        dot.style.left = `calc(${anchorX / config.healthZone.w * 100}% - 3px)`;
+                        dot.style.top = `calc(${anchorY / config.healthZone.h * 100}% - 3px)`;
+                    } else if (dot) {
+                        dot.style.display = 'none';
                     }
 
-                    // ═══ Preprocessing for OCR ═══
                     const debugCanvas = document.getElementById('health-debug-canvas');
                     const dctx = debugCanvas.getContext('2d');
-                    
-                    // If we found an anchor, crop the area NEXT to it (usually to the right)
-                    // The percentage is typically 10-60 pixels to the right.
                     let targetX = 0, targetY = 0, targetW = config.healthZone.w, targetH = config.healthZone.h;
+                    
+                    if (!window.healthOcrState) {
+                        window.healthOcrState = { lastAnchorRelPos: null, customAnchorChar: null };
+                    }
+
                     if (anchorX !== -1) {
-                        targetX = Math.max(0, anchorX - 5); // Start slightly before the icon
-                        targetW = 80; // Typically enough for "100%"
-                        targetH = 25; 
+                        targetX = Math.max(0, anchorX - 5);
+                        targetW = 80; targetH = 25; 
                         targetY = Math.max(0, anchorY - 10);
                     }
 
                     debugCanvas.width = targetW;
                     debugCanvas.height = targetH;
-                    
-                    // 1. Grayscale & Contrast
                     dctx.filter = 'grayscale(1) contrast(2) brightness(1.2) invert(1)';
                     dctx.drawImage(tempCanvas, targetX, targetY, targetW, targetH, 0, 0, targetW, targetH);
                     
-                    // 2. Thresholding
                     const imageData = dctx.getImageData(0, 0, targetW, targetH);
                     const data = imageData.data;
                     for (let i = 0; i < data.length; i += 4) {
@@ -4463,10 +4444,8 @@
                     dctx.putImageData(imageData, 0, 0);
 
                     const processedUrl = debugCanvas.toDataURL('image/png');
-                    // v2.10.1 - Broadcast processed image to OCR Debug window
                     ipcRenderer.send('ocr:debug-update', processedUrl);
 
-                    // v2.10.2 - Structural OCR Scan
                     const result = await ipcRenderer.invoke('ocr:process', processedUrl);
                     const { text, words } = result || { text: '', words: [] };
                     
@@ -4474,37 +4453,46 @@
 
                     if (words && words.length > 0) {
                         let finalValue = null;
+                        const anchorChars = ['v', 'y', '+', '*', '|', 'x'];
+                        const anchor = words.find(w => {
+                            const t = w.text.toLowerCase();
+                            const matches = anchorChars.some(c => t.includes(c)) || t.includes('heart');
+                            if (window.healthOcrState.customAnchorChar && t.includes(window.healthOcrState.customAnchorChar.toLowerCase())) return true;
+                            return matches;
+                        });
                         
-                        // v2.10.2 - Pre-clean and Identify Numbers
                         const candidates = words.map(w => {
-                            const cleaned = w.text
-                                .replace(/[lI|]/g, '1').replace(/[oOQ]/g, '0').replace(/B/g, '8')
-                                .replace(/S/g, '5').replace(/G/g, '6').replace(/Z/g, '2').replace(/T/g, '7');
+                            const cleaned = w.text.replace(/[lI|]/g, '1').replace(/[oOQ]/g, '0').replace(/B/g, '8').replace(/S/g, '5').replace(/G/g, '6').replace(/Z/g, '2').replace(/T/g, '7');
                             const valMatch = cleaned.match(/(\d+)/);
                             return valMatch ? { val: parseInt(valMatch[0]), bbox: w.bbox, text: w.text } : null;
                         }).filter(c => c !== null && c.val <= 100);
 
-                        // Find Anchor (Character that looks like a heart)
-                        const anchor = words.find(w => w.text.toLowerCase().includes(anchorChar.toLowerCase()));
-                        
-                        if (scanStrategy === 'anchor-relative' && anchor && candidates.length > 0) {
-                            // Find numeric closest to anchor
+                        if (anchor && candidates.length > 0) {
                             const ax = (anchor.bbox.x0 + anchor.bbox.x1) / 2;
                             const ay = (anchor.bbox.y0 + anchor.bbox.y1) / 2;
-                            candidates.sort((a, b) => {
-                                const distA = Math.sqrt(Math.pow((a.bbox.x0 + a.bbox.x1)/2 - ax, 2) + Math.pow((a.bbox.y0 + a.bbox.y1)/2 - ay, 2));
-                                const distB = Math.sqrt(Math.pow((b.bbox.x0 + b.bbox.x1)/2 - ax, 2) + Math.pow((b.bbox.y0 + b.bbox.y1)/2 - ay, 2));
-                                return distA - distB;
-                            });
-                            finalValue = candidates[0].val;
-                        } else if (scanStrategy === 'bottom-most' && candidates.length > 0) {
-                            candidates.sort((a, b) => b.bbox.y1 - a.bbox.y1);
-                            finalValue = candidates[0].val;
-                        } else if (scanStrategy === 'top-most' && candidates.length > 0) {
-                            candidates.sort((a, b) => a.bbox.y0 - b.bbox.y0);
-                            finalValue = candidates[0].val;
+                            if (window.healthOcrState.lastAnchorRelPos) {
+                                const lockX = ax + window.healthOcrState.lastAnchorRelPos.dx;
+                                const lockY = ay + window.healthOcrState.lastAnchorRelPos.dy;
+                                candidates.sort((a, b) => Math.hypot((a.bbox.x0+a.bbox.x1)/2 - lockX, (a.bbox.y0+a.bbox.y1)/2 - lockY) - Math.hypot((b.bbox.x0+b.bbox.x1)/2 - lockX, (b.bbox.y0+b.bbox.y1)/2 - lockY));
+                                finalValue = candidates[0].val;
+                                scanStrategy = 'Geometric-Locked';
+                            } else {
+                                candidates.sort((a, b) => Math.hypot((a.bbox.x0+a.bbox.x1)/2 - ax, (a.bbox.y0+a.bbox.y1)/2 - ay) - Math.hypot((b.bbox.x0+b.bbox.x1)/2 - ax, (b.bbox.y0+b.bbox.y1)/2 - ay));
+                                finalValue = candidates[0].val;
+                                scanStrategy = 'Anchor-Relative';
+                            }
                         } else if (candidates.length > 0) {
-                            finalValue = candidates[0].val;
+                            if (scanStrategy === 'bottom-most') {
+                                candidates.sort((a, b) => b.bbox.y1 - a.bbox.y1);
+                                finalValue = candidates[0].val;
+                            } else if (lastDetectedHealth !== null) {
+                                candidates.sort((a, b) => Math.abs(a.val - lastDetectedHealth) - Math.abs(b.val - lastDetectedHealth));
+                                finalValue = candidates[0].val;
+                                scanStrategy = 'Consistency-Guess';
+                            } else {
+                                finalValue = candidates[0].val;
+                                scanStrategy = 'Greedy-Top';
+                            }
                         }
 
                         if (finalValue !== null) {
@@ -4515,44 +4503,60 @@
                             handleOcrFailure(text || 'No Numbers');
                         }
 
-                        // v2.10.2 - Broadcast word metadata for debug visualization
                         ipcRenderer.send('ocr:debug-metadata', { 
-                            words: candidates, 
-                            anchor: anchor,
+                            words: candidates.slice(0, 10), 
+                            anchor: anchor ? { text: anchor.text, bbox: anchor.bbox } : null,
                             finalValue: finalValue,
-                            strategy: scanStrategy
+                            strategy: scanStrategy,
+                            allWords: words.length < 50 ? words.map(w => ({ text: w.text, bbox: w.bbox })) : []
                         });
+                    } else if (lastDetectedHealth === 100) {
+                        updateHealthUI(100);
+                        scanFailCount = 0; 
                     } else {
-                        // v2.10.2 - Healthy Hide Fallback
-                        // If everything is gone, but we were just at 100%, assume we are still healthy
-                        if (lastDetectedHealth === 100) {
-                            updateHealthUI(100);
-                            scanFailCount = 0; 
-                        } else {
-                            handleOcrFailure('Empty Cluster');
-                        }
+                        handleOcrFailure('No Words');
                     }
                 };
-
-        function updateHealthUI(healthVal) {
-            ipcRenderer.send('app:update-health', healthVal);
-
-            // Broadcast to Squad if enabled
-            if (document.getElementById('config-share-health').checked) {
-                ipcRenderer.send('app:share-health', { 
-                    health: healthVal, 
-                    location: currentLocation 
-                });
-            }
-
-            document.getElementById('health-last-val').textContent = healthVal + '%';
-            console.log('[HealthMonitor] Current Health:', healthVal);
-        }
                 img.src = dataUrl;
             } catch (err) {
                 console.error('[HealthMonitor] Scan failed:', err);
             }
         }
+
+        function updateHealthUI(healthVal) {
+            ipcRenderer.send('app:update-health', healthVal);
+            const shareHealthEl = document.getElementById('config-share-health');
+            if (shareHealthEl && shareHealthEl.checked) {
+                ipcRenderer.send('app:share-health', { 
+                    health: healthVal, 
+                    location: typeof currentLocation !== 'undefined' ? currentLocation : 'Unknown'
+                });
+            }
+
+            const valEl = document.getElementById('health-last-val');
+            if (valEl) valEl.textContent = healthVal + '%';
+            console.log('[HealthMonitor] Current Health:', healthVal);
+        }
+
+        // v2.10.4 - Manual OCR Calibration (from Debugger)
+        ipcRenderer.on('ocr:manual-calibrate', (e, data) => {
+            console.log('[OCR] Manual Calibration Received:', data);
+            if (!window.healthOcrState) return;
+
+            if (data.type === 'ANCHOR') {
+                window.healthOcrState.customAnchorChar = data.text;
+                addDashItem('⚓', `Anchor signature set to: "${data.text}"`);
+            } else if (data.type === 'HEALTH' && data.anchor) {
+                const dx = data.x - (data.anchor.bbox.x0 + data.anchor.bbox.x1) / 2;
+                const dy = data.y - (data.anchor.bbox.y0 + data.anchor.bbox.y1) / 2;
+                window.healthOcrState.lastAnchorRelPos = { dx, dy };
+                addDashItem('🎯', `Geometric Lock Active (dx:${dx.toFixed(0)}, dy:${dy.toFixed(0)})`);
+                if (data.val) {
+                    lastDetectedHealth = data.val;
+                    updateHealthUI(data.val);
+                }
+            }
+        });
 
         function copyOCRResult() {
             const text = document.getElementById('ocr-result-text').value;
