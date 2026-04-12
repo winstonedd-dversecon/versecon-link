@@ -269,7 +269,7 @@
             "category": "Navigation",
             "name": "Quantum Travel",
             "status": "research",
-            "regex": "<Quantum>|QuantumDrive",
+            "regex": "(<Quantum>|QuantumDrive)",
             "example": "<Quantum> Player entered quantum travel",
             "event": "QUANTUM",
             "alert": "none",

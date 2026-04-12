@@ -777,10 +777,11 @@
         const recentFeeds = new Map();
 
         function addFeedEntry(icon, text) {
-            // Deduplication logic (5-second window)
-            const signature = `${icon}-${text}`;
+            // Deduplication logic (10-second window, stripped of timestamps)
+            const cleanText = text.replace(/^<[\d:.]+Z?>\s*/, '').replace(/^\d{2}:\d{2}:\d{2}\s*/, '').trim();
+            const signature = `${icon}-${cleanText}`;
             const now = Date.now();
-            if (recentFeeds.has(signature) && (now - recentFeeds.get(signature)) < 5000) {
+            if (recentFeeds.has(signature) && (now - recentFeeds.get(signature)) < 10000) {
                 return; // Ignore duplicate
             }
             recentFeeds.set(signature, now);
