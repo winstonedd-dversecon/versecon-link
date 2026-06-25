@@ -132,6 +132,7 @@ class APIClient extends EventEmitter {
             await axios.post(`${this.baseUrl}/api/me/friend-code`, { code }, {
                 headers: { 'x-session-token': this.token }
             });
+            console.log('[API] Friend code registered:', code);
         } catch (e) {
             console.error('[API] Failed to register friend code', e.message);
         }
@@ -147,6 +148,33 @@ class APIClient extends EventEmitter {
         } catch (e) {
             console.error('[API] Failed to fetch friends', e.message);
             return [];
+        }
+    }
+
+    async addFriendByCode(code) {
+        if (!this.token) throw new Error('NOT_LOGGED_IN');
+        try {
+            const res = await axios.post(`${this.baseUrl}/api/me/friends/add`, { code }, {
+                headers: { 'x-session-token': this.token }
+            });
+            return res.data;
+        } catch (e) {
+            const status = e.response?.status;
+            if (status === 404) throw new Error('CODE_NOT_FOUND');
+            if (status === 409) throw new Error('ALREADY_FRIENDS');
+            if (status === 403) throw new Error('NOT_LOGGED_IN');
+            throw new Error(e.response?.data?.message || e.message);
+        }
+    }
+
+    async removeFriend(friendId) {
+        if (!this.token) return;
+        try {
+            await axios.delete(`${this.baseUrl}/api/me/friends/${friendId}`, {
+                headers: { 'x-session-token': this.token }
+            });
+        } catch (e) {
+            console.error('[API] Failed to remove friend', e.message);
         }
     }
 

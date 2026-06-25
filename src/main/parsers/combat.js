@@ -69,6 +69,13 @@ class CombatParser extends BaseParser {
             proximity_fire: /\u003cFire Client - Background Simulation Skipped\u003e Fire Area '([^']+)'/i,
 
             fire_notification: /Added notification.*(?:Fire|fire)/i,
+
+            // OCS Radar detection pattern (CItemResourceHost::AddHostedNode)
+            ocs_radar: /\[CItemResourceHost::AddHostedNode\] Resource container component was already registered!\s+Entity\s*:\s*(\w+)_(\d+)\s+--\s+Host\s*:\s*(\w+)_(\d+)/i,
+
+            // Corpse stream-in (corpse/death details)
+            // Captures: "body_01_noMagicPocket_463403260094"
+            corpse_stream: /<CSCActorCorpseUtils::PopulateItemPortForItemRecoveryEntitlement>.*?Item\s+'(body_01_noMagicPocket_\d+)/i,
         };
 
         // Track recent deaths for crew correlation (deaths within 200ms of vehicle destruction)
@@ -91,10 +98,79 @@ class CombatParser extends BaseParser {
 
         // Reference to current ship (set by vehicle parser via main.js)
         this.currentShip = null;
+        this.filterAIShips = false; // Filter AI ships setting
+
+        // Character differentiation & OCS Radar State
+        this.rsiHandle = '';
+        this.recentOcsIds = new Map();
+        this.radarBuffer = [];
+        this.radarBufferTimeout = null;
+        this.recentAlertedShips = [];
     }
 
-    parse(line) {
+    parse(line, context = {}) {
         let handled = false;
+
+        // Skip parsing radar and threat events if we are doing historical catch-up
+        if (context.initialRead) {
+            // We still want to handle quantum state updates to set inQuantum state
+            if (/Jump Drive Requesting State Change.*to Traveling/i.test(line)) {
+                this.inQuantum = true;
+            } else if (/Jump Drive Requesting State Change.*to Idle/i.test(line)) {
+                this.inQuantum = false;
+            }
+            // If it's a radar match, mark it as handled so LogEngine knows we processed it, but don't emit anything
+            if (this.patterns.ocs_radar.test(line) || this.patterns.proximity_fire.test(line) || /Local Route Guard - Server Rerouted/i.test(line)) {
+                return true;
+            }
+            return false;
+        }
+
+        // ── 0. OCS Radar Detections ──
+        const ocsMatch = line.match(this.patterns.ocs_radar);
+        if (ocsMatch) {
+            const entityName = ocsMatch[1];
+            const entityId = ocsMatch[2];
+            const hostName = ocsMatch[3];
+            const hostId = ocsMatch[4];
+
+            const now = Date.now();
+
+            // Clean up 5-second cache
+            for (const [id, ts] of this.recentOcsIds.entries()) {
+                if (now - ts > 5000) {
+                    this.recentOcsIds.delete(id);
+                }
+            }
+
+            // De-duplicate: if we've seen either entityId or hostId in the last 5 seconds, skip
+            if (!this.recentOcsIds.has(entityId) && !this.recentOcsIds.has(hostId)) {
+                this.recentOcsIds.set(entityId, now);
+                this.recentOcsIds.set(hostId, now);
+
+                const chassisName = this.getCleanShipName(hostName);
+
+                // Skip if this is the player's own ship
+                const isOwnShip = this.currentShip && (
+                    chassisName.toLowerCase().includes(this.currentShip.toLowerCase()) ||
+                    this.currentShip.toLowerCase().includes(chassisName.toLowerCase())
+                );
+
+                const isAI = this.filterAIShips && this.isAIShip(entityName, hostName, chassisName);
+
+                if (!isOwnShip && !isAI) {
+                    // Add to buffer for burst grouping
+                    this.radarBuffer.push({ chassisName, hostId, timestamp: now });
+                }
+
+                if (!this.radarBufferTimeout) {
+                    this.radarBufferTimeout = setTimeout(() => {
+                        this._flushRadarBuffer();
+                    }, 300);
+                }
+            }
+            handled = true;
+        }
 
         // ── 1. Actor Death ──
         if (this.patterns.actor_death.test(line)) {
@@ -104,6 +180,8 @@ class CombatParser extends BaseParser {
                 const zoneMatch = line.match(this.patterns.death_zone);
                 const dirMatch = line.match(this.patterns.death_direction);
 
+                const isLocalPlayer = victim.toLowerCase() === (this.rsiHandle || '').toLowerCase();
+
                 const payload = {
                     type: 'DEATH',
                     value: 'Killed',
@@ -112,6 +190,7 @@ class CombatParser extends BaseParser {
                         killer,
                         weapon,
                         damageType,
+                        isLocalPlayer,
                         zone: zoneMatch ? zoneMatch[1] : null,
                         direction: dirMatch ? {
                             x: parseFloat(dirMatch[1]),
@@ -139,6 +218,8 @@ class CombatParser extends BaseParser {
             const fromZone = stateDeadMatch[2];
             const toZone = stateDeadMatch[3];
 
+            const isLocalPlayer = victim.toLowerCase() === (this.rsiHandle || '').toLowerCase();
+
             const payload = {
                 type: 'DEATH',
                 value: 'Killed',
@@ -147,6 +228,7 @@ class CombatParser extends BaseParser {
                     killer: 'Unknown',
                     weapon: 'Unknown',
                     damageType: 'Unknown',
+                    isLocalPlayer,
                     zone: toZone, // where they ended up
                     fromZone: fromZone // usually the ship they died in
                 }
@@ -155,6 +237,20 @@ class CombatParser extends BaseParser {
 
             this.recentDeaths.push({ victim, timestamp: Date.now() });
             this._cleanOldDeaths();
+            handled = true;
+        }
+
+        // ── 1.6 Corpse Stream-in (corpse/death details) ──
+        const corpseMatch = line.match(this.patterns.corpse_stream);
+        if (corpseMatch) {
+            const corpseName = corpseMatch[1];
+            this.emit('gamestate', {
+                type: 'CORPSE_DETECTED',
+                value: `Player corpse streamed in: ${corpseName}`,
+                details: {
+                    corpseId: corpseName
+                }
+            });
             handled = true;
         }
 
@@ -289,6 +385,41 @@ class CombatParser extends BaseParser {
             this.inQuantum = false;
         }
 
+        // Detect ships arriving from quantum travel.
+        // FinalStop=0 is the verified signal that a ship has just exited quantum drive and loaded into the area.
+        // FinalStop=1 and FinalStop=-1 are unreliable (appear on grounded/static entities) and are ignored.
+        if (line.includes('Local Route Guard - Server Rerouted')) {
+            const finalStopMatch = line.match(/FinalStop=(-?\d+)/i);
+            const finalStop = finalStopMatch ? parseInt(finalStopMatch[1]) : null;
+
+            // Only process FinalStop=0 (confirmed quantum arrival signal)
+            if (finalStop === 0) {
+                // Try to extract ship entity name from the line
+                // Matches: RSI_Hermes_509694187799[509694187799] or DRAK_Corsair_512402756909[...]
+                const entityMatch = line.match(/\|\s*([A-Za-z]+_[A-Za-z]+_[A-Za-z0-9_]+)\[\d+\]/i);
+                let shipName = 'Unknown Ship';
+                if (entityMatch && entityMatch[1]) {
+                    shipName = this.getCleanShipName(entityMatch[1]);
+                }
+
+                const isOwnShip = this.currentShip && (
+                    shipName.toLowerCase().includes(this.currentShip.toLowerCase()) ||
+                    this.currentShip.toLowerCase().includes(shipName.toLowerCase())
+                );
+
+                if (!isOwnShip && shipName !== 'Unknown Ship') {
+                    const actionMsg = `${shipName} — Quantum Arrival`;
+                    this.emit('gamestate', {
+                        type: 'TACTICAL_QUANTUM',
+                        value: actionMsg,
+                        ship: shipName,
+                        direction: 'arrival'
+                    });
+                    handled = true;
+                }
+            }
+        }
+
         const proxMatch = line.match(this.patterns.proximity_fire);
         if (proxMatch && this.interdictionShips.length > 0) {
             // Gate: if quantumOnly mode is on, skip unless we're currently in quantum
@@ -341,6 +472,48 @@ class CombatParser extends BaseParser {
         console.log('[CombatParser] Interdiction quantum-only mode:', this.interdictionQuantumOnly);
     }
 
+    /**
+     * Set whether AI ships should be filtered out from OCS radar.
+     * @param {boolean} enabled
+     */
+    setFilterAIShips(enabled) {
+        this.filterAIShips = !!enabled;
+        console.log('[CombatParser] Filter AI ships mode:', this.filterAIShips);
+    }
+
+    /**
+     * Check if the entity, host, or chassis name matches known AI/NPC patterns
+     */
+    isAIShip(entityName, hostName, chassisName) {
+        const aiPatterns = [/AI_/i, /NPC_/i, /PU_Pilot_/i, /Criminal-Pilot/i, /Security-/i, /Pirate-/i];
+        
+        // Check explicit pattern matches in entityName and hostName
+        for (const pattern of aiPatterns) {
+            if (pattern.test(entityName) || pattern.test(hostName)) {
+                return true;
+            }
+        }
+
+        // Heuristics:
+        // 1. Long entity names with multiple hyphens or underscores (e.g. PU_Pilot_Pirate_Cutlass_Black_...)
+        const hyphenCount = (entityName.match(/[-_]/g) || []).length;
+        if (entityName.length > 40 || hyphenCount > 3) {
+            if (/^(?:PU_|AI_|NPC_|Criminal|Security|Pirate)/i.test(entityName)) {
+                return true;
+            }
+        }
+
+        // Clean name check
+        if (chassisName) {
+            const cleanLower = chassisName.toLowerCase();
+            if (cleanLower.startsWith('ai ') || cleanLower.startsWith('npc ') || cleanLower.includes(' npc') || cleanLower.includes(' ai ')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Strip trailing entity ID and convert underscores */
     _cleanVehicleName(raw) {
         if (!raw) return 'Unknown';
@@ -358,6 +531,72 @@ class CombatParser extends BaseParser {
     _cleanOldDeaths() {
         const cutoff = Date.now() - this.CREW_WINDOW_MS;
         this.recentDeaths = this.recentDeaths.filter(d => d.timestamp > cutoff);
+    }
+
+    /** Set user's RSI handle for player/other separation */
+    setRsiHandle(handle) {
+        this.rsiHandle = handle;
+        console.log('[CombatParser] RSI handle updated:', this.rsiHandle);
+    }
+
+    /** Process and emit grouped or single radar detections */
+    _flushRadarBuffer() {
+        const now = Date.now();
+        const ships = this.radarBuffer;
+        this.radarBuffer = [];
+        this.radarBufferTimeout = null;
+
+        if (ships.length === 0) return;
+
+        // Clean up 15-second rolling history of alerted unique ships (using hostId)
+        this.recentAlertedShips = this.recentAlertedShips.filter(s => now - s.timestamp <= 15000);
+
+        // Filter out duplicates within this buffer burst itself, and also check against the 15s history
+        const uniqueShips = [];
+        const seenIds = new Set();
+        for (const s of ships) {
+            // Check if seen in this burst
+            if (seenIds.has(s.hostId)) continue;
+            seenIds.add(s.hostId);
+
+            // Check if seen in the 15-second history
+            const alreadyAlerted = this.recentAlertedShips.some(historyShip => historyShip.id === s.hostId);
+            if (alreadyAlerted) continue;
+
+            uniqueShips.push(s);
+        }
+
+        if (uniqueShips.length === 0) return;
+
+        // Add newly alerted unique ships to sliding 15s history
+        for (const s of uniqueShips) {
+            this.recentAlertedShips.push({ name: s.chassisName, id: s.hostId, timestamp: now });
+        }
+
+        if (uniqueShips.length > 3) {
+            const uniqueNames = [...new Set(uniqueShips.map(s => s.chassisName))];
+            const payload = {
+                type: 'RADAR_GROUP',
+                value: `Area Loaded: ${uniqueShips.length} ships nearby (List: ${uniqueNames.join(', ')})`,
+                details: {
+                    count: uniqueShips.length,
+                    ships: uniqueNames
+                }
+            };
+            this.emit('gamestate', payload);
+        } else {
+            for (const s of uniqueShips) {
+                const payload = {
+                    type: 'RADAR_SINGLE',
+                    value: `Ship detected: ${s.chassisName}`,
+                    details: {
+                        chassis: s.chassisName,
+                        hostId: s.hostId
+                    }
+                };
+                this.emit('gamestate', payload);
+            }
+        }
     }
 }
 

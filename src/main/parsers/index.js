@@ -61,6 +61,18 @@ class LogEngine extends EventEmitter {
             }
         }
     }
+
+    /**
+     * Set whether AI ships should be filtered out from OCS radar.
+     * @param {boolean} enabled
+     */
+    setFilterAIShips(enabled) {
+        for (const parser of this.parsers) {
+            if (typeof parser.setFilterAIShips === 'function') {
+                parser.setFilterAIShips(enabled);
+            }
+        }
+    }
 }
 
 // Instantiate and register parsers
@@ -79,5 +91,6 @@ engine.register(require('./economy'));
 // engine.register(require('./zone')); // DISABLED: navigation.js now handles zones with verified patterns
 engine.register(require('./custom'));
 engine.register(require('./social')); // Phase 5
+engine.register(require('./blueprint')); // Blueprint tracking (v2.10.5)
 
 module.exports = engine;

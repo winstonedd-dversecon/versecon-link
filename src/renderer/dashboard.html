@@ -523,6 +523,36 @@
             padding-left: 8px;
             background: linear-gradient(90deg, rgba(255, 165, 0, 0.05), transparent);
         }
+
+        .window-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .win-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+        .win-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .win-btn.win-close:hover {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: #ff4444;
+            color: #fff;
+        }
     </style>
 </head>
 
@@ -530,7 +560,7 @@
     <div class="sidebar title-bar-drag">
         <div class="brand">
             VerseCon <span style="color:white; font-weight:300;">Link</span>
-            <div style="font-size: 0.6rem; opacity: 0.5; margin-top: -5px; font-weight: 400;">v2.8.0</div>
+            <div style="font-size: 0.6rem; opacity: 0.5; margin-top: -5px; font-weight: 400;">v2.11.0</div>
         </div>
 
         <div class="menu-item active no-drag" id="nav-dashboard" onclick="switchTab('dashboard')">
@@ -555,8 +585,11 @@
         <div class="menu-item no-drag" id="nav-logdb" onclick="switchTab('logdb')">
             <span>🗄️</span> Log Database
         </div>
-        <div class="menu-item no-drag" onclick="toggleOverlay()">
-            <span>📺</span> Toggle Overlay
+        <div class="menu-item no-drag" id="nav-blueprints" onclick="switchTab('blueprints')">
+            <span>📐</span> Blueprints
+        </div>
+        <div class="menu-item no-drag" id="nav-overlay-btn" onclick="toggleOverlayUI()" style="transition:color 0.2s;">
+            <span id="nav-overlay-icon">📺</span> <span id="nav-overlay-label">Overlay ON</span>
         </div>
 
         <div style="flex:1"></div>
@@ -627,22 +660,27 @@
                 <div class="subtitle" id="view-subtitle">Live system telemetry and mission feed</div>
             </div>
             <div style="display:flex; gap:10px; align-items:center;" class="no-drag">
-                <!-- Friend Code display -->
-                <div
-                    style="background: rgba(255,165,0,0.1); border: 1px solid var(--accent); padding: 4px 10px; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
-                    <span
-                        style="font-size: 0.7rem; color: var(--accent); text-transform: uppercase; font-weight: 700;">Friend
-                        Code:</span>
-                    <span id="display-friend-code"
-                        style="font-family: monospace; font-weight: bold; color: #fff; letter-spacing: 1px;">------</span>
-                    <button class="no-drag" onclick="copyFriendCode()"
-                        style="background:none; border:none; color: var(--accent); cursor:pointer; padding: 2px;"
-                        title="Copy Code">📋</button>
-                </div>
 
-                <div class="no-drag" onclick="ipcRenderer.send('window:minimize')"></div>
+
+                <div class="window-controls no-drag">
+                    <button onclick="ipcRenderer.send('window:minimize')" class="win-btn" title="Minimize">🗕</button>
+                    <button onclick="ipcRenderer.send('window:close')" class="win-btn win-close" title="Close Workspace">🗙</button>
+                </div>
             </div>
         </div>
+        <!-- Active Mission Banner -->
+        <div id="dash-mission-banner" style="display:none; background: linear-gradient(90deg, rgba(255,165,0,0.1) 0%, rgba(255,165,0,0.02) 100%); border-left: 3px solid orange; padding: 12px 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <div style="font-size:0.75rem; color:orange; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;">🛰️ ACTIVE MISSION</div>
+                <div style="font-size:0.75rem; color:#888;" id="dash-mission-time"></div>
+            </div>
+            <div id="dash-mission-title" style="font-size:1.1rem; font-weight:600; color:#fff; margin-bottom:6px;">-</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:0.7rem; color:orange; border:1px solid rgba(255,165,0,0.3); padding:1px 4px; border-radius:2px; text-transform:uppercase; font-weight:600;">OBJECTIVE</span>
+                <span id="dash-mission-objective" style="font-size:0.85rem; color:#ddd;">-</span>
+            </div>
+        </div>
+
         <div class="feed-container" id="event-feed">
             <div class="feed-item">
                 <span class="feed-time">SYSTEM</span>
@@ -809,7 +847,7 @@
                 <div class="section-title" style="margin-top: 0;">Sound & Alerts</div>
                 <div class="status-row">
                     <span style="color: var(--text-dim);">Alert Sounds</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="sound-enabled" checked
+                    <label style="cursor: pointer;"><input type="checkbox" id="sound-enabled"
                             onchange="toggleSounds()"> Enabled</label>
                 </div>
                 <div class="status-row">
@@ -819,7 +857,17 @@
                 </div>
                 <div class="status-row">
                     <span style="color: var(--text-dim);">HUD Warnings</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="hud-warnings-enabled" checked>
+                    <label style="cursor: pointer;"><input type="checkbox" id="hud-warnings-enabled" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">HUD Warning Flash</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="hud-flash-enabled" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Filter AI Ships</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="filter-ai-ships" onchange="saveConfig()">
                         Enabled</label>
                 </div>
             </div>
@@ -834,40 +882,43 @@
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-hudTop" checked onchange="saveConfig()"> Main HUD (Top)
+                        <input type="checkbox" id="vis-hudTop" onchange="saveConfig()"> Main HUD (Top)
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-sessionInfo" checked onchange="saveConfig()"> Session Info
+                        <input type="checkbox" id="vis-sessionInfo" onchange="saveConfig()"> Session Info
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-systemInfo" checked onchange="saveConfig()"> System Info
+                        <input type="checkbox" id="vis-systemInfo" onchange="saveConfig()"> System Info
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-shipStatus" checked onchange="saveConfig()"> Ship Status
+                        <input type="checkbox" id="vis-shipStatus" onchange="saveConfig()"> Ship Status
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-locationZone" checked onchange="saveConfig()"> Location & Zone
+                        <input type="checkbox" id="vis-locationZone" onchange="saveConfig()"> Location & Zone
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-rightPanel" checked onchange="saveConfig()"> Right Panel (All)
+                        <input type="checkbox" id="vis-rightPanel" onchange="saveConfig()"> Right Panel (All)
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-partyList" checked onchange="saveConfig()"> Party List HUD
+                        <input type="checkbox" id="vis-partyList" onchange="saveConfig()"> Party List HUD
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-tacticalFeed" checked onchange="saveConfig()"> Tactical Feed
+                        <input type="checkbox" id="vis-tacticalFeed" onchange="saveConfig()"> Tactical Feed
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-shipVisualizer" checked onchange="saveConfig()"> Ship Visuals
+                        <input type="checkbox" id="vis-shipVisualizer" onchange="saveConfig()"> Ship Visuals
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
                         <input type="checkbox" id="vis-chatHud" onchange="saveConfig()"> Stream Chat HUD
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-nearbyPlayers" checked onchange="saveConfig()"> Nearby Players
+                        <input type="checkbox" id="vis-nearbyPlayers" onchange="saveConfig()"> Nearby Players
                     </label>
                     <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
-                        <input type="checkbox" id="vis-healthMonitor" checked onchange="saveConfig()"> Health Monitor HUD
+                        <input type="checkbox" id="vis-healthMonitor" onchange="saveConfig()"> Health Monitor HUD
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="vis-networkPanel" onchange="saveConfig()"> Network & Tactical HUD
                     </label>
                 </div>
             </div>
@@ -921,6 +972,11 @@
                         <input type="text" id="config-rsi-handle" class="modern-input" placeholder="Your Handle" style="margin:0; flex:1;" onchange="saveConfig()">
                     </div>
 
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 100px; font-size: 0.8rem; color: var(--text-dim);">Player ID</span>
+                        <input type="text" id="config-rsi-id" class="modern-input" placeholder="Numeric ID (Optional)" style="margin:0; flex:1;" onchange="saveConfig()">
+                    </div>
+
                     <div style="display: flex; gap: 10px;">
                         <button class="cyber-btn small" id="btn-squad-off" onclick="setSquadMode('OFF')" style="flex:1;">OFF</button>
                         <button class="cyber-btn small" id="btn-squad-join" onclick="setSquadMode('JOIN')" style="flex:1;">JOIN</button>
@@ -955,6 +1011,9 @@
 
                     <button class="cyber-btn" onclick="openCncOverlay()" style="width: 100%; font-weight: bold; margin-top: 5px;">
                         📊 Open CNC Dashboard
+                    </button>
+                    <button class="cyber-btn" onclick="openNetProximityHud()" style="width: 100%; font-weight: bold; margin-top: 5px; background: linear-gradient(135deg, #0d9488 0%, #115e59 100%); border-color: #14b8a6;">
+                        📡 Open Proximity & Telemetry HUD
                     </button>
                 </div>
             </div>
@@ -1077,6 +1136,28 @@
                     from docking near an interdictor).
                 </div>
 
+                <!-- Quantum Exits Only Toggle -->
+                <div class="status-row"
+                    style="margin-bottom: 10px; padding: 8px 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                    <span style="color: var(--text-dim); font-size: 0.8rem;">🌌 Only alert Quantum Exits (Ignore scan Detections)</span>
+                    <label class="switch small" style="margin-left: auto;">
+                        <input type="checkbox" id="config-quantum-exits-only"
+                            onchange="saveConfig()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- Suppress Mass Quantum Alerts Toggle -->
+                <div class="status-row"
+                    style="margin-bottom: 10px; padding: 8px 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                    <span style="color: var(--text-dim); font-size: 0.8rem;">⏳ Suppress HUD Alerts for Mass Arrivals</span>
+                    <label class="switch small" style="margin-left: auto;">
+                        <input type="checkbox" id="config-suppress-mass-quantum-alerts" checked
+                            onchange="saveConfig()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
                 <div id="interdiction-ship-list" style="min-height: 30px; margin-bottom: 10px;"></div>
 
                 <div style="display:flex; gap: 8px;">
@@ -1195,6 +1276,8 @@
                         New</button>
                     <button class="cyber-btn small" onclick="openLocationSearch()"
                         style="font-size: 0.7rem; margin-left: 5px;">🔍 Search</button>
+                    <button class="cyber-btn small success" onclick="exportCustomLocationsForPublic()"
+                        style="font-size: 0.7rem; margin-left: 5px;">📤 Export to Public</button>
                     <!-- Help tooltip -->
                     <span style="font-size:0.7rem; color:#666; margin-left:10px; cursor:help;"
                         onclick="alert('Map raw log values (e.g. OOC_Stanton_1b_Aberdeen) to friendly names (e.g. Vivere PAF-1).\nWorks with Location[...] and RoomName: logs.')">ℹ️
@@ -1230,6 +1313,7 @@
                             <option value="Comm Array">Comm Array</option>
                             <option value="Landing Zone">Landing Zone</option>
                             <option value="Space Station">Space Station</option>
+                            <option value="Facility">Facility</option>
                             <option value="Outpost">Outpost</option>
                             <option value="Medical Zone">Medical</option>
                             <option value="Wormhole Transit">Wormhole</option>
@@ -1258,7 +1342,11 @@
                             <button class="cyber-btn small" onclick="grabRawLocation()"
                                 style="width: auto; margin: 0;">Grab</button>
                         </div>
+                        <div id="suggested-location-container" style="font-size: 0.75rem; margin-top: 6px; display: none; color: #aaa; border-top: 1px solid rgba(0,255,136,0.1); padding-top: 6px;">
+                            Suggested Name: <span id="suggested-location-name" style="color: var(--success); font-weight: 600;">None</span>
+                        </div>
                     </div>
+
                 </div>
             </div>
 
@@ -1375,51 +1463,19 @@
                 <button class="cyber-btn small" onclick="testHueLights()">Test Connection</button>
             </div>
 
-            <!-- Location Sharing (Phase 5) -->
-            <div
-                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
-                <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <div>
-                        <div style="font-weight:bold; color:#fff;">Wait for Signal</div>
-                        <div style="font-size:0.8rem; color:#888;">Broadcast location to friends via VerseCon Relay
-                        </div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="config-share-location" onchange="saveConfig()">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            </div>
-
             <!-- Team Designations (v2.8) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
-                <div class="section-title" style="margin-top: 0;">Team Designations</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                    <div class="section-title" style="margin: 0;">Team Designations</div>
+                    <button class="cyber-btn small" onclick="addTeamField()" style="width:auto; margin:0; padding: 2px 8px; font-size:0.7rem;">+ Add Team</button>
+                </div>
                 <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
                     Rename your squadron's callsigns and assign yourself to a team.
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 1</div>
-                        <input type="text" id="team-name-0" class="modern-input" style="margin:0;"
-                            onchange="saveTeamNames()">
-                    </div>
-                    <div>
-                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 2</div>
-                        <input type="text" id="team-name-1" class="modern-input" style="margin:0;"
-                            onchange="saveTeamNames()">
-                    </div>
-                    <div>
-                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 3</div>
-                        <input type="text" id="team-name-2" class="modern-input" style="margin:0;"
-                            onchange="saveTeamNames()">
-                    </div>
-                    <div>
-                        <div style="font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">TEAM 4</div>
-                        <input type="text" id="team-name-3" class="modern-input" style="margin:0;"
-                            onchange="saveTeamNames()">
-                    </div>
+                <div id="team-names-container" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <!-- Dynamically populated inputs -->
                 </div>
 
                 <div
@@ -1430,10 +1486,7 @@
                     </div>
                     <select id="config-user-team" class="modern-input" style="width:120px; margin:0;"
                         onchange="saveConfig()">
-                        <option value="Alpha">Alpha</option>
-                        <option value="Bravo">Bravo</option>
-                        <option value="Charlie">Charlie</option>
-                        <option value="Delta">Delta</option>
+                        <!-- Dynamically populated options -->
                     </select>
                 </div>
             </div>
@@ -1576,29 +1629,51 @@
     <div id="view-players" class="view">
         <div
             style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; border: 1px solid var(--border); flex: 1; display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin:0; color:var(--accent);">SOCIAL HUB</h3>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="add-friend-code" placeholder="Enter Friend Code" class="modern-input"
-                        style="width: 150px; margin:0;">
-                    <button class="cyber-btn" onclick="addFriendByCode()">Add Friend</button>
-                </div>
+            <!-- ══ SQUAD SESSION ══ -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h3 style="margin:0; color:var(--accent);">SQUAD SESSION</h3>
+                <div id="squad-status-badge" style="font-size:0.75rem; color:#555; letter-spacing:0.05em;">No active session</div>
             </div>
 
-            <div style="flex: 1; overflow-y: auto;">
-                <div id="friend-list">
-                    <div style="color:#666; font-style:italic; text-align:center; padding: 40px;">No friends found. Add
-                        someone to start sharing telemetry.</div>
+            <!-- Action bar -->
+            <div id="squad-action-bar" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+                <button class="cyber-btn" id="squad-host-btn" onclick="squadHost()" style="margin:0; background:rgba(0,180,80,0.15); border-color:#00cc44;">
+                    🛡 Host Session
+                </button>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <input id="squad-join-code" type="text" placeholder="Paste session code" maxlength="10"
+                        style="width:160px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                               border-radius:4px; padding:7px 10px; color:#fff; font-size:0.85rem; font-family:inherit;
+                               outline:none; text-transform:uppercase; letter-spacing:1px;"
+                        onkeydown="if(event.key==='Enter') squadJoin()">
+                    <button class="cyber-btn" id="squad-join-btn" onclick="squadJoin()" style="margin:0;">⚡ Join</button>
                 </div>
+                <button class="cyber-btn small" id="squad-leave-btn" onclick="squadLeave()" style="margin:0; display:none; border-color:#ff6666; color:#ff6666;">
+                    Leave Session
+                </button>
             </div>
 
-            <div
-                style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                <div style="color: var(--text-dim); font-size: 0.8rem;">
-                    Friends can see your location and status if "Wait for Signal" is enabled.
+            <!-- Session code display (shown when hosting) -->
+            <div id="squad-code-panel" style="display:none; background:rgba(0,180,80,0.08); border:1px solid #00cc44;
+                 border-radius:6px; padding:14px 16px; margin-bottom:16px;">
+                <div style="font-size:0.75rem; color:#00cc44; letter-spacing:0.1em; margin-bottom:6px;">YOUR SESSION CODE — share this with your squad:</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div id="squad-my-code" style="font-family:monospace; font-size:1.4rem; font-weight:700; letter-spacing:4px; color:#fff;"></div>
+                    <button onclick="copySquadCode()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);
+                            border-radius:4px; color:#aaa; cursor:pointer; padding:4px 10px; font-size:0.75rem;">📋 Copy</button>
                 </div>
-                <button class="cyber-btn small no-drag"
-                    onclick="shell.openExternal('https://versecon.space/groups')">Discover Groups</button>
+                <div id="squad-host-note" style="font-size:0.7rem; color:#888; margin-top:6px;"></div>
+            </div>
+
+            <div id="squad-msg" style="font-size:0.8rem; margin-bottom:12px; min-height:18px;"></div>
+
+            <!-- Squad member list -->
+            <div style="flex:1; overflow-y:auto; min-height:0;">
+                <div id="squad-member-list">
+                    <div style="color:#555; text-align:center; padding:30px; font-style:italic;">
+                        Host a session or join one to see your squad here.
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1637,6 +1712,106 @@
             <div style="color:#555; font-style:italic; padding:30px; text-align:center;">
                 Loading pattern database...
             </div>
+        </div>
+    </div>
+
+    <!-- ═══ BLUEPRINTS TAB ═══ -->
+    <div id="view-blueprints" class="view">
+
+        <!-- Toolbar -->
+        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; align-items:center;">
+            <button class="cyber-btn" id="bp-scan-btn" onclick="scanOldLogs()" style="margin:0;">
+                📂 Scan Old Logs
+            </button>
+            <button class="cyber-btn" id="bp-mod-btn" onclick="generateScMod()" style="margin:0; background:rgba(0,180,80,0.15); border-color:#00cc44;">
+                🎮 Generate SC Mod File
+            </button>
+            <button class="cyber-btn small" onclick="showAddBlueprintForm()" style="margin:0;">
+                + Add to Master List
+            </button>
+            <span id="bp-scan-status" style="font-size:0.75rem; color:#888; margin-left:8px;"></span>
+            <span id="bp-mod-status" style="font-size:0.75rem; color:#888; margin-left:8px;"></span>
+        </div>
+
+        <!-- Search bar -->
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+            <input id="bp-search" type="text" placeholder="🔍  Search blueprints…"
+                oninput="renderBlueprintUI()"
+                style="flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                       border-radius:4px; padding:7px 12px; color:#fff; font-size:0.85rem;
+                       font-family:inherit; outline:none; max-width:360px;">
+            <button class="cyber-btn small" onclick="document.getElementById('bp-search').value=''; renderBlueprintUI();" style="margin:0; padding:6px 10px;">✕</button>
+            <select id="bp-filter-cat" onchange="renderBlueprintUI()"
+                style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                       border-radius:4px; padding:7px 8px; color:#fff; font-size:0.8rem; font-family:inherit; outline:none;">
+                <option value="">All categories</option>
+                <option value="Armor">Armor</option>
+                <option value="Armor/Apparel">Armor/Apparel</option>
+                <option value="Weapon">Weapon</option>
+                <option value="Ammo">Ammo</option>
+                <option value="Quantum Drive">Quantum Drive</option>
+                <option value="Shield">Shield</option>
+                <option value="Powerplant">Powerplant</option>
+                <option value="Cooler">Cooler</option>
+                <option value="Ship Component">Ship Component</option>
+            </select>
+        </div>
+
+        <!-- Progress bar -->
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <span style="font-size:0.8rem; color:#aaa; white-space:nowrap;">Progress:</span>
+            <div style="flex:1; background:rgba(255,255,255,0.07); border-radius:4px; height:10px; overflow:hidden;">
+                <div id="bp-progress-bar" style="height:100%; width:0%; background:var(--accent); border-radius:4px; transition:width 0.4s;"></div>
+            </div>
+            <span id="bp-progress-label" style="font-size:0.8rem; color:var(--accent); white-space:nowrap; min-width:60px; text-align:right;">0 / 0</span>
+        </div>
+
+        <!-- Most Recent Gained Blueprints -->
+        <div id="bp-recent-section" style="display:none; flex-direction:column; gap:8px; margin-bottom:16px; background:rgba(0, 255, 136, 0.03); border:1px dashed rgba(0, 255, 136, 0.2); border-radius:6px; padding:10px;">
+            <div style="font-size:0.72rem; color:#00ff88; font-weight:600; letter-spacing:0.05em; display:flex; justify-content:space-between; align-items:center;">
+                <span>⏱️ 5 MOST RECENT BLUEPRINTS GAINED</span>
+            </div>
+            <div id="bp-recent-list" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;"></div>
+        </div>
+
+        <!-- Three columns: Have / Missing / Unreleased -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; height:calc(100vh - 350px); overflow:hidden;">
+
+            <!-- Collected -->
+            <div style="display:flex; flex-direction:column; gap:8px; min-height:0;">
+                <div style="font-size:0.8rem; color:#00ff88; font-weight:600; letter-spacing:0.05em; flex-shrink:0;">
+                    ✅ COLLECTED (<span id="bp-have-count">0</span>)
+                </div>
+                <div id="bp-have-list" class="feed-container" style="flex:1; min-height:0; overflow-y:auto; padding:8px;"></div>
+            </div>
+
+            <!-- Missing -->
+            <div style="display:flex; flex-direction:column; gap:8px; min-height:0;">
+                <div style="font-size:0.8rem; color:#ff6666; font-weight:600; letter-spacing:0.05em; flex-shrink:0;">
+                    ❌ MISSING (<span id="bp-missing-count">0</span>)
+                </div>
+                <div id="bp-missing-list" class="feed-container" style="flex:1; min-height:0; overflow-y:auto; padding:8px;"></div>
+            </div>
+
+            <!-- Unreleased -->
+            <div style="display:flex; flex-direction:column; gap:8px; min-height:0;">
+                <div style="font-size:0.8rem; color:#a855f7; font-weight:600; letter-spacing:0.05em; flex-shrink:0;">
+                    🔮 UNRELEASED (<span id="bp-unreleased-count">0</span>)
+                </div>
+                <div id="bp-unreleased-list" class="feed-container" style="flex:1; min-height:0; overflow-y:auto; padding:8px;"></div>
+            </div>
+        </div>
+
+        <!-- Add to master list form (hidden by default) -->
+        <div id="bp-add-form" style="display:none; margin-top:12px; background:rgba(0,200,255,0.05);
+            border:1px solid rgba(0,200,255,0.2); border-radius:6px; padding:12px; gap:8px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="bp-add-name" placeholder="Blueprint name..." class="modern-input"
+                style="flex:1; min-width:160px; margin:0;">
+            <input type="text" id="bp-add-category" placeholder="Category (e.g. Weapon)" class="modern-input"
+                style="width:140px; margin:0;">
+            <button class="cyber-btn small" onclick="addBlueprintToMaster()" style="margin:0;">Add</button>
+            <button class="cyber-btn small" onclick="document.getElementById('bp-add-form').style.display='none'"
+                style="margin:0; background:rgba(255,100,100,0.15);">Cancel</button>
         </div>
     </div>
 
@@ -1845,7 +2020,8 @@
                         <option value="Armistice Zone">Armistice</option>
                         <option value="Open Space">Open Space</option>
                         <option value="Station">Space Station / R&R</option>
-                        <option value="Outpost">Outpost / Facility</option>
+                        <option value="Facility">Facility</option>
+                        <option value="Outpost">Outpost</option>
                         <option value="Settlement">Settlement / Village</option>
                         <option value="Distribution Center">Distribution Center</option>
                         <option value="Bunker">Underground / Bunker</option>
@@ -1906,11 +2082,14 @@
                 'config': ['Settings', 'Application configuration and log patterns'],
                 'ocr': ['OCR Scanner', 'Extract text from screen for party sharing'],
                 'players': ['Social Hub', 'Manage friends and shared telemetry'],
-                'logdb': ['Log Database', 'Known Star Citizen log patterns — browse, edit, export']
+                'logdb': ['Log Database', 'Known Star Citizen log patterns — browse, edit, export'],
+                'blueprints': ['Blueprints', 'Track crafting blueprints collected across sessions']
             };
 
             // Auto-load patterns when switching to logdb
             if (tab === 'logdb') loadPatternDB();
+            if (tab === 'blueprints') loadBlueprintUI();
+            if (tab === 'players') loadFriendList();
 
             if (titles[tab]) {
                 document.getElementById('view-title').innerText = titles[tab][0];
@@ -1950,8 +2129,11 @@
                 logPath: document.getElementById('config-log-path').value,
                 volume: document.getElementById('sound-volume').value,
                 soundEnabled: document.getElementById('sound-enabled').checked,
+                hudWarningsEnabled: document.getElementById('hud-warnings-enabled').checked,
+                hudFlashEnabled: document.getElementById('hud-flash-enabled').checked,
+                filterAIShips: document.getElementById('filter-ai-ships').checked,
                 // overlayEnabled if exists
-                shareLocation: document.getElementById('config-share-location').checked,
+                shareLocation: document.getElementById('config-share-location') ? document.getElementById('config-share-location').checked : true,
                 hueEnabled: document.getElementById('config-hue-enabled')?.checked,
                 hueBridge: document.getElementById('config-hue-bridge')?.value,
                 hueUser: document.getElementById('config-hue-user')?.value,
@@ -1967,8 +2149,9 @@
                     tacticalFeed: document.getElementById('vis-tacticalFeed').checked,
                     shipVisualizer: document.getElementById('vis-shipVisualizer').checked,
                     chatHud: document.getElementById('vis-chatHud').checked,
-                    nearbyPlayers: document.getElementById('vis-nearbyPlayers').checked,
-                    healthMonitor: document.getElementById('vis-healthMonitor').checked
+                    nearbyPlayers: document.getElementById('vis-nearbyPlayers')?.checked || false,
+                    healthMonitor: document.getElementById('vis-healthMonitor')?.checked || false,
+                    networkPanel: document.getElementById('vis-networkPanel')?.checked || false
                 },
                 accentColor: document.getElementById('config-accent-color')?.value,
                 twitchChannel: document.getElementById('config-twitch-channel')?.value,
@@ -1980,6 +2163,7 @@
                 
                 // Squad Settings (v2.8)
                 rsiHandle: document.getElementById('config-rsi-handle').value,
+                rsiId: document.getElementById('config-rsi-id').value,
                 shareHealth: document.getElementById('config-share-health').checked,
                 squadHostIp: document.getElementById('config-squad-host-ip').value,
 
@@ -1988,6 +2172,8 @@
                 ttsVoice: document.getElementById('config-tts-voice').value,
                 interdictionShips: Array.from(document.querySelectorAll('.interdiction-ship-tag')).map(el => el.dataset.ship),
                 interdictionQuantumOnly: document.getElementById('config-interdiction-quantum-only').checked,
+                quantumExitsOnly: document.getElementById('config-quantum-exits-only').checked,
+                suppressMassQuantumAlerts: document.getElementById('config-suppress-mass-quantum-alerts').checked,
                 teamNames: config.teamNames || ['Alpha', 'Bravo', 'Charlie', 'Delta'],
                 userTeam: document.getElementById('config-user-team')?.value,
                 healthZone: config.healthZone,
@@ -2007,9 +2193,16 @@
         ipcRenderer.on('settings:updated', (e, updatedConfig) => {
             config = updatedConfig; // Update global state
             // Update UI from config
+            if (config.logPath) {
+                const logPathEl = document.getElementById('config-log-path');
+                if (logPathEl) logPathEl.value = config.logPath;
+            }
             if (config.volume) document.getElementById('sound-volume').value = config.volume;
             if (config.soundEnabled !== undefined) document.getElementById('sound-enabled').checked = config.soundEnabled;
-            if (config.shareLocation !== undefined) document.getElementById('config-share-location').checked = config.shareLocation;
+            if (config.hudWarningsEnabled !== undefined) document.getElementById('hud-warnings-enabled').checked = config.hudWarningsEnabled;
+            if (config.hudFlashEnabled !== undefined) document.getElementById('hud-flash-enabled').checked = config.hudFlashEnabled;
+            if (config.filterAIShips !== undefined) document.getElementById('filter-ai-ships').checked = config.filterAIShips;
+            if (config.shareLocation !== undefined && document.getElementById('config-share-location')) document.getElementById('config-share-location').checked = config.shareLocation;
 
             // Hue Settings
             if (config.hueEnabled !== undefined) {
@@ -2040,6 +2233,16 @@
                 const cb = document.getElementById('config-interdiction-quantum-only');
                 if (cb) { cb.checked = config.interdictionQuantumOnly; updateInterdictionHint(config.interdictionQuantumOnly); }
             }
+            if (config.quantumExitsOnly !== undefined) {
+                document.getElementById('config-quantum-exits-only').checked = config.quantumExitsOnly;
+            }
+            if (config.suppressMassQuantumAlerts !== undefined) {
+                document.getElementById('config-suppress-mass-quantum-alerts').checked = config.suppressMassQuantumAlerts;
+            }
+            // Populate team dropdown options first if custom names exist
+            if (config.teamNames) {
+                updateTeamUIs();
+            }
             if (config.userTeam !== undefined) document.getElementById('config-user-team').value = config.userTeam;
             if (config.hueLights !== undefined && Array.isArray(config.hueLights)) {
                 const hueLightsEl = document.getElementById('config-hue-lights');
@@ -2067,6 +2270,10 @@
                     const el = document.getElementById('vis-healthMonitor');
                     if (el) el.checked = ov.healthMonitor;
                 }
+                if (ov.networkPanel !== undefined) {
+                    const el = document.getElementById('vis-networkPanel');
+                    if (el) el.checked = ov.networkPanel;
+                }
             }
 
             if (config.monitorHealth !== undefined) {
@@ -2090,6 +2297,7 @@
             if (config.youtubeId) document.getElementById('config-youtube-id').value = config.youtubeId;
             
             if (config.rsiHandle) document.getElementById('config-rsi-handle').value = config.rsiHandle;
+            if (config.rsiId) document.getElementById('config-rsi-id').value = config.rsiId;
             if (config.shareHealth !== undefined) document.getElementById('config-share-health').checked = config.shareHealth;
             if (config.squadHostIp) document.getElementById('config-squad-host-ip').value = config.squadHostIp;
 
@@ -2178,13 +2386,62 @@
         }
 
         // ═══ NEW LOCATION TOAST LOGIC ═══
+        // Deduplicate: track recently-shown location keys so startup replay doesn't spam
+        const _shownLocations = new Set();
+        const _locationCooldown = 10000; // ms before same location can toast again
+
+        function getCustomLocationMatch(rawName, cleanedName, customLocs) {
+            if (!customLocs) return null;
+            if (customLocs[rawName]) return customLocs[rawName];
+            if (cleanedName && customLocs[cleanedName]) return customLocs[cleanedName];
+
+            const normalizedRaw = rawName ? rawName.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid') : '';
+            const normalizedCleaned = cleanedName ? cleanedName.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid') : '';
+
+            let bestKey = null;
+            let bestVal = null;
+            let bestLen = 0;
+
+            for (const [key, val] of Object.entries(customLocs)) {
+                const normKey = key.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid');
+                
+                if (normalizedRaw === normKey || normalizedCleaned === normKey || 
+                    (normalizedRaw.startsWith(normKey) && normKey.length > 5) || 
+                    (normalizedCleaned.startsWith(normKey) && normKey.length > 5)) {
+                    
+                    if (normKey.length > bestLen) {
+                        bestLen = normKey.length;
+                        bestKey = key;
+                        bestVal = val;
+                    }
+                }
+            }
+            return bestVal;
+        }
+
         function showNewLocationToast(displayName, rawName) {
+            // Check if it's already custom mapped
+            if (typeof customLocations !== 'undefined' && getCustomLocationMatch(rawName, displayName, customLocations)) {
+                return; // Skip toast if already mapped
+            }
+            const key = (rawName || displayName || '').trim().toLowerCase();
+            if (!key) return;
+            if (_shownLocations.has(key)) return; // already showing / shown recently
+            _shownLocations.add(key);
+            setTimeout(() => _shownLocations.delete(key), _locationCooldown);
+
+
             let container = document.getElementById('toast-container');
             if (!container) {
                 container = document.createElement('div');
                 container.id = 'toast-container';
                 container.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:10px; pointer-events:none;';
                 document.body.appendChild(container);
+            }
+
+            // Also cap total visible toasts at 4
+            while (container.children.length >= 4) {
+                container.firstChild.remove();
             }
 
             const toast = document.createElement('div');
@@ -2261,7 +2518,38 @@
             }, 10000);
         }
 
-        function toggleOverlay() { ipcRenderer.send('app:toggle-overlay'); }
+        // Overlay toggle with persistent state
+        let _overlayEnabled = localStorage.getItem('overlayEnabled') !== 'false';
+
+        function updateOverlayBtn() {
+            const btn   = document.getElementById('nav-overlay-btn');
+            const icon  = document.getElementById('nav-overlay-icon');
+            const label = document.getElementById('nav-overlay-label');
+            if (!btn) return;
+            if (_overlayEnabled) {
+                icon.textContent  = '📺';
+                label.textContent = 'Overlay ON';
+                btn.style.color   = '';
+                btn.style.opacity = '1';
+            } else {
+                icon.textContent  = '🚫';
+                label.textContent = 'Overlay OFF';
+                btn.style.color   = '#ff6666';
+                btn.style.opacity = '0.7';
+            }
+        }
+
+        function toggleOverlayUI() {
+            _overlayEnabled = !_overlayEnabled;
+            localStorage.setItem('overlayEnabled', _overlayEnabled);
+            ipcRenderer.send('app:toggle-overlay');
+            updateOverlayBtn();
+        }
+
+        function toggleOverlay() { toggleOverlayUI(); }
+
+        // Init button state on load
+        document.addEventListener('DOMContentLoaded', updateOverlayBtn);
 
         function selectLogFile() {
             ipcRenderer.invoke('app:select-log').then(path => {
@@ -2728,15 +3016,201 @@
             showNotification('📋 Friend Code Copied', 'Share it with your squadron!');
         }
 
-        function addFriendByCode() {
-            const input = document.getElementById('add-friend-code');
-            const code = input.value.trim().toUpperCase();
-            if (code.length !== 6) return alert('Invalid code. Must be 6 characters.');
+        async function addFriendByCode() {
+            const input  = document.getElementById('add-friend-code');
+            const btn    = document.getElementById('add-friend-btn');
+            const status = document.getElementById('add-friend-status');
+            const code   = input.value.trim().toUpperCase();
 
-            // Placeholder logic
-            alert(`Sending friend request to ${code}...`);
-            input.value = '';
+            if (code.length !== 6) {
+                status.textContent = '⚠ Code must be 6 characters.';
+                status.style.color = '#ffaa00';
+                return;
+            }
+
+            btn.disabled = true;
+            status.textContent = `Sending request to ${code}…`;
+            status.style.color = '#aaa';
+
+            const result = await ipcRenderer.invoke('social:add-friend', code);
+
+            btn.disabled = false;
+            if (result.success) {
+                input.value = '';
+                status.textContent = `✅ Friend request sent to ${code}!`;
+                status.style.color = '#00cc44';
+            } else {
+                const msg = {
+                    'NOT_LOGGED_IN': '⚠ You must Login with VerseCon first.',
+                    'CODE_NOT_FOUND': `❌ Code ${code} not found — make sure they have the app open.`,
+                    'ALREADY_FRIENDS': '✅ You are already friends with this player.',
+                }[result.error] || `❌ ${result.error}`;
+                status.textContent = msg;
+                status.style.color = result.error === 'ALREADY_FRIENDS' ? '#00cc44' : '#ff6666';
+            }
+            setTimeout(() => { status.textContent = ''; }, 6000);
         }
+
+        // Load friend list on Social Hub open and on updates
+        async function loadFriendList() {
+            const result = await ipcRenderer.invoke('social:get-friends');
+            renderFriendList(result.friends || []);
+        }
+
+        function renderFriendList(friends) {
+            const container = document.getElementById('friend-list-container');
+            if (!container) return;
+            if (!friends || friends.length === 0) {
+                container.innerHTML = `<div style="color:#555; text-align:center; padding:40px; font-style:italic;">
+                    No friends yet. Share your Friend Code and ask them to add you!
+                </div>`;
+                return;
+            }
+            container.innerHTML = friends.map(f => `
+                <div style="display:flex; align-items:center; padding:10px 14px; border-radius:6px;
+                            background:rgba(255,255,255,0.04); margin-bottom:6px; gap:10px;">
+                    <div style="width:8px; height:8px; border-radius:50%; flex-shrink:0;
+                                background:${f.online ? '#00cc44' : '#555'};"></div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600; font-size:0.9rem;">${escapeHtml(f.handle || f.name || 'Unknown')}</div>
+                        ${f.location ? `<div style="font-size:0.75rem; color:#888;">${escapeHtml(f.location)}</div>` : ''}
+                    </div>
+                    <div style="font-size:0.75rem; color:${f.online ? '#00cc44' : '#555'};">${f.online ? 'ONLINE' : 'OFFLINE'}</div>
+                    <button onclick="removeFriend('${f.id || f._id}')"
+                        style="background:none; border:1px solid #333; color:#888; border-radius:3px;
+                               cursor:pointer; padding:3px 8px; font-size:0.7rem;">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        async function removeFriend(id) {
+            if (!confirm('Remove this friend?')) return;
+            await ipcRenderer.invoke('social:remove-friend', id);
+        }
+
+        ipcRenderer.on('social:friends-updated', (e, friends) => renderFriendList(friends));
+
+        // ══════════════════════════════════════════════════════
+        // SQUAD P2P SYSTEM
+        // ══════════════════════════════════════════════════════
+
+        let squadActive = false;
+
+        function setSquadMsg(msg, color) {
+            const el = document.getElementById('squad-msg');
+            if (el) { el.textContent = msg; el.style.color = color || '#aaa'; }
+        }
+
+        function setSquadBadge(text, color) {
+            const el = document.getElementById('squad-status-badge');
+            if (el) { el.textContent = text; el.style.color = color || '#555'; }
+        }
+
+        async function squadHost() {
+            document.getElementById('squad-host-btn').disabled = true;
+            setSquadMsg('Starting session…', '#aaa');
+            const result = await ipcRenderer.invoke('squad:host');
+            document.getElementById('squad-host-btn').disabled = false;
+
+            if (!result.success) {
+                setSquadMsg('❌ ' + result.error, '#ff6666');
+                return;
+            }
+
+            document.getElementById('squad-my-code').textContent = result.code;
+            document.getElementById('squad-code-panel').style.display = 'block';
+            document.getElementById('squad-leave-btn').style.display = '';
+            document.getElementById('squad-host-btn').style.display  = 'none';
+            document.getElementById('squad-join-btn').disabled = true;
+            document.getElementById('squad-join-code').disabled = true;
+
+            const note = result.upnpOk
+                ? `✅ UPnP port forward active on port ${result.port}`
+                : `⚠ UPnP unavailable. If friends can't connect, manually forward port ${result.port} on your router.`;
+            document.getElementById('squad-host-note').textContent = note;
+
+            setSquadBadge('● HOSTING', '#00cc44');
+            setSquadMsg('Session active — share your code!', '#00cc44');
+            squadActive = true;
+        }
+
+        async function squadJoin() {
+            const code = document.getElementById('squad-join-code').value.trim().toUpperCase();
+            if (code.length !== 10) { setSquadMsg('⚠ Code must be 10 characters.', '#ffaa00'); return; }
+
+            document.getElementById('squad-join-btn').disabled = true;
+            document.getElementById('squad-host-btn').disabled = true;
+            setSquadMsg('Connecting…', '#aaa');
+
+            const result = await ipcRenderer.invoke('squad:join', code);
+
+            if (!result.success) {
+                document.getElementById('squad-join-btn').disabled = false;
+                document.getElementById('squad-host-btn').disabled = false;
+                setSquadMsg('❌ ' + result.error, '#ff6666');
+                return;
+            }
+
+            document.getElementById('squad-leave-btn').style.display = '';
+            document.getElementById('squad-host-btn').style.display  = 'none';
+            document.getElementById('squad-join-code').disabled = true;
+            document.getElementById('squad-join-btn').disabled  = true;
+
+            setSquadBadge('● CONNECTED', '#00cc44');
+            setSquadMsg('Connected to squad!', '#00cc44');
+            squadActive = true;
+        }
+
+        async function squadLeave() {
+            await ipcRenderer.invoke('squad:leave');
+            document.getElementById('squad-code-panel').style.display = 'none';
+            document.getElementById('squad-leave-btn').style.display  = 'none';
+            document.getElementById('squad-host-btn').style.display   = '';
+            document.getElementById('squad-join-btn').disabled  = false;
+            document.getElementById('squad-join-code').disabled = false;
+            document.getElementById('squad-host-btn').disabled  = false;
+            document.getElementById('squad-member-list').innerHTML =
+                '<div style="color:#555; text-align:center; padding:30px; font-style:italic;">Host a session or join one to see your squad here.</div>';
+            setSquadBadge('No active session', '#555');
+            setSquadMsg('', '');
+            squadActive = false;
+        }
+
+        function copySquadCode() {
+            const code = document.getElementById('squad-my-code').textContent;
+            navigator.clipboard.writeText(code);
+            setSquadMsg('📋 Code copied to clipboard!', '#aaa');
+        }
+
+        ipcRenderer.on('squad:update', (e, squad) => {
+            const list = document.getElementById('squad-member-list');
+            if (!list) return;
+            if (!squad || squad.length === 0) {
+                list.innerHTML = '<div style="color:#555; text-align:center; padding:20px; font-style:italic;">Waiting for squad members…</div>';
+                return;
+            }
+            list.innerHTML = squad.map((p, i) => `
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 14px;
+                            border-radius:6px; background:rgba(255,255,255,0.04); margin-bottom:6px;
+                            border-left:3px solid ${i === 0 ? '#00cc44' : 'rgba(255,255,255,0.1)'};">
+                    <div style="flex-shrink:0; font-size:1.1rem;">${i === 0 ? '🛡' : '👤'}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:6px;">
+                            ${escapeHtml(p.handle || 'Unknown')}
+                            ${p.isHost ? '<span style="font-size:0.65rem; color:#00cc44; background:rgba(0,200,60,0.15); border:1px solid #00cc44; border-radius:3px; padding:1px 5px;">HOST</span>' : ''}
+                        </div>
+                        ${p.location ? `<div style="font-size:0.72rem; color:#888; margin-top:2px;">📍 ${escapeHtml(p.location)}</div>` : ''}
+                        ${p.ship     ? `<div style="font-size:0.72rem; color:#aaa; margin-top:1px;">🚀 ${escapeHtml(p.ship)}</div>`     : ''}
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div style="font-size:0.8rem; color:${(p.health||0) > 50 ? '#00cc44' : '#ff6666'}; font-weight:600;">
+                            ${p.health !== undefined ? p.health + '%' : '--'}
+                        </div>
+                        <div style="font-size:0.65rem; color:#555; margin-top:2px;">HEALTH</div>
+                    </div>
+                </div>
+            `).join('');
+        });
 
         function showNotification(title, body) {
             // Implementation of a small toast could go here, or use existing alerts
@@ -2749,11 +3223,14 @@
                 lastRawLocation = data.raw;
                 const sniffer = document.getElementById('last-raw-location');
                 if (sniffer) sniffer.textContent = data.raw;
+                updateLocationSuggestion(data.raw);
             } else if (data.type === 'LOCATION_RAW') {
                 lastRawLocation = data.value;
                 const sniffer = document.getElementById('last-raw-location');
                 if (sniffer) sniffer.textContent = data.value;
+                updateLocationSuggestion(data.value);
             }
+
 
             // Raw Feed (Tail)
             addRawLogLine(data.raw || JSON.stringify(data)); // Fallback if no raw line
@@ -2858,6 +3335,10 @@
                     addDashItem('🔄', '<span class="feed-highlight">Game restarting...</span>');
                     break;
                 // ═══ NEW: Multi-Mission List ═══
+                case 'BLUEPRINT_RECEIVED':
+                    addDashItem('📐', `Blueprint received: <span class="feed-highlight">${data.value}</span>${data.isNew ? ' <span style="color:#00ff88;font-size:0.7rem;">NEW</span>' : ''}`);
+                    break;
+
                 case 'MISSION_ACCEPTED':
                 case 'MISSION_OBJECTIVE':
                 case 'MISSION_STATUS':
@@ -2958,20 +3439,43 @@
                     document.getElementById('mission-status-box').style.display = 'block';
                     document.getElementById('mission-title').innerText = data.value;
                     document.getElementById('mission-title').title = data.value; // Tooltip for overflow
+                    
+                    const dashBanner = document.getElementById('dash-mission-banner');
+                    if (dashBanner) {
+                        dashBanner.style.display = 'block';
+                        document.getElementById('dash-mission-title').innerText = data.value;
+                        document.getElementById('dash-mission-time').innerText = new Date().toLocaleTimeString();
+                    }
+                    
                     addDashItem('📜', `Mission Accepted: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'MISSION_OBJECTIVE':
                     document.getElementById('mission-status-box').style.display = 'block';
                     document.getElementById('mission-objective').innerText = data.value;
+                    
+                    const dashObj = document.getElementById('dash-mission-objective');
+                    if (dashObj) {
+                        document.getElementById('dash-mission-banner').style.display = 'block';
+                        dashObj.innerText = data.value;
+                    }
+                    
                     addDashItem('🎯', `Objective: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'MISSION_CLEARED':
                     document.getElementById('mission-title').innerText = 'Completed / Ended';
                     document.getElementById('mission-objective').innerText = '-';
+                    
+                    const dashBannerClear = document.getElementById('dash-mission-banner');
+                    if (dashBannerClear) {
+                        document.getElementById('dash-mission-title').innerText = 'Completed / Ended';
+                        document.getElementById('dash-mission-objective').innerText = '-';
+                    }
+                    
                     setTimeout(() => {
                         // Only hide if it hasn't been updated again
                         if (document.getElementById('mission-title').innerText.includes('Completed')) {
                             document.getElementById('mission-status-box').style.display = 'none';
+                            if (dashBannerClear) dashBannerClear.style.display = 'none';
                         }
                     }, 10000); // Keep result visible for 10s
                     addDashItem('✅', 'Mission Ended');
@@ -3150,14 +3654,47 @@
             }).join('');
         }
 
-        // let lastRawLocation = ''; (Already declared above)
+        function updateLocationSuggestion(raw) {
+            const container = document.getElementById('suggested-location-container');
+            const nameEl = document.getElementById('suggested-location-name');
+            if (!container || !nameEl) return;
+            
+            if (!raw || raw === 'None' || raw === 'None Detected') {
+                container.style.display = 'none';
+                return;
+            }
+
+            // Clean raw location to suggest a clean title
+            let cleaned = raw
+                .replace(/^Stanton\d*_/i, '')
+                .replace(/^Outpost_PAF_/i, '')
+                .replace(/^Outpost_OLP_/i, '')
+                .replace(/^Outpost_/i, '')
+                .replace(/^PrisonMine_/i, 'Prison Mine ')
+                .replace(/_/g, ' ')
+                .trim();
+
+            // Format to Title Case
+            cleaned = cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+            nameEl.textContent = cleaned;
+            container.style.display = 'block';
+        }
 
         function grabRawLocation() {
             if (!lastRawLocation) return;
             document.getElementById('new-loc-key').value = lastRawLocation;
+            
+            // Auto-fill suggested name
+            const nameEl = document.getElementById('suggested-location-name');
+            if (nameEl && nameEl.textContent && nameEl.textContent !== 'None') {
+                document.getElementById('new-loc-val').value = nameEl.textContent;
+            }
+            
             // Focus friendly name input for convenience
             document.getElementById('new-loc-val').focus();
         }
+
 
         // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
         let defaultPatterns = {};
@@ -3378,12 +3915,15 @@
                              ${m.tracked ? `<span onclick="window.currentMissionId='${m.id}'; renameCurrentMission()" style="cursor:pointer; margin-left:5px; opacity:0.7;" title="Rename Mission">✏️</span>` : ''}
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <div style="font-size:0.6rem; background:${m.tracked ? 'rgba(255,165,0,0.2)' : 'rgba(255,255,255,0.05)'}; 
-                                        color:${m.tracked ? 'orange' : '#aaa'}; padding:1px 4px; border-radius:2px">
-                                ${m.status === 'active' ? 'IN PROGRESS' : m.status.toUpperCase()}
+                            <div style="font-size:0.6rem; 
+                                        background:${m.status === 'completed' ? 'rgba(0,255,136,0.15)' : (m.status === 'failed' ? 'rgba(255,68,68,0.15)' : (m.tracked ? 'rgba(255,165,0,0.2)' : 'rgba(255,255,255,0.05)'))}; 
+                                        color:${m.status === 'completed' ? '#00ff88' : (m.status === 'failed' ? '#ff4444' : (m.tracked ? 'orange' : '#aaa'))}; 
+                                        padding:1px 4px; border-radius:2px">
+                                ${m.status === 'active' ? 'IN PROGRESS' : (m.status === 'completed' ? 'COMPLETE' : m.status.toUpperCase())}
                             </div>
                                     <span onclick="dismissMission('${m.id.replace(/'/g, "\\'")}')" style="cursor:pointer; color:#ff4444; font-size:0.8rem;" title="Dismiss / Remove" class="no-drag">❌</span>
                                 </div>
+
                     </div>
                     <div style="font-weight:600; color:${m.tracked ? 'white' : '#ccc'}; margin-bottom:4px; font-size: 0.85rem; line-height:1.2;">
                         ${escapeHtml(m.title)}
@@ -3583,6 +4123,24 @@
                     closeLocationSearchModal();
                 }
             }
+        };
+
+        window.exportCustomLocationsForPublic = function () {
+            ipcRenderer.invoke('settings:export-custom-locations').then(res => {
+                if (res.success) {
+                    let msg = `Successfully exported ${res.count} locations to data/locations.json in dev build.`;
+                    if (res.publicWritten) {
+                        msg += ` Also updated the public project database directly!`;
+                    } else {
+                        msg += ` Note: Public project folder was not found, so only dev was updated.`;
+                    }
+                    addDashItem('✅', msg);
+                    alert(msg);
+                } else {
+                    addDashItem('❌', `Failed to export locations: ${res.error}`);
+                    alert(`Failed to export: ${res.error}`);
+                }
+            });
         };
 
         // ═══ CUSTOM LOCATION SEARCH & EDIT (New Feature) ═══
@@ -3988,13 +4546,40 @@
             }
         }
 
+        function addTeamField() {
+            if (!config.teamNames) config.teamNames = ['Alpha', 'Bravo', 'Charlie', 'Delta'];
+            const newIndex = config.teamNames.length + 1;
+            config.teamNames.push(`Team ${newIndex}`);
+            saveTeamNamesFromConfig();
+        }
+
+        function removeTeamField(index) {
+            if (!config.teamNames) config.teamNames = ['Alpha', 'Bravo', 'Charlie', 'Delta'];
+            if (config.teamNames.length <= 1) {
+                alert("You must have at least one team!");
+                return;
+            }
+            const deletedTeam = config.teamNames[index];
+            config.teamNames.splice(index, 1);
+            if (config.userTeam === deletedTeam) {
+                config.userTeam = config.teamNames[0];
+            }
+            saveTeamNamesFromConfig();
+        }
+
+        function saveTeamNamesFromConfig() {
+            saveConfig();
+            updateTeamUIs();
+        }
+
         function saveTeamNames() {
-            const names = [
-                document.getElementById('team-name-0').value || 'Alpha',
-                document.getElementById('team-name-1').value || 'Bravo',
-                document.getElementById('team-name-2').value || 'Charlie',
-                document.getElementById('team-name-3').value || 'Delta'
-            ];
+            const container = document.getElementById('team-names-container');
+            if (!container) return;
+            const inputs = container.querySelectorAll('.team-name-input');
+            const names = [];
+            inputs.forEach((input, i) => {
+                names.push(input.value.trim() || `Team ${i + 1}`);
+            });
             config.teamNames = names;
             saveConfig();
             updateTeamUIs();
@@ -4003,27 +4588,53 @@
         function updateTeamUIs() {
             const names = config.teamNames || ['Alpha', 'Bravo', 'Charlie', 'Delta'];
 
-            // Update Settings Inputs
-            for (let i = 0; i < 4; i++) {
-                const el = document.getElementById(`team-name-${i}`);
-                if (el) el.value = names[i];
+            // 1. Update Settings Inputs Container
+            const container = document.getElementById('team-names-container');
+            if (container) {
+                container.innerHTML = names.map((name, i) => `
+                    <div style="position:relative; display:flex; flex-direction:column;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.6rem; color:var(--text-dim); margin-bottom:2px;">
+                            <span>TEAM ${i + 1}</span>
+                            <span style="color:var(--danger); cursor:pointer; font-weight:bold;" onclick="removeTeamField(${i})" title="Remove Team">✕</span>
+                        </div>
+                        <input type="text" value="${escapeHtml(name)}" class="modern-input team-name-input" style="margin:0;" onchange="saveTeamNames()">
+                    </div>
+                `).join('');
             }
 
-            // Update Target Dropdown
+            function escapeHtml(text) {
+                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            }
+
+            // 2. Update Target Dropdown
             const targetSelect = document.getElementById('cmd-target');
             if (targetSelect) {
-                targetSelect.options[1].textContent = `🏷️ ${names[0]}`; targetSelect.options[1].value = names[0].toUpperCase();
-                targetSelect.options[2].textContent = `🏷️ ${names[1]}`; targetSelect.options[2].value = names[1].toUpperCase();
-                targetSelect.options[3].textContent = `🏷️ ${names[2]}`; targetSelect.options[3].value = names[2].toUpperCase();
-                targetSelect.options[4].textContent = `🏷️ ${names[3]}`; targetSelect.options[4].value = names[3].toUpperCase();
+                const firstOption = targetSelect.options[0];
+                targetSelect.innerHTML = '';
+                targetSelect.appendChild(firstOption);
+                names.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name.toUpperCase();
+                    opt.textContent = `🏷️ ${name}`;
+                    targetSelect.appendChild(opt);
+                });
             }
 
-            // Update Your Team Dropdown
+            // 3. Update Your Team Dropdown
             const userTeamSelect = document.getElementById('config-user-team');
             if (userTeamSelect) {
-                for (let i = 0; i < 4; i++) {
-                    userTeamSelect.options[i].textContent = names[i];
-                    userTeamSelect.options[i].value = names[i];
+                const currentVal = userTeamSelect.value || config.userTeam || names[0];
+                userTeamSelect.innerHTML = '';
+                names.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    userTeamSelect.appendChild(opt);
+                });
+                if (names.includes(currentVal)) {
+                    userTeamSelect.value = currentVal;
+                } else {
+                    userTeamSelect.value = names[0];
                 }
             }
         }
@@ -4580,6 +5191,422 @@
             addDashItem('📡', 'OCR result shared with squadron.');
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // BLUEPRINT TRACKER UI
+        // ═══════════════════════════════════════════════════════════
+
+        let blueprintData = { collected: [], masterList: [] };
+
+        async function loadBlueprintUI() {
+            blueprintData = await ipcRenderer.invoke('blueprint:get-data');
+            renderBlueprintUI();
+        }
+
+        // Normalize helper for deduplication
+        function normalizeBPName(n) {
+            return (n || '').toLowerCase()
+                .replace(/\[[^\]]+\]/g, '')  // Remove square brackets
+                .replace(/\([^)]+\)/g, '')   // Remove parentheses
+                .replace(/["']/g, '')        // Remove quotes
+                .replace(/\b(sl|ex|xl|sth|s[1-9]|s10|grade\s*[1-9]|size\s*[1-9])\b/g, '') // Remove sizes/grades
+                .replace(/[^a-z0-9]/g, ' ')  // Replace punctuation with space
+                .replace(/\s+/g, ' ')        // Collapse whitespace
+                .trim();
+        }
+
+        function getBlueprintMeta(name, category, source) {
+            let size = '';
+            let grade = '';
+            let type = '';
+            
+            const lowerName = name.toLowerCase();
+            const lowerCat = (category || '').toLowerCase();
+            
+            // --- 1. Identify Type ---
+            if (lowerCat.includes('weapon') || lowerName.includes('rifle') || lowerName.includes('pistol') || lowerName.includes('shotgun') || lowerName.includes('smg') || lowerName.includes('lmg') || lowerName.includes('sniper') || lowerName.includes('cannon') || lowerName.includes('gatling') || lowerName.includes('repeater') || lowerName.includes('laser') || lowerName.includes('ballistic') || lowerName.includes('distortion')) {
+                if (!lowerCat.includes('ammo') && !lowerCat.includes('mat')) {
+                    type = 'Weapon';
+                }
+            }
+            if (lowerCat.includes('shield')) {
+                type = 'Shield';
+            } else if (lowerCat.includes('quantum drive') || lowerCat.includes('quantumdrive')) {
+                type = 'Quantum Drive';
+            } else if (lowerCat.includes('powerplant') || lowerCat.includes('power plant')) {
+                type = 'Powerplant';
+            } else if (lowerCat.includes('cooler')) {
+                type = 'Cooler';
+            } else if (lowerCat.includes('ship component') || lowerCat.includes('thruster') || lowerCat.includes('vehiclegear')) {
+                type = 'Ship Component';
+            }
+            
+            if (!type) return null;
+
+            // --- 2. Determine Size ---
+            if (type === 'Weapon') {
+                const szMatch = name.match(/\bS([1-9]|10)\b/i) || name.match(/size\s*([1-9]|10)/i);
+                if (szMatch) {
+                    size = 'Size ' + szMatch[1];
+                } else if (lowerName.includes('9-series')) {
+                    size = 'Size 1';
+                } else if (lowerName.includes('10-series')) {
+                    size = 'Size 2';
+                } else if (lowerName.includes('11-series')) {
+                    size = 'Size 3';
+                } else if (lowerName.includes('ad4b')) {
+                    size = 'Size 4';
+                } else if (lowerName.includes('ad5b')) {
+                    size = 'Size 5';
+                } else if (lowerName.includes('ad6b')) {
+                    size = 'Size 6';
+                } else if (lowerName.includes('mining laser') || lowerName.includes('scraper module') || lowerName.includes('tractor beam') || lowerName.includes('rifle') || lowerName.includes('pistol') || lowerName.includes('shotgun') || lowerName.includes('smg') || lowerName.includes('lmg') || lowerName.includes('sniper')) {
+                    size = 'Personal';
+                }
+            } else {
+                const behringMatch = name.match(/\b[5-7](SA|MA|CA)\b/i);
+                if (behringMatch) {
+                    const letter = behringMatch[1].charAt(0).toUpperCase();
+                    if (letter === 'S') size = 'Size 1';
+                    else if (letter === 'M') size = 'Size 2';
+                    else if (letter === 'C') size = 'Size 3';
+                }
+                
+                if (!size) {
+                    const szMatch = name.match(/\bS([1-4])\b/i) || name.match(/size\s*([1-4])/i);
+                    if (szMatch) {
+                        size = 'Size ' + szMatch[1];
+                    }
+                }
+                
+                if (!size) {
+                    const s1 = ['bolt', 'vk-00', 'siren', 'spectre', 'spicule', 'zephyr', 'palisade', 'guardian', 'parapet', 'vaporblock', 'defiant', 'endurance', 'sedulity', 'absolutezero'];
+                    const s2 = ['yeager', 'xl-1', 'crossfield', 'hemera', 'pontes', 'bulwark', 'aspis', 'shimmer', 'barbican', 'j-span'];
+                    const s3 = ['agni', 'colossus', 'balandin', 'ts-2', 'citadel', 'rampart', 'stronghold'];
+                    const s4 = ['capital'];
+                    
+                    if (s1.some(w => lowerName.includes(w))) size = 'Size 1';
+                    else if (s2.some(w => lowerName.includes(w))) size = 'Size 2';
+                    else if (s3.some(w => lowerName.includes(w))) size = 'Size 3';
+                    else if (s4.some(w => lowerName.includes(w))) size = 'Size 4';
+                }
+            }
+            
+            // --- 3. Determine Grade ---
+            const behringGrade = name.match(/\b([5-7])(?:SA|MA|CA)\b/i);
+            if (behringGrade) {
+                const num = behringGrade[1];
+                if (num === '5') grade = 'Grade C';
+                else if (num === '6') grade = 'Grade B';
+                else if (num === '7') grade = 'Grade A';
+            }
+            
+            if (!grade) {
+                const generalGrade = name.match(/grade\s+([a-d])/i);
+                if (generalGrade) {
+                    grade = 'Grade ' + generalGrade[1].toUpperCase();
+                }
+            }
+            
+            if (!grade) {
+                const gradeA = ['bolt', 'vk-00', 'spicule', 'xl-1', 'ts-2', 'colossus', 'parapet', 'citadel', 'stronghold', 'vaporblock', 'defiant'];
+                const gradeB = ['spectre', 'guardian', 'rampart', 'sedulity', 'absolutezero'];
+                const gradeC = ['siren', 'zephyr', 'yeager', 'agni', 'balandin', 'palisade', 'barbican', 'endurance'];
+                
+                if (gradeA.some(w => lowerName.includes(w))) grade = 'Grade A';
+                else if (gradeB.some(w => lowerName.includes(w))) grade = 'Grade B';
+                else if (gradeC.some(w => lowerName.includes(w))) grade = 'Grade C';
+            }
+
+            // --- 4. Determine Family ---
+            let family = '';
+            if (type && type !== 'Weapon') {
+                const nameLower = lowerName;
+                const stealthWords = ['siren', 'spectre', 'spicule', 'zephyr', 'mirage', 'eclipse', 'slipstream', 'nightglow', 'snowpack', 'zerorush', 'stealth'];
+                const militaryWords = ['citadel', 'guardian', 'parapet', 'rampart', 'stronghold', 'bulwark', 'aspis', 'vk-00', 'xl-1', 'yeager', 'crossfield', 'pontes', 'colossus', 'defiant', 'glacier', 'supernova', 'thermoflo', 'military'];
+                const industrialWords = ['palisade', 'shimmer', 'agni', 'balandin', 'ts-2', 'endurance', 'coolforce', 'industrial', 'kama', 'brrr', 'quadracell'];
+                const civilianWords = ['barbican', 'bolt', 'sedulity', 'hemera', 'expedition', 'brisk', 'endofreeze', 'js-300', 'js-400', 'civilian', 'civ'];
+                
+                if (stealthWords.some(w => nameLower.includes(w))) family = 'Stealth';
+                else if (militaryWords.some(w => nameLower.includes(w))) family = 'Military';
+                else if (industrialWords.some(w => nameLower.includes(w))) family = 'Industrial';
+                else if (civilianWords.some(w => nameLower.includes(w))) family = 'Civilian';
+            }
+            
+            return { type, size, grade, family };
+        }
+
+        function renderBlueprintUI() {
+            const master = blueprintData.masterList || [];
+            
+            // Deduplication helper sets
+            const normalizedCollected = (blueprintData.collected || []).map(n => normalizeBPName(n));
+            
+            function isMasterCollected(masterName, exactOnly = false) {
+                const normMaster = normalizeBPName(masterName);
+                if (!normMaster) return false;
+                return normalizedCollected.some(normCol => {
+                    if (exactOnly) return normCol === normMaster;
+                    return normCol === normMaster || normCol.startsWith(normMaster + ' ');
+                });
+            }
+
+            function isCollectedUntracked(collectedName) {
+                const normCol = normalizeBPName(collectedName);
+                if (!normCol) return false;
+                return !master.some(m => {
+                    const normMaster = normalizeBPName(m.name);
+                    return normCol === normMaster || normCol.startsWith(normMaster + ' ');
+                });
+            }
+
+            // Search / filter
+            const query   = (document.getElementById('bp-search')?.value || '').toLowerCase().trim();
+            const catFilter = (document.getElementById('bp-filter-cat')?.value || '').toLowerCase();
+
+            function matchesFilter(name, category, source) {
+                if (catFilter && (category || '').toLowerCase() !== catFilter) return false;
+                if (!query) return true;
+                return (name || '').toLowerCase().includes(query)
+                    || (category || '').toLowerCase().includes(query)
+                    || (source || '').toLowerCase().includes(query);
+            }
+
+            // Separate released and unreleased blueprints in the master list
+            const releasedMaster = master.filter(b => !b.unreleased && b.source !== '');
+            const unreleasedMaster = master.filter(b => b.unreleased || b.source === '');
+
+            // Blueprints in master that are collected
+            const have = releasedMaster.filter(b => isMasterCollected(b.name) && matchesFilter(b.name, b.category, b.source));
+            // Blueprints in master not yet collected
+            const missing = releasedMaster.filter(b => !isMasterCollected(b.name) && matchesFilter(b.name, b.category, b.source));
+            // Unreleased blueprints (collected or not)
+            const unreleased = unreleasedMaster.filter(b => matchesFilter(b.name, b.category, b.source));
+            // Collected but not in master list — treat as known collected for progress
+            const untracked = (blueprintData.collected || []).filter(n => isCollectedUntracked(n) && matchesFilter(n, 'Unknown', '')).sort();
+
+            // Deduplicate lists by normalized name to prevent doubled-up entries
+            function deduplicateByNormalizedName(arr, nameSelector = (x) => x.name || x) {
+                const seen = new Set();
+                return arr.filter(item => {
+                    const norm = normalizeBPName(nameSelector(item));
+                    if (!norm || seen.has(norm)) return false;
+                    seen.add(norm);
+                    return true;
+                });
+            }
+
+            const uniqueHave = deduplicateByNormalizedName(have);
+            const uniqueMissing = deduplicateByNormalizedName(missing);
+            const uniqueUnreleased = deduplicateByNormalizedName(unreleased);
+            const uniqueUntracked = deduplicateByNormalizedName(untracked);
+
+            // Progress: count collected released (including untracked) vs master released + untracked
+            const totalKnown  = releasedMaster.length + uniqueUntracked.length;
+            const totalHave   = uniqueHave.length + uniqueUntracked.length;
+            const pct = totalKnown > 0 ? Math.round((totalHave / totalKnown) * 100) : 0;
+            document.getElementById('bp-progress-bar').style.width = pct + '%';
+            document.getElementById('bp-progress-label').textContent = `${totalHave} / ${totalKnown}`;
+
+            // Render 5 most recent gained blueprints
+            const recentSection = document.getElementById('bp-recent-section');
+            const recentList = document.getElementById('bp-recent-list');
+            if (recentSection && recentList) {
+                const collectedAt = blueprintData.collectedAt || {};
+                
+                const collectedWithTs = (blueprintData.collected || []).map(name => {
+                    return {
+                        name,
+                        timestamp: collectedAt[name] ? new Date(collectedAt[name]).getTime() : 0
+                    };
+                });
+                
+                // Deduplicate recent list to avoid different grades of the same item filling the 5 slots
+                const uniqueCollectedWithTs = deduplicateByNormalizedName(collectedWithTs, (x) => x.name);
+                uniqueCollectedWithTs.sort((a, b) => b.timestamp - a.timestamp);
+                const top5 = uniqueCollectedWithTs.slice(0, 5).filter(item => item.name);
+                
+                if (top5.length > 0) {
+                    recentSection.style.display = 'flex';
+                    recentList.innerHTML = top5.map(item => {
+                        const tsText = item.timestamp > 0 ? new Date(item.timestamp).toLocaleString() : 'Date unknown';
+                        const meta = getBlueprintMeta(item.name, '', '');
+                        let info = '';
+                        if (meta && (meta.size || meta.grade || meta.family)) {
+                            info = `<div style="font-size:0.65rem; color:#00ff88; margin-top:2px;">${[meta.size, meta.grade, meta.family].filter(Boolean).join(' | ')}</div>`;
+                        }
+                        return `<div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:4px; padding:6px 8px; text-align:center; min-width:0;">
+                                    <div style="font-size:0.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff;" title="${item.name}">${item.name}</div>
+                                    ${info}
+                                    <div style="font-size:0.7rem; color:#ffdd00; font-weight:600; margin-top:3px;" title="${tsText}">${tsText}</div>
+                                </div>`;
+                    }).join('');
+                } else {
+                    recentSection.style.display = 'none';
+                }
+            }
+
+            // Create normalized timestamp map for fast row lookup
+            const normTimestampMap = {};
+            for (const [k, v] of Object.entries(blueprintData.collectedAt || {})) {
+                normTimestampMap[normalizeBPName(k)] = v;
+            }
+
+            // Have list — master-matched first, then untracked
+            document.getElementById('bp-have-count').textContent = uniqueHave.length + uniqueUntracked.length;
+            const haveList = document.getElementById('bp-have-list');
+            if (uniqueHave.length === 0 && uniqueUntracked.length === 0) {
+                haveList.innerHTML = '<div style="color:#555; font-style:italic; padding:20px; text-align:center;">No blueprints collected yet</div>';
+            } else {
+                const rows = [];
+                uniqueHave.forEach(b => rows.push(bpRow(b.name, b.category, true, b.source, normTimestampMap)));
+                if (uniqueUntracked.length > 0) {
+                    rows.push(`<div style="font-size:0.7rem; color:#666; padding:6px 8px 2px; letter-spacing:0.05em;">— ${uniqueUntracked.length} collected (not in master list) —</div>`);
+                    uniqueUntracked.forEach(n => rows.push(bpRow(n, 'Unknown', true, 'Not in master list — found in logs', normTimestampMap)));
+                }
+                haveList.innerHTML = rows.join('');
+            }
+
+            // Missing list
+            document.getElementById('bp-missing-count').textContent = uniqueMissing.length;
+            const missList = document.getElementById('bp-missing-list');
+            if (uniqueMissing.length === 0 && releasedMaster.length > 0) {
+                missList.innerHTML = '<div style="color:#00ff88; font-style:italic; padding:20px; text-align:center;">🎉 All known blueprints collected!</div>';
+            } else if (releasedMaster.length === 0) {
+                missList.innerHTML = '<div style="color:#555; font-style:italic; padding:20px; text-align:center;">Master list loading…</div>';
+            } else {
+                missList.innerHTML = uniqueMissing.map(b => bpRow(b.name, b.category, false, b.source, normTimestampMap)).join('');
+            }
+
+            // Unreleased list
+            document.getElementById('bp-unreleased-count').textContent = uniqueUnreleased.length;
+            const unreleasedList = document.getElementById('bp-unreleased-list');
+            if (uniqueUnreleased.length === 0) {
+                unreleasedList.innerHTML = '<div style="color:#555; font-style:italic; padding:20px; text-align:center;">No unreleased blueprints found</div>';
+            } else {
+                unreleasedList.innerHTML = uniqueUnreleased.map(b => {
+                    const isCollected = isMasterCollected(b.name, true);
+                    return bpRow(b.name, b.category, isCollected, 'In Files (Not Available In-Game)', normTimestampMap);
+                }).join('');
+            }
+        }
+
+        function bpRow(name, category, have, source, normTimestampMap = {}) {
+            const meta = getBlueprintMeta(name, category, source);
+            let metaBadge = '';
+            if (meta) {
+                const details = [];
+                if (meta.size) details.push(meta.size);
+                if (meta.grade) details.push(meta.grade);
+                if (meta.family) details.push(meta.family);
+                if (meta.type && meta.type !== category) details.push(meta.type);
+                if (details.length > 0) {
+                    metaBadge = `<span style="font-size:0.68rem; color:#00ff88; margin-left:6px; background:rgba(0,255,136,0.1); padding:1px 4px; border-radius:3px; border:1px solid rgba(0,255,136,0.2);">${details.join(' | ')}</span>`;
+                }
+            }
+            const cat = category ? `<span style="font-size:0.68rem; color:#888; margin-left:6px;">[${category}]</span>` : '';
+            
+            let tsHtml = '';
+            if (have) {
+                const collectedAt = normTimestampMap[normalizeBPName(name)];
+                if (collectedAt) {
+                    const formattedDate = new Date(collectedAt).toLocaleString();
+                    tsHtml = `<div style="font-size:0.72rem; color:#ffdd00; font-weight:600; margin-top:2px; padding-left:24px;">📅 Acquired: ${formattedDate}</div>`;
+                } else {
+                    tsHtml = `<div style="font-size:0.72rem; color:#888; margin-top:2px; padding-left:24px;">📅 Acquired: Date unknown</div>`;
+                }
+            }
+
+            const src = source ? `<div style="font-size:0.7rem; color:#555; margin-top:1px; padding-left:24px;">${source}</div>` : '';
+            const icon = have ? '✅' : '❌';
+            return `<div style="padding:5px 8px; border-radius:4px; margin-bottom:3px; background:rgba(255,255,255,0.03);">
+                        <div style="display:flex; align-items:center;">
+                            <span style="margin-right:8px; flex-shrink:0;">${icon}</span>
+                            <span style="flex:1; font-size:0.85rem;">${name}</span>${metaBadge}${cat}
+                        </div>${tsHtml}${src}
+                    </div>`;
+        }
+
+        async function scanOldLogs() {
+            const btn = document.getElementById('bp-scan-btn');
+            const status = document.getElementById('bp-scan-status');
+            btn.disabled = true;
+            status.textContent = 'Scanning...';
+
+            const result = await ipcRenderer.invoke('blueprint:scan-logs');
+
+            btn.disabled = false;
+            if (!result) { status.textContent = 'Cancelled.'; return; }
+
+            blueprintData = result.data;
+            renderBlueprintUI();
+
+            if (result.newlyFound.length > 0) {
+                status.textContent = `Found ${result.newlyFound.length} new blueprint(s) across ${result.scannedFiles} file(s)!`;
+                result.newlyFound.forEach(b => addDashItem('📐', `Blueprint unlocked: <span class="feed-highlight">${b.name}</span>`));
+            } else {
+                status.textContent = `Scanned ${result.scannedFiles} file(s) — no new blueprints found.`;
+            }
+        }
+
+        async function generateScMod() {
+            const btn    = document.getElementById('bp-mod-btn');
+            const status = document.getElementById('bp-mod-status');
+            btn.disabled = true;
+            status.textContent = 'Downloading latest StarStrings & generating…';
+            status.style.color  = '#aaa';
+
+            const result = await ipcRenderer.invoke('blueprint:generate-mod');
+
+            btn.disabled = false;
+            if (!result || result.canceled) {
+                status.textContent = '';
+                return;
+            }
+            if (result.success) {
+                status.style.color = '#00cc44';
+                const action = result.source === 'patched' ? 'Patched global.ini' : 'Generated global.ini';
+                status.textContent = `✅ ${action} — ${result.markedCount} blueprint(s) marked [✓ COLLECTED]`;
+            } else {
+                status.style.color  = '#ff6666';
+                status.textContent  = `❌ Error: ${result.error}`;
+            }
+        }
+
+        function showAddBlueprintForm() {
+            const form = document.getElementById('bp-add-form');
+            form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+            if (form.style.display === 'flex') document.getElementById('bp-add-name').focus();
+        }
+
+        async function addBlueprintToMaster() {
+            const name = document.getElementById('bp-add-name').value.trim();
+            const category = document.getElementById('bp-add-category').value.trim() || 'Unknown';
+            if (!name) return;
+
+            const existing = blueprintData.masterList.find(b => b.name.toLowerCase() === name.toLowerCase());
+            if (existing) { alert('Already in master list.'); return; }
+
+            blueprintData.masterList.push({ name, category, notes: '' });
+            blueprintData = await ipcRenderer.invoke('blueprint:update-master', blueprintData.masterList);
+            document.getElementById('bp-add-name').value = '';
+            document.getElementById('bp-add-category').value = '';
+            document.getElementById('bp-add-form').style.display = 'none';
+            renderBlueprintUI();
+        }
+
+        // Live blueprint received (from parser while game is running)
+        ipcRenderer.on('blueprint:received', (e, data) => {
+            blueprintData.collected = [...new Set([...blueprintData.collected, data.value])].sort();
+            if (!blueprintData.collectedAt) blueprintData.collectedAt = {};
+            blueprintData.collectedAt[data.value] = data.timestamp || new Date().toISOString();
+            const label = data.isNew ? '📐 NEW Blueprint' : '📐 Blueprint';
+            addDashItem(label, `<span class="feed-highlight">${data.value}</span>`);
+            // Refresh UI if tab is active
+            if (document.getElementById('view-blueprints').classList.contains('active')) {
+                renderBlueprintUI();
+            }
+        });
+
         // ═══ SQUAD MANAGEMENT (v2.8) ═══
         function setSquadMode(mode) {
             // UI Toggle
@@ -4628,6 +5655,11 @@
             addDashItem('📱', 'Opening Squad HUD...');
         }
 
+        function openNetProximityHud() {
+            ipcRenderer.send('net-proximity:open-hud');
+            addDashItem('📡', 'Opening Net & Proximity HUD...');
+        }
+
         function openOcrDebug() {
             ipcRenderer.send('ocr:open-debug');
             addDashItem('🔬', 'Opening OCR Debugger Window...');
@@ -4665,6 +5697,31 @@
             }
         });
 
+        // Request initial log watcher status from main process on startup
+        // Uses invoke (request-response) instead of send (fire-and-forget) for reliability
+        async function requestLogStatus() {
+            try {
+                const data = await ipcRenderer.invoke('log:get-status');
+                const dot = document.getElementById('status-log-dot');
+                const txt = document.getElementById('status-log-text');
+                if (data && data.connected) {
+                    dot.className = 'dot on';
+                    txt.innerText = 'Active';
+                    if (data.path) {
+                        document.getElementById('config-log-path').value = data.path;
+                    }
+                } else {
+                    // LogWatcher might not have started yet, retry after a delay
+                    setTimeout(requestLogStatus, 2000);
+                }
+            } catch (e) {
+                console.error('[Dashboard] Failed to get log status:', e);
+                setTimeout(requestLogStatus, 2000);
+            }
+        }
+        // Initial request + delayed retry to cover LogWatcher startup race
+        requestLogStatus();
+        setTimeout(requestLogStatus, 3000);
     </script>
 </body>
 

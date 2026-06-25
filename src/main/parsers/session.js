@@ -9,6 +9,7 @@ class SessionParser extends BaseParser {
             environment: /\[Trace\] Environment:\s+(\w+)/i,
             session_id: /\[Trace\] @session:\s+'([^']+)'/i,
             system_quit: /<SystemQuit>\s+CSystem::Quit invoked/i,
+            main_menu: /Disconnecting from server|Connection closed|CGameClient::OnDisconnect|Exiting to Main Menu|Client disconnect/i,
 
             // Server Transitions (verified in Game.log)
             server_change_start: /<Change Server Start>/i,
@@ -67,9 +68,12 @@ class SessionParser extends BaseParser {
             }
         }
 
-        // 5. System Quit
+        // 5. System Quit / Main Menu / Leave
         if (this.patterns.system_quit.test(line)) {
             this.emit('gamestate', { type: 'GAME_LEAVE', value: 'SystemQuit' });
+            handled = true;
+        } else if (this.patterns.main_menu.test(line)) {
+            this.emit('gamestate', { type: 'GAME_LEAVE', value: 'MainMenu' });
             handled = true;
         }
 

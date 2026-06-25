@@ -7,6 +7,9 @@ class HangarParser extends BaseParser {
             // <2026-02-09T21:37:49.559Z> [Notice] <CSCLoadingPlatformManager::TransitionLightGroupState> [Loading Platform] Loading Platform Manager [LoadingPlatformManager_ShipElevator_HangarMediumTop] transitioning light state in current platform state: OpenIdle [Team_CoreGameplayFeatures][Cargo]
             platform_state: /<CSCLoadingPlatformManager::TransitionLightGroupState>.*platform manager '([^']+)'.*state:\s+(\w+)/i,
 
+            // New 4.0 Platform Changed Event
+            platform_changed: /Loading Platform Manager \[(LoadingPlatformManager_[^\]]+)\] Platform state changed to (\w+)/i,
+
             // Generic ATC Assignment Fallback
             atc_assigned: /Notification "Landing pad ([^"]+) assigned"/i
         };
@@ -16,17 +19,26 @@ class HangarParser extends BaseParser {
     parse(line) {
         let handled = false;
 
-        const platformMatch = line.match(this.patterns.platform_state);
-        if (platformMatch) {
-            const manager = platformMatch[1];
-            const state = platformMatch[2];
+        const changedMatch = line.match(this.patterns.platform_changed);
+        if (changedMatch) {
+            const manager = changedMatch[1];
+            const state = changedMatch[2];
 
-            // We primarily care about ShipElevators for the Hangar Timer
             if (manager.includes('ShipElevator')) {
-                // States like 'MovingToTop', 'MovingToBottom', 'OpenIdle'
-                const isActive = state.startsWith('Moving') || state === 'OpenIdle';
-                const type = state.startsWith('Moving') ? 'TRANSIT' : (state === 'OpenIdle' ? 'READY' : 'CLOSED');
+                let cleanHangar = manager.replace('LoadingPlatformManager_ShipElevator_', '').replace(/_/g, ' ');
+                let cleanState = state.replace('Platform', '').replace('LoadingGate', ' Doors');
+                cleanHangar = cleanHangar.replace(/([A-Z])/g, ' $1').trim();
+                cleanState = cleanState.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
 
+                this.emit('gamestate', {
+                    type: 'TACTICAL_HANGAR',
+                    value: `${cleanHangar}: ${cleanState}`,
+                    manager: manager,
+                    rawState: state
+                });
+                
+                // Keep the legacy HANGAR_STATE for timers
+                const type = state.startsWith('Raising') || state.startsWith('Moving') || state === 'LoweringPlatform' ? 'TRANSIT' : (state === 'OpenIdle' || state === 'Open' ? 'READY' : 'CLOSED');
                 this.emit('gamestate', {
                     type: 'HANGAR_STATE',
                     value: type,
@@ -34,6 +46,26 @@ class HangarParser extends BaseParser {
                     rawState: state
                 });
                 handled = true;
+            }
+        }
+
+        if (!handled) {
+            const platformMatch = line.match(this.patterns.platform_state);
+            if (platformMatch) {
+                const manager = platformMatch[1];
+                const state = platformMatch[2];
+
+                if (manager.includes('ShipElevator')) {
+                    const type = state.startsWith('Moving') ? 'TRANSIT' : (state === 'OpenIdle' ? 'READY' : 'CLOSED');
+
+                    this.emit('gamestate', {
+                        type: 'HANGAR_STATE',
+                        value: type,
+                        manager: manager,
+                        rawState: state
+                    });
+                    handled = true;
+                }
             }
         }
 

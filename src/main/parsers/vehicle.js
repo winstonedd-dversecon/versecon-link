@@ -42,6 +42,10 @@ class VehicleParser extends BaseParser {
 
             // ASOP Terminal
             asop_access: /Fetching ship list for local client\s+\[Team_GameServices\]\[ASOP\]/i,
+
+            // STARMAP ROUTE: Fallback to detect pilot boarding own ship
+            // Captures: "DRAK_Golem_OX" from "Failed to get starmap route data! ... | NOT AUTH | DRAK_Golem_OX_504645144339"
+            starmap_route: /Failed to get starmap route data!.*?\s*\|\s*([A-Za-z0-9_]+)\[\d+\]/i,
         };
         this.currentShip = null;
         this.shipMap = {};
@@ -129,6 +133,25 @@ class VehicleParser extends BaseParser {
                 if (imagePath) payload.image = imagePath;
                 this.emit('gamestate', payload);
                 handled = true;
+            }
+        }
+
+        // Fallback entered ship via starmap route calculation error
+        if (!handled && line.includes('Failed to get starmap route data')) {
+            const starmapMatch = line.match(this.patterns.starmap_route);
+            if (starmapMatch) {
+                const rawShipCode = starmapMatch[1];
+                const cleanShipName = this.getCleanShipName(rawShipCode);
+
+                if (cleanShipName !== this.currentShip || (now - this.lastEnterTime) > 5000) {
+                    this.currentShip = cleanShipName;
+                    this.lastEnterTime = now;
+                    const payload = { type: 'SHIP_ENTER', value: cleanShipName };
+                    const imagePath = this.findShipImage(cleanShipName);
+                    if (imagePath) payload.image = imagePath;
+                    this.emit('gamestate', payload);
+                    handled = true;
+                }
             }
         }
 

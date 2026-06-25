@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>VerseCon Alert</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
 
         * {
             margin: 0;
@@ -38,110 +38,167 @@
 
         .alert-container.active {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            padding-top: 15vh;
         }
 
-        /* ═══ CENTER TEXT ═══ */
+        /* ═══ ALERT CARD — the actual visible box ═══ */
+        #alert-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 24px 48px 20px;
+            background: rgba(0, 0, 0, 0.82);
+            border-radius: 6px;
+            backdrop-filter: blur(12px);
+            opacity: 0;
+        }
+
+        #alert-content.animating {
+            animation: cardAppear var(--alert-dur, 4000ms) ease forwards;
+        }
+
+        /* severity stripe at top of card */
+        .severity-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            border-radius: 6px 6px 0 0;
+        }
+
+        /* ═══ MAIN TEXT ═══ */
         .alert-text {
-            font-size: 4rem;
+            font-size: 5.5rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 8px;
-            text-align: center;
-            animation: alertPulse 0.5s ease-in-out 3;
+            letter-spacing: 10px;
+            line-height: 1;
+            /* deep multi-layer glow for visibility */
             text-shadow:
-                0 0 20px currentColor,
-                0 0 40px currentColor,
-                0 0 80px currentColor;
-            opacity: 0;
-            animation: alertAppear 3s ease forwards;
+                0 0 10px currentColor,
+                0 0 25px currentColor,
+                0 0 60px currentColor,
+                0 0 120px currentColor;
+        }
+
+        .alert-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 6px;
+            margin-bottom: 6px;
+            opacity: 0.7;
         }
 
         .alert-subtitle {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             letter-spacing: 4px;
             margin-top: 10px;
-            opacity: 0.8;
+            font-weight: 600;
+            text-shadow: 0 0 15px currentColor;
         }
 
-        /* ═══ VIGNETTE EFFECTS ═══ */
+        /* ═══ VIGNETTE — screen-edge glow ═══
+           Colorblind safe: danger=orange-amber, info=blue, safe=white-blue
+           Red is used for pure DANGER but ALWAYS paired with text/icon cue */
         .vignette {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
         }
 
-        .vignette-red {
-            box-shadow: inset 0 0 200px 60px rgba(255, 0, 0, 0.6);
+        /* DANGER — orange-amber (distinguishable by deuteranopes/protanopes) */
+        .vignette-danger {
+            box-shadow: inset 0 0 220px 80px rgba(255, 120, 0, 0.70);
+            animation: vignetteFlash 0.25s ease-in-out 6;
+        }
+
+        /* CRITICAL — deep amber-white (maximum contrast) */
+        .vignette-critical {
+            box-shadow: inset 0 0 240px 100px rgba(255, 200, 0, 0.75);
+            animation: vignetteFlash 0.2s ease-in-out 8;
+        }
+
+        /* WARNING — bright yellow */
+        .vignette-warning {
+            box-shadow: inset 0 0 180px 60px rgba(255, 220, 0, 0.60);
+            animation: vignetteFlash 0.35s ease-in-out 5;
+        }
+
+        /* INFO — vivid blue (easy to see for all CVD types) */
+        .vignette-info {
+            box-shadow: inset 0 0 160px 50px rgba(0, 150, 255, 0.55);
+            animation: vignetteFlash 0.4s ease-in-out 4;
+        }
+
+        /* CONTACT — cyan-teal */
+        .vignette-contact {
+            box-shadow: inset 0 0 180px 60px rgba(0, 220, 255, 0.55);
             animation: vignetteFlash 0.3s ease-in-out 5;
         }
 
-        .vignette-yellow {
-            box-shadow: inset 0 0 150px 40px rgba(255, 170, 0, 0.4);
-            animation: vignetteFlash 0.5s ease-in-out 3;
-        }
-
-        .vignette-green {
-            box-shadow: inset 0 0 120px 30px rgba(0, 255, 136, 0.3);
-            animation: vignetteFlash 0.8s ease-in-out 2;
-        }
-
-        .vignette-blue {
-            box-shadow: inset 0 0 180px 50px rgba(0, 100, 255, 0.4);
-            animation: vignetteFlash 0.6s ease-in-out 4;
-        }
-
-        .vignette-cyan {
-            box-shadow: inset 0 0 120px 30px rgba(0, 200, 255, 0.3);
-            animation: vignetteFlash 0.5s ease-in-out 3;
+        /* SAFE — white-blue (calm, low urgency) */
+        .vignette-safe {
+            box-shadow: inset 0 0 130px 40px rgba(100, 200, 255, 0.35);
+            animation: vignetteFlash 0.6s ease-in-out 2;
         }
 
         /* ═══ BORDER FLASH ═══ */
         .border-flash {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
         }
 
-        .border-flash-red {
-            border: 4px solid rgba(255, 0, 0, 0.8);
-            animation: borderPulse 0.3s ease-in-out 5;
+        .border-danger {
+            border: 6px solid rgba(255, 130, 0, 0.95);
+            animation: borderPulse 0.25s ease-in-out 6;
         }
 
-        .border-flash-orange {
-            border: 3px solid rgba(255, 165, 0, 0.8);
-            animation: borderPulse 0.5s ease-in-out 3;
+        .border-critical {
+            border: 6px solid rgba(255, 220, 0, 0.95);
+            animation: borderPulse 0.2s ease-in-out 8;
+        }
+
+        .border-warning {
+            border: 5px solid rgba(255, 200, 0, 0.85);
+            animation: borderPulse 0.35s ease-in-out 4;
+        }
+
+        .border-info {
+            border: 5px solid rgba(0, 170, 255, 0.85);
+            animation: borderPulse 0.4s ease-in-out 4;
+        }
+
+        .border-contact {
+            border: 5px solid rgba(0, 230, 255, 0.9);
+            animation: borderPulse 0.3s ease-in-out 5;
         }
 
         /* ═══ COMMAND OVERLAY ═══ */
         .command-alert {
-            background: rgba(0, 0, 0, 0.85);
-            border: 2px solid #ffa500;
+            background: rgba(0, 0, 0, 0.88);
+            border: 3px solid #ffaa00;
             border-radius: 12px;
             padding: 30px 50px;
             text-align: center;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 40px rgba(255, 165, 0, 0.3);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 60px rgba(255, 170, 0, 0.5);
         }
 
         .command-from {
             font-size: 0.9rem;
-            color: #888;
-            letter-spacing: 3px;
-            margin-bottom: 5px;
+            color: #aaa;
+            letter-spacing: 4px;
+            margin-bottom: 6px;
         }
 
         .command-text {
             font-size: 2.5rem;
-            color: #ffa500;
-            text-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
+            color: #ffcc00;
+            text-shadow: 0 0 20px rgba(255, 200, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
         }
 
         .command-team {
@@ -152,74 +209,41 @@
         }
 
         /* ═══ ANIMATIONS ═══ */
-        @keyframes alertAppear {
-            0% {
-                opacity: 0;
-                transform: scale(1.5);
-            }
-
-            15% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            85% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            100% {
-                opacity: 0;
-                transform: scale(0.95);
-            }
+        @keyframes cardAppear {
+            0%   { opacity: 0; transform: scale(1.08); }
+            10%  { opacity: 1; transform: scale(1); }
+            80%  { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.97); }
         }
 
         @keyframes vignetteFlash {
-
-            0%,
-            100% {
-                opacity: 0.3;
-            }
-
-            50% {
-                opacity: 1;
-            }
+            0%, 100% { opacity: 0.25; }
+            50%       { opacity: 1; }
         }
 
         @keyframes borderPulse {
-
-            0%,
-            100% {
-                opacity: 0.3;
-            }
-
-            50% {
-                opacity: 1;
-            }
+            0%, 100% { opacity: 0.2; }
+            50%       { opacity: 1; }
         }
 
         @keyframes commandSlideIn {
-            0% {
-                opacity: 0;
-                transform: translateY(-30px) scale(0.9);
-            }
-
-            20% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-
-            85% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-
-            100% {
-                opacity: 0;
-                transform: translateY(10px) scale(0.95);
-            }
+            0%   { opacity: 0; transform: translateY(-30px) scale(0.9); }
+            15%  { opacity: 1; transform: translateY(0) scale(1); }
+            85%  { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(10px) scale(0.97); }
+        }
+        /* QUANTUM ARRIVAL — neon purple */
+        .vignette-quantum {
+            box-shadow: inset 0 0 180px 60px rgba(191, 0, 255, 0.55);
+            animation: vignetteFlash 0.3s ease-in-out 5;
+        }
+        .border-quantum {
+            animation: borderPulse 1.8s infinite;
+            border: 2px solid #bf00ff;
+            box-shadow: 0 0 15px #bf00ff;
         }
     </style>
+    <script src="audio-synth.js"></script>
 </head>
 
 <body>
@@ -227,6 +251,8 @@
         <div class="vignette" id="alert-vignette"></div>
         <div class="border-flash" id="alert-border"></div>
         <div id="alert-content">
+            <div class="severity-bar" id="severity-bar"></div>
+            <div class="alert-label" id="alert-label"></div>
             <div class="alert-text" id="alert-text"></div>
             <div class="alert-subtitle" id="alert-subtitle"></div>
         </div>
@@ -235,152 +261,241 @@
     <script>
         const { ipcRenderer } = require('electron');
 
-        const container = document.getElementById('alert-container');
-        const vignette = document.getElementById('alert-vignette');
-        const border = document.getElementById('alert-border');
+        const container  = document.getElementById('alert-container');
+        const vignette   = document.getElementById('alert-vignette');
+        const border     = document.getElementById('alert-border');
         const alertContent = document.getElementById('alert-content');
-        const alertText = document.getElementById('alert-text');
-        const alertSub = document.getElementById('alert-subtitle');
+        const alertLabel   = document.getElementById('alert-label');
+        const alertText    = document.getElementById('alert-text');
+        const alertSub     = document.getElementById('alert-subtitle');
+        const severityBar  = document.getElementById('severity-bar');
 
         let hideTimeout = null;
+        let hudFlashEnabled = true;
 
-        // Alert configurations
+        ipcRenderer.on('settings:updated', (e, config) => {
+            if (config && config.hudFlashEnabled !== undefined) {
+                hudFlashEnabled = config.hudFlashEnabled;
+            }
+        });
+
+        // Request current settings on load
+        ipcRenderer.invoke('settings:get').then(cfg => {
+            if (cfg && cfg.hudFlashEnabled !== undefined) {
+                hudFlashEnabled = cfg.hudFlashEnabled;
+            }
+        }).catch(() => {});
+
+        // ──────────────────────────────────────────────────────────────────────
+        // ALERT CONFIGURATIONS
+        // Color palette is colorblind-safe:
+        //   DANGER  → #ff8800 orange-amber  (safe for deuteranopia/protanopia)
+        //   CRITICAL→ #ffdd00 bright yellow
+        //   WARNING → #ffcc00 amber-yellow
+        //   INFO    → #00aaff vivid blue
+        //   CONTACT → #00e5ff cyan-teal
+        //   SAFE    → #80d4ff light blue
+        // Shape labels (■ ▲ ◆ ●) provide extra non-color cue.
+        // ──────────────────────────────────────────────────────────────────────
         const ALERTS = {
-            // Status alerts
+            // ─ STATUS ─
             death: {
-                text: '💀 KILLED IN ACTION',
-                subtitle: 'SIGNAL LOST',
-                vignette: 'vignette-red',
-                border: 'border-flash-red',
-                color: '#ff4444',
-                duration: 4000,
-                sound: 'alert_death'
-            },
-            suffocating: {
-                text: '🌡️ SUFFOCATING',
-                subtitle: 'CHECK HELMET SEAL',
-                vignette: 'vignette-blue',
-                border: 'border-flash-red',
-                color: '#4488ff',
-                duration: 3000,
-                sound: 'alert_status'
-            },
-            depressurizing: {
-                text: '💨 DEPRESSURIZATION',
-                subtitle: 'HULL BREACH DETECTED',
-                vignette: 'vignette-blue',
-                border: 'border-flash-red',
-                color: '#6688ff',
-                duration: 3000,
-                sound: 'alert_status'
-            },
-
-            // Zone alerts
-            armistice_leave: {
-                text: '⚠️ CAUTION',
-                subtitle: 'LEAVING ARMISTICE ZONE — WEAPONS HOT',
-                vignette: 'vignette-yellow',
-                border: 'border-flash-orange',
-                color: '#ffaa00',
-                duration: 2500,
-                sound: 'alert_zone'
-            },
-            armistice_enter: {
-                text: '🛡️ SAFE ZONE',
-                subtitle: 'ARMISTICE ZONE — COMBAT PROHIBITED',
-                vignette: 'vignette-green',
-                border: '',
-                color: '#00ff88',
-                duration: 2000,
-                sound: null
-            },
-            monitored_enter: {
-                text: '📡 MONITORED',
-                subtitle: 'ENTERING MONITORED SPACE',
-                vignette: 'vignette-cyan',
-                border: '',
-                color: '#00c8ff',
-                duration: 2000,
-                sound: null
-            },
-
-            // ═══ COMBAT ALERTS ═══
-            interdiction: {
-                text: '🚨 INTERDICTION',
-                subtitle: 'QUANTUM JAMMER DETECTED',
-                vignette: 'vignette-red',
-                border: 'border-flash-red',
-                color: '#ff4444',
-                duration: 4000,
-                sound: 'alert_interdiction'
-            },
-            soft_death: {
-                text: '⚠️ CRITICAL DAMAGE',
-                subtitle: 'VEHICLE SOFT DEATH — EVACUATE',
-                vignette: 'vignette-red',
-                border: 'border-flash-orange',
-                color: '#ffaa00',
+                label: '■ SIGNAL LOST',
+                text: '☠ KILLED IN ACTION',
+                subtitle: 'YOU HAVE BEEN ELIMINATED',
+                vignette: 'vignette-critical',
+                border: 'border-critical',
+                color: '#ffdd00',
+                barColor: '#ffdd00',
                 duration: 5000,
                 sound: 'alert_death'
             },
-            shield_down: {
-                text: '🛡️ SHIELDS DOWN',
-                subtitle: 'TAKING HULL DAMAGE',
-                vignette: 'vignette-red',
-                border: 'border-flash-red',
-                color: '#ff4444',
-                duration: 2000,
+            suffocating: {
+                label: '▲ ATMOSPHERE ALERT',
+                text: '⬡ SUFFOCATING',
+                subtitle: 'CHECK HELMET SEAL',
+                vignette: 'vignette-info',
+                border: 'border-info',
+                color: '#00aaff',
+                barColor: '#00aaff',
+                duration: 3500,
+                sound: 'alert_status'
+            },
+            depressurizing: {
+                label: '▲ HULL INTEGRITY',
+                text: '⬡ DEPRESSURIZATION',
+                subtitle: 'HULL BREACH DETECTED',
+                vignette: 'vignette-info',
+                border: 'border-info',
+                color: '#00aaff',
+                barColor: '#00aaff',
+                duration: 3500,
                 sound: 'alert_status'
             },
 
-            // ═══ INDUSTRIAL ALERTS ═══
+            // ─ ZONE ─
+            armistice_leave: {
+                label: '▲ ZONE CHANGE',
+                text: '⚠ WEAPONS HOT',
+                subtitle: 'LEAVING ARMISTICE ZONE',
+                vignette: 'vignette-warning',
+                border: 'border-warning',
+                color: '#ffcc00',
+                barColor: '#ffcc00',
+                duration: 3000,
+                sound: 'alert_zone'
+            },
+            armistice_enter: {
+                label: '◆ ZONE CHANGE',
+                text: '⬡ ARMISTICE ZONE',
+                subtitle: 'COMBAT PROHIBITED',
+                vignette: 'vignette-safe',
+                border: '',
+                color: '#80d4ff',
+                barColor: '#80d4ff',
+                duration: 2500,
+                sound: null
+            },
+            monitored_enter: {
+                label: '● COMMS',
+                text: '📡 MONITORED',
+                subtitle: 'ENTERING MONITORED SPACE',
+                vignette: 'vignette-info',
+                border: '',
+                color: '#00aaff',
+                barColor: '#00aaff',
+                duration: 2500,
+                sound: null
+            },
+
+            // ─ COMBAT ─
+            interdiction: {
+                label: '■ THREAT DETECTED',
+                text: '🚨 INTERDICTION',
+                subtitle: 'QUANTUM JAMMER IN RANGE',
+                vignette: 'vignette-danger',
+                border: 'border-danger',
+                color: '#ff8800',
+                barColor: '#ff8800',
+                duration: 5000,
+                sound: 'alert_interdiction'
+            },
+            soft_death: {
+                label: '■ CRITICAL DAMAGE',
+                text: '⚠ SOFT DEATH',
+                subtitle: 'EVACUATE IMMEDIATELY',
+                vignette: 'vignette-danger',
+                border: 'border-danger',
+                color: '#ff8800',
+                barColor: '#ff8800',
+                duration: 5500,
+                sound: 'alert_death'
+            },
+            shield_down: {
+                label: '▲ SHIELDS',
+                text: '⬡ SHIELDS DOWN',
+                subtitle: 'TAKING HULL DAMAGE',
+                vignette: 'vignette-warning',
+                border: 'border-warning',
+                color: '#ffcc00',
+                barColor: '#ffcc00',
+                duration: 2500,
+                sound: 'alert_status'
+            },
+
+            // ─ RADAR / CONTACTS ─
+            radar_contact: {
+                label: '● SENSOR CONTACT',
+                text: '🛰 SHIP DETECTED',
+                subtitle: '',
+                vignette: 'vignette-contact',
+                border: 'border-contact',
+                color: '#00e5ff',
+                barColor: '#00e5ff',
+                duration: 4000,
+                sound: null
+            },
+            quantum_arrival: {
+                label: '◆ QUANTUM ARRIVAL',
+                text: '🌌 JUMP INBOUND',
+                subtitle: '',
+                vignette: 'vignette-quantum',
+                border: 'border-quantum',
+                color: '#bf00ff',
+                barColor: '#bf00ff',
+                duration: 4000,
+                sound: 'alert_quantum'
+            },
+            proximity_death: {
+                label: '■ ELIMINATION DETECTED',
+                text: '☠ PROXIMITY KIA',
+                subtitle: '',
+                vignette: 'vignette-danger',
+                border: 'border-danger',
+                color: '#ffaa00',
+                barColor: '#ffaa00',
+                duration: 5000,
+                sound: 'alert_death'
+            },
+
+            // ─ INDUSTRIAL ─
             mining_fracture_success: {
-                text: '⛏️ FRACTURE SUCCESS',
+                label: '◆ MINING',
+                text: '⛏ FRACTURE SUCCESS',
                 subtitle: 'READY FOR EXTRACTION',
-                vignette: 'vignette-green',
-                border: 'border-flash-orange',
-                color: '#00ff88',
+                vignette: 'vignette-safe',
+                border: 'border-info',
+                color: '#80d4ff',
+                barColor: '#80d4ff',
                 duration: 2500,
                 sound: 'notification'
             },
 
-            // ═══ FIRE / HAZARD ALERTS ═══
+            // ─ FIRE ─
             fire: {
+                label: '■ FIRE ALERT',
                 text: '🔥 FIRE DETECTED',
                 subtitle: 'CHECK ENGINEERING PANEL',
-                vignette: 'vignette-red',
-                border: 'border-flash-red',
-                color: '#ff6600',
-                duration: 4000,
+                vignette: 'vignette-danger',
+                border: 'border-danger',
+                color: '#ff8800',
+                barColor: '#ff8800',
+                duration: 4500,
                 sound: 'alert_status'
             },
 
-            // ═══ DEATH / DESTRUCTION ALERTS ═══
+            // ─ DESTRUCTION ─
             killed: {
-                text: '☠️ KILLED',
+                label: '■ COMBAT LOG',
+                text: '☠ KILLED',
                 subtitle: '',
-                vignette: 'vignette-red',
-                border: 'border-flash-red',
-                color: '#ff2222',
-                duration: 5000,
+                vignette: 'vignette-critical',
+                border: 'border-critical',
+                color: '#ffdd00',
+                barColor: '#ffdd00',
+                duration: 5500,
                 sound: 'alert_death'
             },
             vehicle_destroyed: {
+                label: '■ SHIP STATUS',
                 text: '💥 SHIP DESTROYED',
                 subtitle: '',
-                vignette: 'vignette-red',
-                border: 'border-flash-red',
-                color: '#ff4444',
-                duration: 5000,
+                vignette: 'vignette-danger',
+                border: 'border-danger',
+                color: '#ff8800',
+                barColor: '#ff8800',
+                duration: 5500,
                 sound: 'alert_death'
             },
             vehicle_crippled: {
-                text: '⚠️ SHIP CRIPPLED',
+                label: '▲ SHIP STATUS',
+                text: '⚠ SHIP CRIPPLED',
                 subtitle: 'CRITICAL DAMAGE',
-                vignette: 'vignette-yellow',
-                border: 'border-flash-orange',
-                color: '#ffaa00',
-                duration: 4000,
+                vignette: 'vignette-warning',
+                border: 'border-warning',
+                color: '#ffcc00',
+                barColor: '#ffcc00',
+                duration: 4500,
                 sound: 'alert_status'
             }
         };
@@ -392,24 +507,45 @@
             vignette.className = 'vignette';
             border.className = 'border-flash';
 
-            // Apply styling
-            if (config.vignette) vignette.classList.add(config.vignette);
-            if (config.border) border.classList.add(config.border);
+            // Apply vignette / border if flash is enabled
+            if (hudFlashEnabled) {
+                if (config.vignette) vignette.classList.add(config.vignette);
+                if (config.border)   border.classList.add(config.border);
+            }
 
-            alertText.textContent = config.text;
-            alertText.style.color = config.color;
-            alertSub.textContent = config.subtitle || '';
-            alertSub.style.color = config.color;
+            // Severity bar color
+            severityBar.style.background = config.barColor || config.color;
 
-            // Reset animation
-            alertContent.style.animation = 'none';
-            alertContent.offsetHeight; // Trigger reflow
-            alertContent.style.animation = `alertAppear ${config.duration}ms ease forwards`;
+            // Text content
+            alertLabel.textContent = config.label || '';
+            alertLabel.style.color = config.color;
+            alertText.textContent  = config.text;
+            alertText.style.color  = config.color;
+            alertSub.textContent   = config.subtitle || '';
+            alertSub.style.color   = config.color;
+
+            // Play sound
+            if (config.sound && window.audioSynth) {
+                try {
+                    window.audioSynth.play(config.sound);
+                } catch (soundErr) {
+                    console.error('[Alert] Failed to play alert sound:', soundErr);
+                }
+            }
+
+            // Duration CSS var for animation
+            alertContent.style.setProperty('--alert-dur', `${config.duration}ms`);
+
+            // Re-trigger animation
+            alertContent.classList.remove('animating');
+            void alertContent.offsetHeight; // reflow
+            alertContent.classList.add('animating');
 
             container.classList.add('active');
 
             hideTimeout = setTimeout(() => {
                 container.classList.remove('active');
+                alertContent.classList.remove('animating');
                 ipcRenderer.send('alert:hide');
             }, config.duration);
         }
@@ -417,8 +553,13 @@
         function showCommandAlert(data) {
             if (hideTimeout) clearTimeout(hideTimeout);
 
-            vignette.className = 'vignette';
-            border.className = 'border-flash border-flash-orange';
+            if (hudFlashEnabled) {
+                vignette.className = 'vignette vignette-warning';
+                border.className   = 'border-flash border-warning';
+            } else {
+                vignette.className = 'vignette';
+                border.className   = 'border-flash';
+            }
 
             const cmdHtml = `
                 <div class="command-alert" style="animation: commandSlideIn 5s ease forwards;">
@@ -435,6 +576,8 @@
                 ipcRenderer.send('alert:hide');
                 // Restore original content
                 alertContent.innerHTML = `
+                    <div class="severity-bar" id="severity-bar"></div>
+                    <div class="alert-label" id="alert-label"></div>
                     <div class="alert-text" id="alert-text"></div>
                     <div class="alert-subtitle" id="alert-subtitle"></div>
                 `;
@@ -445,34 +588,59 @@
             if (data.type === 'STATUS') {
                 const config = ALERTS[data.value];
                 if (config) showAlert(config);
+
             } else if (data.type === 'ZONE') {
-                // Map logical values to alert keys
                 let key = data.value;
                 if (data.value === 'Armistice Zone') key = 'armistice_enter';
-                if (data.value === 'Open Space') key = 'armistice_leave';
-                
+                if (data.value === 'Open Space')     key = 'armistice_leave';
                 const config = ALERTS[key];
                 if (config) showAlert(config);
+
             } else if (data.type === 'HAZARD_FIRE') {
                 const config = { ...ALERTS.fire };
-                if (data.value) config.subtitle = data.value;
+                if (data.value) config.subtitle = data.value.toUpperCase();
                 showAlert(config);
+
             } else if (data.type === 'DEATH') {
                 const config = { ...ALERTS.killed };
                 if (data.details && data.details.killer) {
                     config.subtitle = `KILLED BY ${data.details.killer.toUpperCase()}`;
                 }
                 showAlert(config);
+
             } else if (data.type === 'VEHICLE_DESTRUCTION') {
                 if (data.details && data.details.isTotalLoss) {
                     const config = { ...ALERTS.vehicle_destroyed };
-                    config.subtitle = data.details.vehicle || 'SHIP LOST';
+                    config.subtitle = (data.details.vehicle || 'SHIP LOST').toUpperCase();
                     showAlert(config);
                 } else {
                     const config = { ...ALERTS.vehicle_crippled };
-                    config.subtitle = data.details?.vehicle || 'SYSTEMS FAILING';
+                    config.subtitle = (data.details?.vehicle || 'SYSTEMS FAILING').toUpperCase();
                     showAlert(config);
                 }
+
+            } else if (data.type === 'RADAR_SINGLE') {
+                const config = { ...ALERTS.radar_contact };
+                if (data.details && data.details.chassis) {
+                    config.subtitle = data.details.chassis.toUpperCase();
+                }
+                showAlert(config);
+
+            } else if (data.type === 'TACTICAL_QUANTUM') {
+                // Ship arrived from quantum (FinalStop=0 confirmed signal)
+                const config = { ...ALERTS.quantum_arrival };
+                if (data.ship) {
+                    config.subtitle = data.ship.toUpperCase();
+                } else if (data.value) {
+                    config.subtitle = data.value.toUpperCase();
+                }
+                showAlert(config);
+
+            } else if (data.type === 'PROXIMITY_DEATH') {
+                const config = { ...ALERTS.proximity_death };
+                config.subtitle = (data.value || 'TARGET').toUpperCase() + ' ELIMINATED';
+                showAlert(config);
+
             } else if (data.type === 'COMMAND') {
                 showCommandAlert(data);
             }

@@ -27,6 +27,21 @@ class CustomParser extends BaseParser {
     parse(line) {
         let handled = false;
         for (const p of this.patterns) {
+            // Guard: Bypass weapon alerts on ammo/magazine log lines
+            if (line.includes('AttachmentReceived')) {
+                const lowerLine = line.toLowerCase();
+                const isAmmoLine = lowerLine.includes('port[magazine_') || 
+                                   lowerLine.includes('port[ammo_') ||
+                                   lowerLine.includes('_mag');
+                if (isAmmoLine) {
+                    const regexStr = p.regex ? p.regex.toLowerCase() : '';
+                    const mentionsAmmo = regexStr.includes('mag') || regexStr.includes('ammo') || regexStr.includes('bullet') || regexStr.includes('magazine');
+                    if (!mentionsAmmo) {
+                        continue; // Skip weapon match for ammo logs
+                    }
+                }
+            }
+
             const match = line.match(p.compiled);
             if (match) {
                 // Determine message: message > name > "Custom Match"

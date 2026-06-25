@@ -199,7 +199,7 @@
                     <div class="health-bar-container">
                         <div class="health-bar-fill" style="width: ${healthWidth}; background: ${healthColor}"></div>
                     </div>
-                    <div class="unit-location">${p.location || 'Unknown Orbit'}</div>
+                    <div class="unit-location">${p.ship ? p.ship + ' • ' : ''}${p.location || 'Unknown Orbit'}</div>
                 `;
                 
                 container.appendChild(box);

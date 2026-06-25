@@ -1,6 +1,6 @@
 {
   "name": "versecon-link",
-  "version": "2.10.4",
+  "version": "2.11.0",
   "description": "Star Citizen Log Reader & Overlay Controller for VerseCon",
   "main": "src/main/main.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "dist": "electron-builder",
     "build:fast": "electron-builder --win dir",
     "serve-loadout": "node src/api/loadout-api.js",
-    "build-data-index": "node scripts/build-data-index.js"
+    "build-data-index": "node scripts/build-data-index.js",
+    "update-blueprints": "node scripts/update-blueprint-masterlist.js"
   },
   "keywords": [],
   "author": "VerseCon",

@@ -44,7 +44,7 @@ class NetworkWatcher extends EventEmitter {
             const active = connections.find(c =>
                 c.pid === this.scPid &&
                 c.state === 'ESTABLISHED' &&
-                c.remotePort >= 7000 && c.remotePort <= 8000
+                c.remotePort >= 7000 && c.remotePort <= 10000
             );
 
             if (active) {

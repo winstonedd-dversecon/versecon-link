@@ -32,11 +32,12 @@ class MissionParser extends BaseParser {
             mission_ended_tag: /<MissionEnded>/,
             mission_objective_tag: /<ObjectiveUpserted>/,
 
-            // Notification-based patterns (from SHUDEvent_OnNotification)
-            contract_accepted: /Added notification "Contract Accepted:\s*([^"]+)"/i,
-            contract_complete: /Added notification "Contract Complete[d]?:\s*([^"]+)"/i,
-            contract_failed: /Added notification "Contract Failed:\s*([^"]+)"/i,
-            new_objective: /Added notification "New Objective:\s*([^"]+)"/i,
+            // Notification-based patterns (from SHUDEvent_OnNotification and UpdateNotificationItem)
+            contract_accepted: /(?:Added notification "Contract Accepted:\s*|Notification "Contract Accepted:\s*)([^"]+)"/i,
+            contract_complete: /(?:Added notification "Contract Complete[d]?:\s*|Notification "Contract Complete:\s*)([^"]+)"/i,
+            contract_failed: /(?:Added notification "Contract Failed:\s*|Notification "Contract Failed:\s*)([^"]+)"/i,
+            new_objective: /(?:Added notification "New Objective:\s*|Notification "New Objective:\s*)([^"]+)"/i,
+
 
             // MobiGlas accept
             mobiglas_accept: /MobiGlas::OnAcceptMission/i,
@@ -127,6 +128,7 @@ class MissionParser extends BaseParser {
         const completeMatch = line.match(this.patterns.contract_complete);
         if (completeMatch) {
             let title = completeMatch[1].trim();
+            if (title.endsWith(':')) title = title.slice(0, -1).trim();
             this.emit('gamestate', {
                 type: 'MISSION_STATUS',
                 value: 'completed',
@@ -141,6 +143,7 @@ class MissionParser extends BaseParser {
         const failMatch = line.match(this.patterns.contract_failed);
         if (failMatch) {
             let title = failMatch[1].trim();
+            if (title.endsWith(':')) title = title.slice(0, -1).trim();
             this.emit('gamestate', {
                 type: 'MISSION_STATUS',
                 value: 'failed',
@@ -150,6 +153,7 @@ class MissionParser extends BaseParser {
             if (effectiveId) this.missionMap.delete(effectiveId);
             handled = true;
         }
+
 
         // ── 6. Generic <MissionEnded> fallback (if structured didn't match) ──
         if (!handled && this.patterns.mission_ended_tag.test(line)) {

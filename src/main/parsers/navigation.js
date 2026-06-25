@@ -9,6 +9,9 @@ class NavigationParser extends BaseParser {
             // Line 1935: <RequestLocationInventory> Player[TypicallyBrit_ish] requested inventory for Location[Stanton1_Lorville]
             location_inventory: /<RequestLocationInventory>\s+Player\[[^\]]+\]\s+requested inventory for Location\[([^\]]+)\]/i,
 
+            // Update Inventory Location tracking for quantum transitions
+            inventory_location_change: /<Update Inventory Location>\s+Player\s+\[([^\]]+)\]\s+is\s+changing\s+location\.\s+Landing\s+\[[^\]]*\]\s+->\s+\[[^\]]*\].\s+Location\s+\[(\d+)\]\s+->\s+\[(\d+)\]/i,
+
             // Line 1878: [STAMINA] \t-> RoomName: OOC_Stanton_1_Hurston
             // Matches OOC room names like OOC_Stanton_1_Hurston, OOC_Stanton_2b_Daymar
             stamina_room_ooc: /\[STAMINA\]\s+(?:\\t)?->\s*RoomName:\s*(OOC_[^\s]+)/i,
@@ -42,7 +45,7 @@ class NavigationParser extends BaseParser {
             location_obj: /<StatObjLoad\s+0x[0-9A-Fa-f]+\s+Format>\s+'[^']*?objectcontainers\/pu\/loc\/(?:flagship|mod)\/(?:stanton\/)?(?:station\/ser\/)?(?:[^\/]+\/)*([^\/]{5,})\//i,
 
             // ── QUANTUM TRAVEL (keep for future sessions where QT occurs) ──
-            quantum_spooling: /Player Selected Quantum Target|Successfully calculated route to/i,
+            quantum_spooling: /Successfully calculated route to/i,
             quantum_entered: /<Jump Drive Requesting State Change>.*to Traveling/,
             quantum_exited: /<Jump Drive Requesting State Change>.*to Idle/,
             quantum_arrived: /<Quantum Drive Arrived/,
@@ -62,10 +65,22 @@ class NavigationParser extends BaseParser {
             // Jump Point Grid Entrance
             // CPhysicalProxy::OnPhysicsPostStep is trying to set position in the grid (OOC_JumpPoint_stanton_magnus)
             jump_point: /position in the grid \((OOC_JumpPoint_[^)]+)\)/i,
+
+            // CEntity::SetZone / SetLocalZone — reliable zone marker
+            set_zone: /(?:SetZone|SetLocalZone).*?zone.*?'([^']{4,})'/i,
+
+            // Region Volume Enter — large area markers
+            region_volume: /entering region volume.*?'([A-Za-z][^']{3,})'/i,
         };
         this.lastLocationHint = null;
         this.lastLocation = null;
+        this.lastLocationRaw = null; // Track last raw for deduplication
         this.customLocations = {};
+        this.rsiHandle = '';
+    }
+
+    setRsiHandle(handle) {
+        this.rsiHandle = handle;
     }
 
     setCustomLocations(map) {
@@ -79,10 +94,42 @@ class NavigationParser extends BaseParser {
         const roomMatch = line.match(this.patterns.room_name);
         if (roomMatch) {
             const rawRoom = roomMatch[1];
-            // Wait, roomName regex [^\s]+ won't match "RR P5 L2".
-            // If the user's string has spaces, it might not be a RoomName.
-            // But we can still emit LOCATION_RAW so smart capture sees it.
-            this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
+            // Only emit if value changed to prevent stuck/flood
+            if (rawRoom && rawRoom !== this.lastLocationRaw) {
+                this.lastLocationRaw = rawRoom;
+                this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
+
+                // Also emit as a LOCATION update using the cleaned name
+                const cleaned = this.cleanLocationName(rawRoom);
+                this.emitLocation(cleaned, rawRoom);
+            }
+        }
+
+        // ── 0.5 Inventory Location Change (Quantum Travel check) ──
+        const invLocMatch = line.match(this.patterns.inventory_location_change);
+        if (invLocMatch) {
+            const player = invLocMatch[1];
+            const fromLoc = invLocMatch[2];
+            const toLoc = invLocMatch[3];
+
+            // If an RSI handle is configured, verify it matches
+            if (this.rsiHandle && player.toLowerCase() !== this.rsiHandle.toLowerCase()) {
+                return false;
+            }
+
+            const SYSTEM_CONTAINERS = {
+                '3184339241': 'Stanton'
+            };
+
+            if (SYSTEM_CONTAINERS[toLoc]) {
+                const systemName = SYSTEM_CONTAINERS[toLoc];
+                this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
+                this.emitLocation(`Quantum Travel (${systemName})`, `QuantumTravel_${systemName}`);
+            } else if (SYSTEM_CONTAINERS[fromLoc]) {
+                this.emit('gamestate', { type: 'QUANTUM', value: 'exited' });
+                this.emitLocation('Arriving...', 'Arriving');
+            }
+            return true;
         }
 
         // ── 1. BEST: RequestLocationInventory (most reliable, exact location) ──
@@ -182,8 +229,11 @@ class NavigationParser extends BaseParser {
         }
 
         // ── 6. Quantum State ──
-        if (this.patterns.quantum_spooling.test(line) || this.patterns.quantum_entered.test(line)) {
+        if (this.patterns.quantum_entered.test(line)) {
             this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
+            handled = true;
+        } else if (this.patterns.quantum_spooling.test(line)) {
+            this.emit('gamestate', { type: 'QUANTUM', value: 'spooling' });
             handled = true;
         } else if (this.patterns.quantum_exited.test(line)) {
             this.emit('gamestate', { type: 'QUANTUM', value: 'exited' });
@@ -195,6 +245,7 @@ class NavigationParser extends BaseParser {
             this.emit('gamestate', { type: 'QUANTUM', value: 'arrived' });
             handled = true;
         }
+
 
         // ── 7. Object Container Hints (Backup Location) ──
         const objMatch = line.match(this.patterns.location_obj);
@@ -232,6 +283,30 @@ class NavigationParser extends BaseParser {
             }
         }
 
+        // ── 9. SetZone / Region Volume (fallback raw location) ──
+        const setZoneMatch = line.match(this.patterns.set_zone);
+        if (setZoneMatch) {
+            const rawVal = setZoneMatch[1];
+            if (rawVal && rawVal !== this.lastLocationRaw && !rawVal.match(/^\d+$/) && rawVal.length > 3) {
+                this.lastLocationRaw = rawVal;
+                this.emit('gamestate', { type: 'LOCATION_RAW', value: rawVal });
+
+                // Also emit as a LOCATION update using the cleaned name
+                const cleaned = this.cleanLocationName(rawVal);
+                this.emitLocation(cleaned, rawVal);
+            }
+        }
+
+        const regionMatch = line.match(this.patterns.region_volume);
+        if (regionMatch) {
+            const rawVal = regionMatch[1];
+            const cleaned = this.cleanLocationName(rawVal);
+            if (cleaned && cleaned !== this.lastLocation) {
+                this.emitLocation(cleaned, rawVal);
+                handled = true;
+            }
+        }
+
         return handled;
     }
 
@@ -253,18 +328,33 @@ class NavigationParser extends BaseParser {
                 matchedObj = this.customLocations[cleanedName];
                 isCustomMapped = true;
             }
-            // 3. Try normalized match
+            // 3. Try prefix / startsWith / normalized match with typo handling (asteriod -> asteroid)
             else {
-                const normalizedRaw = rawName ? rawName.toLowerCase().replace(/[+_\s-]/g, '') : '';
-                const normalizedCleaned = cleanedName ? cleanedName.toLowerCase().replace(/[+_\s-]/g, '') : '';
+                const normalizedRaw = rawName ? rawName.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid') : '';
+                const normalizedCleaned = cleanedName ? cleanedName.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid') : '';
+
+                let bestKey = null;
+                let bestVal = null;
+                let bestLen = 0;
 
                 for (const [key, val] of Object.entries(this.customLocations)) {
-                    const normKey = key.toLowerCase().replace(/[+_\s-]/g, '');
-                    if (normKey === normalizedRaw || (normalizedCleaned && normKey === normalizedCleaned)) {
-                        matchedObj = val;
-                        isCustomMapped = true;
-                        break;
+                    const normKey = key.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid');
+                    
+                    if (normalizedRaw === normKey || normalizedCleaned === normKey || 
+                        (normalizedRaw.startsWith(normKey) && normKey.length > 5) || 
+                        (normalizedCleaned.startsWith(normKey) && normKey.length > 5)) {
+                        
+                        if (normKey.length > bestLen) {
+                            bestLen = normKey.length;
+                            bestKey = key;
+                            bestVal = val;
+                        }
                     }
+                }
+
+                if (bestKey) {
+                    matchedObj = bestVal;
+                    isCustomMapped = true;
                 }
             }
 
@@ -294,7 +384,7 @@ class NavigationParser extends BaseParser {
             const lowerRaw = rawName ? rawName.toLowerCase() : '';
             // Exclude jump point transits from system identification to prevent mid-jump misidentification
             if (!lowerRaw.includes('jumppoint')) {
-                if (lowerRaw.includes('pyro') || lowerRaw.includes('pext') || lowerRaw.includes('p_')) {
+                if (lowerRaw.includes('pyro') || lowerRaw.includes('pext') || lowerRaw.includes('p_') || /_p\d_/.test(lowerRaw) || /p\d[a-z]?l\d/.test(lowerRaw)) {
                     this.emit('gamestate', { type: 'SYSTEM', value: 'Pyro' });
                 } else if (lowerRaw.includes('nyx')) {
                     this.emit('gamestate', { type: 'SYSTEM', value: 'Nyx' });
@@ -349,7 +439,8 @@ class NavigationParser extends BaseParser {
             'Pyro2_Monolith': 'The Monolith',
             'Pyro3_Checkpoint': 'Checkpoint',
             'Pyro6_Starlight_Service': 'Starlight Service',
-            'Pyro_RuinStation': 'Ruin Station'
+            'Pyro_RuinStation': 'Ruin Station',
+            'RR_P2_L4': 'Checkmate'
         };
     }
 

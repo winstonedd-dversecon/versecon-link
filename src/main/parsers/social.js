@@ -17,15 +17,41 @@ class SocialParser extends BaseParser {
             channel_connected: /<Channel Connection Complete>/i,
             channel_disconnected: /<Channel Disconnected>/i,
         };
+        this.rsiHandle = '';
+        this.localPlayerId = '';
+    }
+
+    setRsiHandle(handle) {
+        this.rsiHandle = handle;
+        console.log('[SocialParser] RSI handle updated:', this.rsiHandle);
+    }
+
+    setRsiId(id) {
+        if (id) {
+            this.localPlayerId = id.toString();
+            console.log('[SocialParser] RSI ID manually configured:', this.localPlayerId);
+        }
     }
 
     parse(line) {
         let handled = false;
 
+        // Auto-discover local player ID from inventory token flow
+        const localPlayerMatch = line.match(/Requesting access token for User\[([^,\]]+),\s*(\d+)\]/i);
+        if (localPlayerMatch && this.rsiHandle) {
+            if (localPlayerMatch[1].toLowerCase() === this.rsiHandle.toLowerCase()) {
+                this.localPlayerId = localPlayerMatch[2];
+                console.log(`[SocialParser] Auto-discovered local player ID: ${this.localPlayerId} for handle: ${this.rsiHandle}`);
+            }
+        }
+
         // 1. Social Proximity (Stream In)
         const subMatch = line.match(this.patterns.social_subscribe);
         if (subMatch) {
             const player = subMatch[1];
+            if (player === this.localPlayerId) {
+                return true; // Ignore local player
+            }
             this.emit('gamestate', {
                 type: 'SOCIAL_PROXIMITY',
                 value: player,
@@ -38,6 +64,9 @@ class SocialParser extends BaseParser {
         const unsubMatch = line.match(this.patterns.social_unsubscribe);
         if (unsubMatch) {
             const player = unsubMatch[1];
+            if (player === this.localPlayerId) {
+                return true; // Ignore local player
+            }
             this.emit('gamestate', {
                 type: 'SOCIAL_PROXIMITY',
                 value: player,

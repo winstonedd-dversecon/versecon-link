@@ -84,7 +84,17 @@ class LogWatcher extends EventEmitter {
             if (data.type === 'SERVER_ENV') this.cachedState.server = data.value;
             if (data.type === 'SERVER_CONNECTED') this.cachedState.shard = data.value;
             if (data.type === 'SESSION_ID') this.cachedState.session = data.value;
-            if (data.type === 'SPAWN_SET') this.cachedState.spawn = data.value;
+            if (data.type === 'SPAWN_SET') {
+                this.cachedState.spawn = data.value;
+                this.attachmentsByPort.clear();
+                this.attachments = [];
+                this.emit('gamestate', { type: 'HELMET_STATE', value: 'OFF' });
+            }
+            if (data.type === 'DEATH' || data.type === 'GAME_JOIN') {
+                this.attachmentsByPort.clear();
+                this.attachments = [];
+                this.emit('gamestate', { type: 'HELMET_STATE', value: 'OFF' });
+            }
             if (data.type === 'SESSION_START') this.cachedState.startTime = data.value;
             if (data.type === 'BUILD_INFO') this.cachedState.build = data.value;
             if (data.type === 'LOCATION') this.cachedState.location = data.value;
@@ -277,7 +287,18 @@ class LogWatcher extends EventEmitter {
         setTimeout(async () => {
             try {
                 const content = await fs.promises.readFile(this.filePath, 'utf-8');
-                const lines = content.split('\n').slice(-this.initialScanLimit);
+                const allLines = content.split('\n');
+                
+                // Scan backwards for the last <Join PU> line to get shard connection info
+                for (let i = allLines.length - 1; i >= 0; i--) {
+                    if (allLines[i].includes('<Join PU>')) {
+                        console.log('[LogWatcher] Found last Join PU line in log:', allLines[i]);
+                        this.processLine(allLines[i], true);
+                        break;
+                    }
+                }
+                
+                const lines = allLines.slice(-this.initialScanLimit);
                 console.log(`[LogWatcher] Initial scan processing ${lines.length} lines asynchronously.`);
 
                 // Process in batches of 500 to yield event loop
@@ -426,11 +447,24 @@ class LogWatcher extends EventEmitter {
             raw: att.raw || ''
         };
 
+        // Deduplicate unique item IDs across ports (if an item moves, remove it from the old port)
+        if (item.numericId) {
+            for (const [port, existingItem] of this.attachmentsByPort.entries()) {
+                if (existingItem.numericId === item.numericId && port !== item.port) {
+                    this.attachmentsByPort.delete(port);
+                }
+            }
+        }
+
         // Update by port (latest wins)
         this.attachmentsByPort.set(item.port, item);
 
         // Rebuild attachments array sorted by port name for determinism
         this.attachments = Array.from(this.attachmentsByPort.values()).sort((a, b) => (a.port || '').localeCompare(b.port || ''));
+
+        // Determine if helmet is on (if Armor_Helmet is populated)
+        const hasHelmet = this.attachmentsByPort.has('Armor_Helmet');
+        this.emit('gamestate', { type: 'HELMET_STATE', value: hasHelmet ? 'ON' : 'OFF' });
 
         // Write atomic loadout file in repo root
         try {

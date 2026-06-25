@@ -13,6 +13,13 @@ class InventoryParser extends BaseParser {
 
         // Inventory Management tracking (verified in Game.log)
         this.inventoryPattern = /<InventoryManagement>\s+Request\[(\d+)\]\s+for\s+'([^']+)'\s+\[\d+\]\s+Result\[(\w+)\]/i;
+        this.rsiHandle = '';
+        this.playerAttachmentTimes = new Map();
+        this.lastAlertTimes = new Map();
+    }
+
+    setRsiHandle(handle) {
+        this.rsiHandle = handle;
     }
 
     parse(line) {
@@ -38,6 +45,38 @@ class InventoryParser extends BaseParser {
                     raw: line
                 }
             });
+
+            // Check for burst of attachments (likely death/respawn or streaming in)
+            const normalizeName = (name) => (name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (normalizeName(player) !== normalizeName(this.rsiHandle)) {
+                const now = Date.now();
+                if (!this.playerAttachmentTimes.has(player)) {
+                    this.playerAttachmentTimes.set(player, []);
+                }
+                const times = this.playerAttachmentTimes.get(player);
+                times.push(now);
+                
+                // Keep only times in the last 6 seconds
+                const windowStart = now - 6000;
+                const activeTimes = times.filter(t => t > windowStart);
+                this.playerAttachmentTimes.set(player, activeTimes);
+                
+                // If they receive 6+ attachments in 6 seconds, trigger alert (throttled to once per 30 seconds per player)
+                if (activeTimes.length >= 6) {
+                    const lastAlert = this.lastAlertTimes.get(player) || 0;
+                    if (now - lastAlert > 30000) { // 30s cooldown per player
+                        this.lastAlertTimes.set(player, now);
+                        this.emit('gamestate', {
+                            type: 'PROXIMITY_DEATH',
+                            value: player,
+                            details: {
+                                attachmentsCount: activeTimes.length,
+                                timestamp: new Date().toISOString()
+                            }
+                        });
+                    }
+                }
+            }
 
             return true;
         }

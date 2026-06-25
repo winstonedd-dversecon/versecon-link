@@ -85,6 +85,23 @@
 
         body.edit-mode .drag-handle {
             display: flex;
+            background: rgba(0, 0, 0, 0.85) !important;
+            border: 1px solid var(--accent);
+            height: 24px !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.edit-mode .drag-handle::after {
+            content: "::: DRAG TO MOVE :::";
+            font-size: 0.65rem;
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        body.edit-mode .drag-handle .drag-handle-bar {
+            display: none;
         }
 
         .drag-handle:active {
@@ -186,6 +203,39 @@
             background: var(--danger);
             box-shadow: 0 0 5px var(--danger);
         }
+
+        /* DEAD indicator */
+        .dead-indicator {
+            display: none;
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #ff2222;
+            text-shadow: 0 0 12px rgba(255,34,34,0.8), 0 0 30px rgba(255,34,34,0.4);
+            animation: deadPulse 0.8s ease-in-out infinite alternate;
+        }
+        .dead-indicator.visible { display: block; }
+        @keyframes deadPulse {
+            from { opacity: 0.5; text-shadow: 0 0 8px rgba(255,34,34,0.6); }
+            to   { opacity: 1;   text-shadow: 0 0 20px rgba(255,34,34,1), 0 0 40px rgba(255,34,34,0.5); }
+        }
+
+        /* HELMET warning */
+        .helmet-warning {
+            display: none;
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #ffaa00; /* Amber */
+            text-shadow: 0 0 12px rgba(255,170,0,0.8), 0 0 30px rgba(255,170,0,0.4);
+            animation: helmetPulse 0.8s ease-in-out infinite alternate;
+        }
+        .helmet-warning.visible { display: block; }
+        @keyframes helmetPulse {
+            from { opacity: 0.5; text-shadow: 0 0 8px rgba(255,170,0,0.6); }
+            to   { opacity: 1;   text-shadow: 0 0 20px rgba(255,170,0,1), 0 0 40px rgba(255,170,0,0.5); }
+        }
+
 
         /* ═══ RIGHT PANEL (Lists) ═══ */
         .hud-right-panel {
@@ -304,37 +354,82 @@
             }
         }
 
+        @keyframes fullscreen-flash {
+            0% { 
+                box-shadow: inset 0 0 150px rgba(0, 240, 255, 0.95), inset 0 0 50px rgba(0, 240, 255, 0.7); 
+                background: rgba(0, 240, 255, 0.25); 
+            }
+            50% {
+                box-shadow: inset 0 0 100px rgba(0, 240, 255, 0.6), inset 0 0 30px rgba(0, 240, 255, 0.4); 
+                background: rgba(0, 240, 255, 0.12);
+            }
+            100% { 
+                box-shadow: inset 0 0 0px rgba(0, 240, 255, 0); 
+                background: rgba(0, 240, 255, 0); 
+            }
+        }
+        .flash-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 99999;
+            animation: fullscreen-flash 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
         /* ═══ ALERTS (Centered) ═══ */
         .alert-container {
             position: absolute;
-            top: 150px;
+            top: 25%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
             width: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
             pointer-events: none;
+            z-index: 10000;
         }
 
         .alert-box {
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-            padding: 15px 40px;
+            background: rgba(0, 15, 25, 0.95);
+            border: 3px solid #00f0ff;
+            color: #00f0ff;
+            padding: 25px 60px;
             text-align: center;
             clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%, 0% 20%);
             margin-bottom: 10px;
-            animation: pulseAlert 1s infinite alternate;
+            animation: pulseAlert 0.8s infinite alternate;
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.7);
+        }
+
+        .alert-box h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.9), 0 0 30px rgba(0, 240, 255, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .alert-box div {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
         }
 
         @keyframes pulseAlert {
             from {
-                box-shadow: 0 0 10px rgba(255, 68, 68, 0.2);
+                box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+                border-color: rgba(0, 240, 255, 0.6);
             }
 
             to {
-                box-shadow: 0 0 30px rgba(255, 68, 68, 0.6);
+                box-shadow: 0 0 50px rgba(0, 240, 255, 0.9), inset 0 0 15px rgba(0, 240, 255, 0.3);
+                border-color: #00f0ff;
             }
         }
 
@@ -446,9 +541,42 @@
             padding: 4px 8px;
             font-size: 0.65rem;
             text-align: center;
-            color: var(--cyan);
+        /* ═══ NETWORK & TACTICAL HUD ═══ */
+        .hud-network-panel {
+            position: absolute;
+            left: 20px;
+            top: 250px;
+            width: 290px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        body.edit-mode .hud-network-panel {
+            border: 1px dashed var(--accent) !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            padding: 5px;
+        }
+
+        .net-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            margin-bottom: 3px;
+        }
+
+        .net-label {
+            color: var(--text-dim);
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+        }
+
+        .net-value {
+            color: var(--cyan);
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 200, 255, 0.3);
         }
 
         /* ═══ RESPONSIVE SCALING ═══ */
@@ -470,7 +598,7 @@
     <!-- Top Center HUD (Flight Deck + Squad HUD) -->
     <div id="hud-top-center" class="hud-top-center">
         <!-- Drag Handle -->
-        <div class="drag-handle">
+        <div class="drag-handle interactive">
             <div class="drag-handle-bar"></div>
         </div>
 
@@ -500,6 +628,17 @@
             </div>
 
 
+            <!-- DEAD Indicator -->
+            <div class="fd-col hidden" id="col-dead" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-dead">&#9760; DEAD</div>
+            </div>
+
+            <!-- Helmet Warning -->
+            <div class="fd-col hidden" id="col-helmet" style="padding:0 10px;">
+                <div class="helmet-warning visible" id="val-helmet">⚠️ NO HELMET</div>
+            </div>
+
+
             <!-- Ship -->
             <div class="fd-col" id="col-ship">
                 <div class="fd-label">Vehicle Control</div>
@@ -521,7 +660,17 @@
             <div class="fd-col" id="col-system">
                 <div class="fd-label">Network / Shard</div>
                 <div class="fd-value" id="val-shard" style="font-size: 1.2rem;">Disconnected</div>
-                <div class="fd-label" id="val-net-ip" style="font-size: 0.5rem; opacity: 0.5; display: none;">0.0.0.0
+                <div class="fd-label" id="val-net-ip-hidden" style="font-size: 0.5rem; opacity: 0.5; display: none;">0.0.0.0
+                </div>
+            </div>
+
+            <!-- Server Link Telemetry (v2.10) -->
+            <div class="fd-col" id="col-net-telemetry">
+                <div class="fd-label">Server Link</div>
+                <div style="display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 2px;">
+                    <div style="font-size: 0.65rem; color: var(--text-dim);">Ping: <span id="hud-net-ping" style="color: #00ff66; font-weight: 700;">--</span></div>
+                    <div style="font-size: 0.65rem; color: var(--text-dim);">Loc: <span id="hud-net-loc" style="color: #fff; font-weight: 700;">--</span></div>
+                    <div style="font-size: 0.65rem; color: var(--text-dim);">Bw: <span id="hud-net-bw" style="color: #fff; font-weight: 700;">--</span></div>
                 </div>
             </div>
 
@@ -603,6 +752,30 @@
         </div>
     </div>
 
+    <!-- ═══ LEFT: NETWORK & TACTICAL HUD ═══ -->
+    <div id="hud-network-panel" class="hud-network-panel interactive">
+        <div class="drag-handle">
+            <div class="drag-handle-bar" style="width:40px;"></div>
+        </div>
+
+        <!-- Network Module -->
+        <div class="panel-module active" id="module-network" style="text-align: left; border-right: none; border-left: 2px solid var(--accent); background: linear-gradient(270deg, transparent, rgba(11, 12, 16, 0.9));">
+            <div class="panel-header" style="text-align: left;">Network Status</div>
+            <div class="net-row"><span class="net-label">Server IP:</span> <span class="net-value" id="val-net-ip">0.0.0.0</span></div>
+            <div class="net-row"><span class="net-label">Ping:</span> <span class="net-value" id="val-net-ping">-- ms</span></div>
+            <div class="net-row"><span class="net-label">Geo Location:</span> <span class="net-value" id="val-net-geo">Disconnected</span></div>
+            <div class="net-row"><span class="net-label">Bandwidth:</span> <span class="net-value" id="val-net-bw" style="font-size:0.75rem;">D: 0.00 / U: 0.00 Mbps</span></div>
+        </div>
+
+        <!-- Tactical Proximity Feed Module -->
+        <div class="panel-module active" id="module-tactical" style="text-align: left; border-right: none; border-left: 2px solid var(--accent); background: linear-gradient(270deg, transparent, rgba(11, 12, 16, 0.9)); margin-top: 10px;">
+            <div class="panel-header" style="text-align: left;">Tactical Proximity Feed <span id="prox-count" style="color:var(--accent); margin-left:4px;">[0]</span></div>
+            <div id="tactical-feed-list" style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px; padding-top: 5px;">
+                <div style="opacity:0.5; font-style:italic;">Scanning airspace...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const { ipcRenderer } = require('electron');
 
@@ -619,6 +792,34 @@
             if (el) el.textContent = nearbyPlayers.size;
         }
 
+        // Tactical Feed Logger
+        function addTacticalFeedEntry(icon, text) {
+            const list = document.getElementById('tactical-feed-list');
+            if (!list) return;
+
+            // Remove placeholder if present
+            if (list.innerHTML.includes('Scanning airspace...')) {
+                list.innerHTML = '';
+            }
+
+            const div = document.createElement('div');
+            div.style.padding = '4px 6px';
+            div.style.background = 'rgba(255, 255, 255, 0.03)';
+            div.style.borderLeft = '2px solid var(--accent)';
+            div.style.marginBottom = '2px';
+            div.style.fontSize = '0.8rem';
+            
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            div.innerHTML = `<span style="color:var(--text-dim); font-size:0.7rem; margin-right:6px;">${timeStr}</span> ${icon} <span style="font-weight:bold; color:var(--cyan);">${text}</span>`;
+
+            list.insertBefore(div, list.firstChild);
+
+            // Limit list to 6 entries
+            while (list.children.length > 6) {
+                list.removeChild(list.lastChild);
+            }
+        }
+
         // Auto-start session timer immediately (counts from app launch)
         // Will be corrected if/when SESSION_START event arrives with the real start time
         startTime = new Date().toISOString();
@@ -627,15 +828,48 @@
         // ═══ CUSTOM LOCATION SYNC ═══
         // When custom locations are saved in dashboard, update overlay display instantly
         let customLocations = {};
+
+        function getCustomLocationMatch(rawName, cleanedName, customLocs) {
+            if (!customLocs) return null;
+            if (customLocs[rawName]) return customLocs[rawName];
+            if (cleanedName && customLocs[cleanedName]) return customLocs[cleanedName];
+
+            const normalizedRaw = rawName ? rawName.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid') : '';
+            const normalizedCleaned = cleanedName ? cleanedName.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid') : '';
+
+            let bestKey = null;
+            let bestVal = null;
+            let bestLen = 0;
+
+            for (const [key, val] of Object.entries(customLocs)) {
+                const normKey = key.toLowerCase().replace(/[+_\s-]/g, '').replace('asteriod', 'asteroid');
+                
+                if (normalizedRaw === normKey || normalizedCleaned === normKey || 
+                    (normalizedRaw.startsWith(normKey) && normKey.length > 5) || 
+                    (normalizedCleaned.startsWith(normKey) && normKey.length > 5)) {
+                    
+                    if (normKey.length > bestLen) {
+                        bestLen = normKey.length;
+                        bestKey = key;
+                        bestVal = val;
+                    }
+                }
+            }
+            return bestVal;
+        }
+
         ipcRenderer.on('settings:custom-locations-updated', (e, locations) => {
             customLocations = locations || {};
             // If current location matches a newly-mapped raw code, update display
             const locEl = document.getElementById('val-location');
-            if (locEl && locEl.dataset.raw && customLocations[locEl.dataset.raw]) {
-                const valObj = customLocations[locEl.dataset.raw];
-                locEl.textContent = typeof valObj === 'object' ? valObj.name : valObj;
+            if (locEl && locEl.dataset.raw) {
+                const matched = getCustomLocationMatch(locEl.dataset.raw, locEl.textContent, customLocations);
+                if (matched) {
+                    locEl.textContent = typeof matched === 'object' ? matched.name : matched;
+                }
             }
         });
+
 
         function updateTimer() {
             // 1. Session Timer (always runs)
@@ -758,6 +992,14 @@
                     el.style.transform = 'none';
                 }
             }
+            if (positions['hud-network-panel']) {
+                const el = document.getElementById('hud-network-panel');
+                if (el) {
+                    el.style.left = positions['hud-network-panel'].left + 'px';
+                    el.style.top = positions['hud-network-panel'].top + 'px';
+                    el.style.right = 'auto';
+                }
+            }
         }
 
         loadPositions();
@@ -821,7 +1063,7 @@
             const visibilityMap = {
                 hudTop: '.hud-top-center',
                 sessionInfo: '#col-session',
-                systemInfo: '#col-system',
+                systemInfo: '#col-system, #col-net-telemetry',
                 shipStatus: '#col-ship',
                 locationZone: '#col-location',
                 rightPanel: '.hud-right-panel',
@@ -829,18 +1071,19 @@
                 tacticalFeed: '#module-feed',
                 shipVisualizer: '#ship-viz-container',
                 nearbyPlayers: '#col-nearby',
-                healthMonitor: '#col-health'
+                healthMonitor: '#col-health',
+                networkPanel: '#hud-network-panel'
             };
 
             for (const [key, selector] of Object.entries(visibilityMap)) {
-                const el = document.querySelector(selector);
-                if (el) {
+                const els = document.querySelectorAll(selector);
+                els.forEach(el => {
                     if (ov[key] === false) {
                         el.classList.add('hidden');
                     } else {
                         el.classList.remove('hidden');
                     }
-                }
+                });
             }
 
             // Accent Color (v2.10)
@@ -896,7 +1139,72 @@
                 document.getElementById('val-net-ip').textContent = '0.0.0.0';
                 document.getElementById('val-shard').textContent = 'Disconnected';
                 document.getElementById('val-shard').style.color = '';
+                document.getElementById('val-net-ping').textContent = '-- ms';
+                document.getElementById('val-net-geo').textContent = 'Disconnected';
+                document.getElementById('val-net-bw').textContent = 'D: 0.00 / U: 0.00 Mbps';
+                
+                const hudPing = document.getElementById('hud-net-ping');
+                if (hudPing) {
+                    hudPing.textContent = '--';
+                    hudPing.style.color = '';
+                }
+                const hudLoc = document.getElementById('hud-net-loc');
+                if (hudLoc) hudLoc.textContent = '--';
+                const hudBw = document.getElementById('hud-net-bw');
+                if (hudBw) hudBw.textContent = '--';
+
                 addFeedEntry('🔌', 'Network Lost');
+                addTacticalFeedEntry('🔌', 'Network Connection Lost');
+            } else if (event.type === 'NETWORK_QUALITY') {
+                if (event.data) {
+                    if (event.data.ping !== null && event.data.ping !== undefined) {
+                        const pingEl = document.getElementById('val-net-ping');
+                        pingEl.textContent = event.data.ping + ' ms';
+                        if (event.data.ping < 60) pingEl.style.color = '#00ff66';
+                        else if (event.data.ping < 120) pingEl.style.color = 'var(--accent)';
+                        else pingEl.style.color = 'var(--danger)';
+
+                        const hudPing = document.getElementById('hud-net-ping');
+                        if (hudPing) {
+                            hudPing.textContent = event.data.ping + ' ms';
+                            if (event.data.ping < 60) hudPing.style.color = '#00ff66';
+                            else if (event.data.ping < 120) hudPing.style.color = 'var(--accent)';
+                            else hudPing.style.color = 'var(--danger)';
+                        }
+                    }
+                    if (event.data.geo) {
+                        const city = event.data.geo.city || '';
+                        const country = event.data.geo.country || '';
+                        const locText = city ? `${city}, ${country}` : country;
+                        document.getElementById('val-net-geo').textContent = locText;
+
+                        const hudLoc = document.getElementById('hud-net-loc');
+                        if (hudLoc) {
+                            hudLoc.textContent = country || city || 'Unknown';
+                            hudLoc.title = locText;
+                        }
+                    }
+                    if (event.data.bandwidth) {
+                        const bwText = `D: ${event.data.bandwidth.downMbps.toFixed(2)} / U: ${event.data.bandwidth.upMbps.toFixed(2)} Mbps`;
+                        document.getElementById('val-net-bw').textContent = bwText;
+
+                        const hudBw = document.getElementById('hud-net-bw');
+                        if (hudBw) {
+                            hudBw.textContent = `${event.data.bandwidth.downMbps.toFixed(1)}M`;
+                            hudBw.title = bwText;
+                        }
+                    }
+                }
+            } else if (event.type === 'SERVER_CONNECTED') {
+                const ipStr = event.data ? (event.data.ip + ':' + event.data.port) : '0.0.0.0';
+                document.getElementById('val-net-ip').textContent = ipStr;
+                document.getElementById('val-net-geo').textContent = 'Locating...';
+                
+                const hudLoc = document.getElementById('hud-net-loc');
+                if (hudLoc) hudLoc.textContent = 'Locating...';
+
+                addFeedEntry('🌐', 'Server Connected');
+                addTacticalFeedEntry('🌐', `Connected to server: ${ipStr}`);
             }
         });
 
@@ -921,10 +1229,11 @@
                     // Store raw code for custom location sync
                     if (data.raw) locDisplay.dataset.raw = data.raw;
                     // Check if we have a custom name for this raw code
-                    const valObj = data.raw && customLocations[data.raw];
-                    const customName = typeof valObj === 'object' ? valObj.name : valObj;
+                    const matched = getCustomLocationMatch(data.raw, data.value, customLocations);
+                    const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
                     locDisplay.textContent = customName || data.value;
                     break;
+
 
                 case 'SESSION_START':
                     startTime = data.value;
@@ -940,25 +1249,17 @@
                     break;
 
                 case 'HANGAR_STATE': {
+                    // Disabled by user request: do not track or show hangar timer
                     const hangarCol = document.getElementById('col-hangar');
-                    const hangarLabel = document.getElementById('label-hangar');
-                    if (data.value === 'CLOSED') {
-                        hangarCol.classList.add('hidden');
-                        hangarStartTime = null;
-                    } else {
-                        hangarCol.classList.remove('hidden');
-                        // Show human-readable hangar status
-                        const hangarText = data.value === 'TRANSIT' ? '🔄 ELEVATOR MOVING'
-                            : data.value === 'READY' ? '✅ HANGAR OPEN'
-                                : `HANGAR ${data.value}`;
-                        hangarLabel.textContent = hangarText;
-                        if (!hangarStartTime) hangarStartTime = Date.now();
-                    }
+                    if (hangarCol) hangarCol.classList.add('hidden');
+                    hangarStartTime = null;
                     break;
                 }
 
                 case 'SHIP_CURRENT':
-                case 'SHIP_ENTER':
+                case 'SHIP_ENTER': {
+                    const deadColShip = document.getElementById('col-dead');
+                    if (deadColShip) deadColShip.classList.add('hidden');
                     document.getElementById('val-ship').textContent = data.value;
                     if (data.type === 'SHIP_ENTER') addFeedEntry('🚀', `Boarded ${data.value}`);
                     // Show ship image if available
@@ -978,23 +1279,33 @@
                         console.log('[Overlay] No ship image for:', data.value);
                     }
                     break;
+                }
 
-                case 'SHIP_EXIT':
-                    // ClearDriver = left pilot seat, NOT necessarily left the ship
-                    document.getElementById('val-ship').textContent = data.value ? `${data.value} (Aboard)` : 'On Foot';
+                case 'SHIP_EXIT': {
+                    const deadColExit = document.getElementById('col-dead');
+                    if (deadColExit) deadColExit.classList.add('hidden');
+                    // User wants it to say 'On Foot' when not inside pilot seat/ship
+                    document.getElementById('val-ship').textContent = 'On Foot';
                     document.getElementById('ship-image-panel').classList.remove('visible');
-                    addFeedEntry('🪑', `Left Pilot Seat`);
+                    addFeedEntry('🚶', `Left pilot seat / ship`);
                     break;
+                }
 
-                case 'SPAWN_SET':
+                case 'SPAWN_SET': {
+                    const deadColSpawn = document.getElementById('col-dead');
+                    if (deadColSpawn) deadColSpawn.classList.add('hidden');
                     // We still track this internally but it's hidden from main HUD now
                     addFeedEntry('🏠', 'Spawn Updated');
                     break;
+                }
 
-                case 'GAME_JOIN':
+                case 'GAME_JOIN': {
+                    const deadColJoin = document.getElementById('col-dead');
+                    if (deadColJoin) deadColJoin.classList.add('hidden');
                     document.getElementById('dot-game').classList.add('on');
                     addFeedEntry('🎮', 'Connected');
                     break;
+                }
 
                 case 'GAME_LEAVE':
                     document.getElementById('dot-game').classList.remove('on');
@@ -1043,11 +1354,14 @@
                     if (data.action === 'enter') {
                         nearbyPlayers.add(data.value);
                         addFeedEntry('👥', `Player inbound: ${data.value}`);
+                        addTacticalFeedEntry('👥', `Proximity connection: Player ID ${data.value}`);
                     } else if (data.action === 'leave') {
                         nearbyPlayers.delete(data.value);
                         addFeedEntry('👥', `Player outbound: ${data.value}`);
+                        addTacticalFeedEntry('👥', `Proximity lost: Player ID ${data.value}`);
                     }
                     updateNearbyUI();
+                    document.getElementById('prox-count').textContent = `[${nearbyPlayers.size}]`;
                     break;
 
                 case 'JURISDICTION':
@@ -1074,12 +1388,33 @@
                         // Show IP
                         const ipEl = document.getElementById('val-net-ip');
                         if (ipEl) ipEl.textContent = data.value.address;
+                        addTacticalFeedEntry('🌐', `Shard updated: ${data.value.shard}`);
                     }
                     addFeedEntry('🌐', 'Server Connected');
                     break;
 
                 case 'QUANTUM':
                     addFeedEntry('🌌', `Quantum ${data.value}`);
+                    if (data.value === 'entered') {
+                        // Clear proximity feed
+                        const list = document.getElementById('tactical-feed-list');
+                        if (list) {
+                            list.innerHTML = '<div style="opacity:0.5; font-style:italic;">Scanning airspace...</div>';
+                        }
+                        // Reset nearby counts
+                        nearbyPlayers.clear();
+                        updateNearbyUI();
+                        const countEl = document.getElementById('prox-count');
+                        if (countEl) countEl.textContent = '[0]';
+                        // Update HUD Location info
+                        const locEl = document.getElementById('val-location');
+                        if (locEl) locEl.textContent = 'IN QUANTUM';
+                        const zoneEl = document.getElementById('val-zone');
+                        if (zoneEl) {
+                            zoneEl.textContent = 'TRANSIT';
+                            zoneEl.style.color = 'var(--cyan)';
+                        }
+                    }
                     break;
 
                 case 'HAZARD_FIRE':
@@ -1096,15 +1431,87 @@
                     break;
 
                 // ── Combat Events ──
-                case 'DEATH':
+                case 'RADAR_SINGLE':
+                    if (data.details) {
+                        addTacticalFeedEntry('🛰️', `Radar Target: ${data.details.chassis}`);
+                        addFeedEntry('🛰️', `Radar Target: ${data.details.chassis}`);
+                        // showAlert('🛰️ SENSOR CONTACT', `${data.details.chassis.toUpperCase()} detected in area`);
+                        
+                        // Fullscreen flash effect
+                        const flashDiv = document.createElement('div');
+                        flashDiv.className = 'flash-effect';
+                        document.body.appendChild(flashDiv);
+                        setTimeout(() => flashDiv.remove(), 1500);
+                    }
+                    break;
+
+                case 'RADAR_GROUP':
+                    if (data.details) {
+                        addTacticalFeedEntry('🚨', `Radar: ${data.details.count} Ships Loaded (${data.details.ships.join(', ')})`);
+                        addFeedEntry('🚨', `${data.details.count} Ships Loaded`);
+                    }
+                    break;
+
+                case 'TACTICAL_QUANTUM':
+                    if (data.direction === 'arrival') {
+                        addTacticalFeedEntry('🌌', `↓ QUANTUM ARRIVAL: ${data.ship || data.value}`);
+                        addFeedEntry('🌌', `↓ ${data.value}`);
+                    } else {
+                        addTacticalFeedEntry('🌌', data.value);
+                        addFeedEntry('🌌', data.value);
+                    }
+                    break;
+
+                case 'PROXIMITY_DEATH':
+                    addTacticalFeedEntry('💀', `☠ PROXIMITY KIA: ${data.value}`);
+                    addFeedEntry('💀', `Proximity KIA: ${data.value}`);
+                    break;
+
+                case 'TACTICAL_HANGAR':
+                    addTacticalFeedEntry('🛗', data.value);
+                    addFeedEntry('🛗', data.value);
+                    break;
+
+                case 'CORPSE_DETECTED':
+                    addTacticalFeedEntry('☠️', 'Corpse loaded into zone');
+                    addFeedEntry('💀', 'Corpse Detected');
+                    showAlert('☠️ CORPSE DETECTED', 'A player corpse streamed into your zone!');
+                    
+                    // Fullscreen cyan warning flash
+                    const corpseFlash = document.createElement('div');
+                    corpseFlash.className = 'flash-effect';
+                    corpseFlash.style.background = 'rgba(0, 240, 255, 0.15)';
+                    document.body.appendChild(corpseFlash);
+                    setTimeout(() => corpseFlash.remove(), 1500);
+                    break;
+
+                case 'DEATH': {
+                    const deadCol = document.getElementById('col-dead');
+                    if (deadCol) deadCol.classList.remove('hidden');
                     if (data.details && data.details.killer) {
                         showAlert('☠️ KILLED', `${data.details.victim} killed by ${data.details.killer}`);
                         addFeedEntry('☠️', `${data.details.victim} → ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
+                        addTacticalFeedEntry('💀', `${data.details.victim} killed by ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
                     } else {
                         showAlert('💀 DEATH', 'You died');
                         addFeedEntry('💀', 'Death detected');
+                        addTacticalFeedEntry('💀', `${data.details && data.details.victim ? data.details.victim : 'Player'} died`);
                     }
                     break;
+                }
+
+                case 'HELMET_STATE': {
+                    const helmetCol = document.getElementById('col-helmet');
+                    if (helmetCol) {
+                        if (data.value === 'OFF') {
+                            helmetCol.classList.remove('hidden');
+                        } else {
+                            helmetCol.classList.add('hidden');
+                        }
+                    }
+                    break;
+                }
+
 
                 case 'VEHICLE_DESTRUCTION':
                     if (data.details) {
@@ -1114,9 +1521,11 @@
                             : `${shipName} CRIPPLED by ${data.details.attacker || 'Unknown'}`;
                         showAlert(data.details.isTotalLoss ? '💥 DESTROYED' : '⚠️ CRIPPLED', msg);
                         addFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', msg);
+                        addTacticalFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', `${data.details.driver || 'Pilot'}'s ${shipName} destroyed/crippled by ${data.details.attacker || 'Unknown'}`);
                     } else {
                         showAlert('💥 DESTROYED', data.value || 'Vehicle Destroyed');
                         addFeedEntry('💥', data.value || 'Vehicle Destroyed');
+                        addTacticalFeedEntry('💥', data.value || 'Vehicle Destroyed');
                     }
                     break;
 

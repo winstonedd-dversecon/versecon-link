@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Network & Proximity HUD</title>
+    <style>
+        :root {
+            --bg-glass: rgba(10, 15, 20, 0.75);
+            --bg-solid: rgba(10, 15, 20, 0.95);
+            --border-neon: rgba(20, 184, 166, 0.3);
+            --border-neon-active: rgba(20, 184, 166, 0.8);
+            --accent: #14b8a6;
+            --accent-glow: rgba(20, 184, 166, 0.4);
+            --success: #00ff88;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --text-main: #ffffff;
+            --text-dim: #94a3b8;
+            --font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: transparent;
+            color: var(--text-main);
+            font-family: var(--font-family);
+            overflow: hidden;
+            user-select: none;
+            padding: 5px;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .hud-window {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-neon);
+            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            transition: border-color 0.3s ease;
+        }
+
+        .hud-window.edit-mode {
+            border: 2px dashed var(--border-neon-active);
+            background: var(--bg-solid);
+        }
+
+        /* Top Drag & Control Bar */
+        .hud-header {
+            height: 34px;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.4);
+            -webkit-app-region: drag; /* Draggable by default unless specified */
+        }
+
+        .hud-title {
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-controls {
+            display: flex;
+            gap: 6px;
+            -webkit-app-region: no-drag;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            color: var(--text-main);
+            background: rgba(20, 184, 166, 0.2);
+            border-color: var(--accent);
+        }
+
+        /* Telemetry Section */
+        .telemetry-grid {
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            -webkit-app-region: no-drag;
+        }
+
+        .tel-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .tel-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tel-value {
+            font-size: 0.8rem;
+            font-family: monospace;
+            font-weight: bold;
+            color: var(--text-main);
+            text-shadow: 0 0 4px rgba(255,255,255,0.1);
+        }
+
+        .ping-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            margin-right: 4px;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        /* Live Airspace Feed */
+        .radar-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+            -webkit-app-region: no-drag;
+        }
+
+        .section-header {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 4px;
+        }
+
+        .radar-feed {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 4px;
+        }
+
+        /* Scrollbar styling */
+        .radar-feed::-webkit-scrollbar {
+            width: 3px;
+        }
+        .radar-feed::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .radar-feed::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        /* Feed items */
+        .feed-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--accent);
+            padding: 6px 10px;
+            border-radius: 0 4px 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.25s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .feed-item.radar-group {
+            border-left-color: var(--warning);
+            background: rgba(234, 179, 8, 0.05);
+        }
+
+        .feed-item.death-self {
+            border-left-color: var(--danger);
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        .feed-item.death-other {
+            border-left-color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .feed-item.server-connected {
+            border-left-color: var(--success);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .feed-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .feed-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .feed-sub {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            font-family: monospace;
+        }
+
+        .feed-time {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            font-family: monospace;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hud-window" id="hud-root">
+        <!-- Header -->
+        <div class="hud-header">
+            <div class="hud-title">
+                <span>📡</span> Network & Proximity HUD
+            </div>
+            <div class="hud-controls">
+                <button class="control-btn" id="btn-edit" onclick="toggleEditMode()">
+                    <span id="edit-icon">🔓</span> <span id="edit-text">Unlock HUD</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Telemetry -->
+        <div class="telemetry-grid">
+            <div class="tel-item">
+                <span class="tel-label">Server / Region</span>
+                <span class="tel-value" id="val-server">Disconnected</span>
+            </div>
+            <div class="tel-item">
+                <span class="tel-label">Shard ID</span>
+                <span class="tel-value" id="val-shard">Offline</span>
+            </div>
+            <div class="tel-item">
+                <span class="tel-label">Ping Latency</span>
+                <span class="tel-value" style="display: flex; align-items: center;">
+                    <span class="ping-indicator" id="ping-dot"></span>
+                    <span id="val-ping">-- ms</span>
+                </span>
+            </div>
+            <div class="tel-item">
+                <span class="tel-label">IO Bandwidth</span>
+                <span class="tel-value" id="val-bw">D: 0.0 / U: 0.0 Mbps</span>
+            </div>
+        </div>
+
+        <!-- Live Feed -->
+        <div class="radar-section">
+            <div class="section-header">
+                <span>Tactical Airspace & Logs</span>
+                <span id="radar-count" style="color: var(--accent); font-family: monospace;">[0 EVENTS]</span>
+            </div>
+            <div class="radar-feed" id="feed-container">
+                <div style="text-align: center; color: var(--text-dim); font-size: 0.7rem; padding: 20px; font-style: italic;">
+                    Sensors online. Awaiting system logs...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let isLocked = true;
+        let eventCount = 0;
+
+        function toggleEditMode() {
+            isLocked = !isLocked;
+            const root = document.getElementById('hud-root');
+            const btnText = document.getElementById('edit-text');
+            const btnIcon = document.getElementById('edit-icon');
+
+            if (isLocked) {
+                root.classList.remove('edit-mode');
+                btnText.textContent = "Unlock HUD";
+                btnIcon.textContent = "🔓";
+                document.querySelector('.hud-header').style.webkitAppRegion = 'drag';
+            } else {
+                root.classList.add('edit-mode');
+                btnText.textContent = "Lock HUD";
+                btnIcon.textContent = "🔒";
+                // Let the whole frame be draggable during edit mode so it's easier to position
+                document.querySelector('.hud-header').style.webkitAppRegion = 'drag';
+            }
+        }
+
+        // Add item to feed helper
+        function addFeedItem(typeClass, icon, title, subtitle = '') {
+            const container = document.getElementById('feed-container');
+            
+            // Remove the placeholder if it exists
+            if (container.children.length === 1 && container.children[0].style.fontStyle === 'italic') {
+                container.innerHTML = '';
+            }
+
+            const item = document.createElement('div');
+            item.className = `feed-item ${typeClass}`;
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            item.innerHTML = `
+                <div class="feed-info">
+                    <div class="feed-text">${icon} ${title}</div>
+                    ${subtitle ? `<div class="feed-sub">${subtitle}</div>` : ''}
+                </div>
+                <div class="feed-time">${timeStr}</div>
+            `;
+
+            container.insertBefore(item, container.firstChild);
+            
+            // Limit to 30 items
+            if (container.children.length > 30) {
+                container.removeChild(container.lastChild);
+            }
+
+            eventCount++;
+            document.getElementById('radar-count').textContent = `[${eventCount} EVENTS]`;
+        }
+
+        // Handle raw telemetry updates
+        ipcRenderer.on('telemetry:update', (e, event) => {
+            if (event.type === 'SERVER_DISCONNECTED') {
+                document.getElementById('val-server').textContent = 'Disconnected';
+                document.getElementById('val-shard').textContent = 'Offline';
+                document.getElementById('val-ping').textContent = '-- ms';
+                document.getElementById('ping-dot').style.color = 'var(--text-dim)';
+                document.getElementById('val-bw').textContent = 'D: 0.0 / U: 0.0 Mbps';
+                addFeedItem('death-other', '🔌', 'Server Connection Lost', 'Disconnected');
+            } else if (event.type === 'NETWORK_QUALITY') {
+                if (event.data) {
+                    if (event.data.ping !== null && event.data.ping !== undefined) {
+                        const ping = event.data.ping;
+                        document.getElementById('val-ping').textContent = `${ping} ms`;
+                        const dot = document.getElementById('ping-dot');
+                        if (ping < 50) {
+                            dot.style.color = 'var(--success)';
+                            dot.style.backgroundColor = 'var(--success)';
+                        } else if (ping < 120) {
+                            dot.style.color = 'var(--warning)';
+                            dot.style.backgroundColor = 'var(--warning)';
+                        } else {
+                            dot.style.color = 'var(--danger)';
+                            dot.style.backgroundColor = 'var(--danger)';
+                        }
+                    }
+                    if (event.data.geo) {
+                        const city = event.data.geo.city || '';
+                        const country = event.data.geo.country || '';
+                        document.getElementById('val-server').textContent = city ? `${city}, ${country}` : country;
+                    }
+                    if (event.data.bandwidth) {
+                        document.getElementById('val-bw').textContent = `D: ${event.data.bandwidth.downMbps.toFixed(1)} / U: ${event.data.bandwidth.upMbps.toFixed(1)} Mbps`;
+                    }
+                }
+            } else if (event.type === 'SERVER_CONNECTED') {
+                const ipStr = event.data ? event.data.ip : '0.0.0.0';
+                document.getElementById('val-server').textContent = ipStr;
+                document.getElementById('val-shard').textContent = 'Locating...';
+                addFeedItem('server-connected', '🌐', 'Connected to Server', ipStr);
+            }
+        });
+
+        // Handle game/combat events
+        ipcRenderer.on('log:update', (e, data) => {
+            if (data.type === 'SERVER_CONNECTED' && data.value) {
+                let shardDisplay = data.value.shard || data.value;
+                if (typeof shardDisplay === 'string' && shardDisplay.includes('_')) {
+                    const shardParts = shardDisplay.split('_');
+                    shardDisplay = shardParts[1].toUpperCase();
+                }
+                document.getElementById('val-shard').textContent = shardDisplay;
+                if (data.value.address) {
+                    document.getElementById('val-server').textContent = data.value.address;
+                }
+            }
+
+            // Radar single spawn
+            if (data.type === 'RADAR_SINGLE' && data.details) {
+                addFeedItem('radar-single', '🛰️', `Radar Target: ${data.details.chassis}`, `NetID: ${data.details.hostId}`);
+            }
+
+            // Radar group spawn (Suppressed mass loads)
+            if (data.type === 'RADAR_GROUP' && data.details) {
+                addFeedItem('radar-group', '🚨', `${data.details.count} Ships Loaded`, `List: ${data.details.ships.join(', ')}`);
+            }
+
+            // Custom Proximity Alert (Interdictor ships)
+            if (data.type === 'TACTICAL_PROXIMITY') {
+                addFeedItem('radar-group', '⚠️', `Proximity Alert: ${data.value}`, 'Interdiction vessel detected');
+            }
+
+            // Corpse stream detected
+            if (data.type === 'CORPSE_DETECTED') {
+                addFeedItem('death-other', '💀', 'Player Corpse Detected', 'Corpse streamed into zone');
+            }
+
+            // Quantum State entered: Clear list
+            if (data.type === 'QUANTUM' && data.value === 'entered') {
+                const container = document.getElementById('feed-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: var(--text-dim); font-size: 0.7rem; padding: 20px; font-style: italic;">
+                            Sensors online. Awaiting system logs...
+                        </div>
+                    `;
+                }
+                eventCount = 0;
+                const countEl = document.getElementById('radar-count');
+                if (countEl) countEl.textContent = '[0 EVENTS]';
+            }
+
+            // Death handling
+            if (data.type === 'DEATH' && data.details) {
+                const isSelf = data.details.isLocalPlayer;
+                const classType = isSelf ? 'death-self' : 'death-other';
+                const label = isSelf ? '(Self)' : '(Other Player)';
+                
+                if (data.details.killer && data.details.killer !== 'Unknown') {
+                    addFeedItem(classType, '💀', `${data.details.victim} ${label} killed by ${data.details.killer}`, `Using: ${data.details.weapon || 'Unknown'}`);
+                } else {
+                    addFeedItem(classType, '💀', `${data.details.victim} ${label} died`, `Zone: ${data.details.zone || 'Unknown'}`);
+                }
+            }
+
+            // Quantum ship arrival (FinalStop=0 — ship exited quantum into area)
+            if (data.type === 'TACTICAL_QUANTUM' && data.direction === 'arrival') {
+                const shipLabel = data.ship || data.value || 'Unknown Ship';
+                addFeedItem('radar-single', '🌌', `Quantum Arrival: ${shipLabel}`, 'Ship dropped out of quantum nearby');
+            }
+        });
+    </script>
+</body>
+</html>

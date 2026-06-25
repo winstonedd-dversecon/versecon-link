@@ -19,6 +19,7 @@ let alertWindow;
 let cncWindow; // v2.8 CNC Overlay
 let squadHudWindow; // v2.10 Squad HUD
 let ocrDebugWindow; // v2.10.2 OCR Debug
+let netProximityHudWindow = null; // Net & Proximity HUD Overlay
 let remoteApp = null;
 let remoteServer = null;
 let tray = null;
@@ -28,6 +29,8 @@ let streamChatService = null;
 let squadManager = null; // v2.8 Squad Sync
 let isQuitting = false;
 let dndMode = false;
+let gameActive = false;
+let recentDetections = [];
 
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
@@ -378,7 +381,29 @@ const IS_ADMIN = process.env.VCON_ROLE === 'admin' || process.env.VCON_DEV === '
 console.log('[Main] Role:', IS_ADMIN ? 'ADMIN/DEV' : 'USER');
 
 
-let config = { shipMap: {}, customPatterns: [], customLocations: {} };
+let config = {
+    shipMap: {},
+    customPatterns: [],
+    customLocations: {},
+    soundEnabled: false,
+    hudWarningsEnabled: false,
+    hudFlashEnabled: true,
+    overlayVisibility: {
+        hudTop: false,
+        sessionInfo: false,
+        systemInfo: false,
+        shipStatus: false,
+        locationZone: false,
+        rightPanel: false,
+        partyList: false,
+        tacticalFeed: false,
+        shipVisualizer: false,
+        chatHud: false,
+        nearbyPlayers: false,
+        healthMonitor: false,
+        networkPanel: false
+    }
+};
 let patternDatabase = { patterns: [] };
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 
@@ -419,19 +444,38 @@ function loadConfig() {
             if (config.monitorHealth === undefined) config.monitorHealth = false;
             if (config.healthFreq === undefined) config.healthFreq = 5;
 
+            if (config.soundEnabled === undefined) config.soundEnabled = false;
+            if (config.hudWarningsEnabled === undefined) config.hudWarningsEnabled = true;
+            if (config.hudFlashEnabled === undefined) config.hudFlashEnabled = true;
+            if (config.filterAIShips === undefined) config.filterAIShips = false;
+
             if (!config.overlayVisibility) {
                 config.overlayVisibility = {
-                    hudTop: true,
-                    sessionInfo: true,
-                    systemInfo: true,
-                    shipStatus: true,
-                    locationZone: true,
-                    rightPanel: true,
-                    partyList: true,
-                    tacticalFeed: true,
-                    shipVisualizer: true,
-                    chatHud: false
+                    hudTop: false,
+                    sessionInfo: false,
+                    systemInfo: false,
+                    shipStatus: false,
+                    locationZone: false,
+                    rightPanel: false,
+                    partyList: false,
+                    tacticalFeed: false,
+                    shipVisualizer: false,
+                    chatHud: false,
+                    nearbyPlayers: false,
+                    healthMonitor: false,
+                    networkPanel: false
                 };
+            } else {
+                const props = [
+                    'hudTop', 'sessionInfo', 'systemInfo', 'shipStatus', 'locationZone',
+                    'rightPanel', 'partyList', 'tacticalFeed', 'shipVisualizer', 'chatHud',
+                    'nearbyPlayers', 'healthMonitor', 'networkPanel'
+                ];
+                props.forEach(p => {
+                    if (config.overlayVisibility[p] === undefined) {
+                        config.overlayVisibility[p] = false;
+                    }
+                });
             }
             if (!config.accentColor) config.accentColor = '#ffa500';
             if (!config.twitchChannel) config.twitchChannel = '';
@@ -442,9 +486,12 @@ function loadConfig() {
             if (config.ttsEnabled === undefined) config.ttsEnabled = true;
             if (config.ttsVolume === undefined) config.ttsVolume = 0.8;
             if (!config.ttsVoice) config.ttsVoice = '';
+            if (config.rsiId === undefined) config.rsiId = '';
             if (!config.logPath) config.logPath = null; // Initialize logPath (will be auto-detected if null)
             if (!config.interdictionShips) config.interdictionShips = ['Mantis', 'AEGS_Mantis', 'Cutlass_Blue', 'DRAK_Cutlass_Blue', 'Zeus_Sentinel', 'Antares'];
             if (config.interdictionQuantumOnly === undefined) config.interdictionQuantumOnly = true;
+            if (config.quantumExitsOnly === undefined) config.quantumExitsOnly = false;
+            if (config.suppressMassQuantumAlerts === undefined) config.suppressMassQuantumAlerts = true;
             if (!config.friendCode) {
                 config.friendCode = generateFriendCode();
                 saveConfig();
@@ -488,7 +535,30 @@ function createWindows() {
     dashboardWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
         LogWatcher.emitUnknowns();
-        dashboardWindow.webContents.send('log:status', { connected: LogWatcher.isWatching, path: LogWatcher.filePath });
+
+        // Force-set log status directly in the renderer DOM (bypasses IPC entirely)
+        function forceSetLogStatus() {
+            if (!dashboardWindow || dashboardWindow.isDestroyed()) return;
+            const isActive = LogWatcher.isWatching;
+            const logPath = LogWatcher.filePath || '';
+            const dotClass = isActive ? 'dot on' : 'dot off';
+            const statusText = isActive ? 'Active' : 'Searching...';
+            const safeLogPath = JSON.stringify(logPath);
+            const js = 'try {' +
+                'var dot = document.getElementById("status-log-dot");' +
+                'var txt = document.getElementById("status-log-text");' +
+                'if (dot) dot.className = ' + JSON.stringify(dotClass) + ';' +
+                'if (txt) txt.innerText = ' + JSON.stringify(statusText) + ';' +
+                'var pathEl = document.getElementById("config-log-path");' +
+                'if (pathEl && ' + safeLogPath + ') pathEl.value = ' + safeLogPath + ';' +
+                '} catch(e) { console.error("[ForceStatus]", e); }';
+            dashboardWindow.webContents.executeJavaScript(js)
+                .catch(e => console.error('[Main] executeJavaScript failed:', e));
+        }
+        // Try at 1s, 3s, and 5s to cover all timing scenarios
+        setTimeout(forceSetLogStatus, 1000);
+        setTimeout(forceSetLogStatus, 3000);
+        setTimeout(forceSetLogStatus, 5000);
         // Restore persistent spawn point if not yet in cache
         if (config.spawnPoint && !LogWatcher.cachedState.spawn) {
             LogWatcher.cachedState.spawn = config.spawnPoint;
@@ -519,14 +589,12 @@ function createWindows() {
             LogWatcher.on('raw-line', (line) => telemetryEngine.handleLogLine(line));
             LogWatcher.on('gamestate', (data) => {
                 if (data.type === 'SESSION_ID') telemetryEngine.updateSessionId(data.value);
+                if (data.type === 'SERVER_CONNECTED') telemetryEngine.updateServerInfo(data.value);
             });
 
             telemetryEngine.on('telemetry', (data) => {
                 console.log('[Main] Telemetry Event:', data.type);
-                broadcast('telemetry:event', data);
-                if (dashboardWindow && !dashboardWindow.isDestroyed()) {
-                    dashboardWindow.webContents.send('telemetry:update', data);
-                }
+                broadcast('telemetry:update', data);
             });
             telemetryEngine.start();
 
@@ -556,15 +624,21 @@ function createWindows() {
         y: 0,
         frame: false,
         transparent: true,
+        backgroundColor: '#00000000',
         alwaysOnTop: true,
         resizable: false,
         skipTaskbar: true,
         focusable: false, // Don't steal focus from game
         type: 'toolbar_menu', // Better for overlays
+        show: false,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
         }
+    });
+
+    overlayWindow.once('ready-to-show', () => {
+        overlayWindow.show();
     });
 
     // Pass through clicks to game, but allow interaction with UI
@@ -585,6 +659,7 @@ function createWindows() {
     overlayWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
         overlayWindow.webContents.send('log:status', { connected: LogWatcher.isWatching, path: LogWatcher.filePath });
+        overlayWindow.webContents.send('settings:updated', config);
     });
 
     // 3. Alert Window (Full-screen transparent for HUD warnings)
@@ -595,10 +670,12 @@ function createWindows() {
         y: 0,
         frame: false,
         transparent: true,
+        backgroundColor: '#00000000',
         alwaysOnTop: true,
         resizable: false,
         skipTaskbar: true,
         focusable: false,
+        show: false,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
@@ -606,10 +683,13 @@ function createWindows() {
     });
 
     alertWindow.loadFile(path.join(__dirname, '../renderer/alert.html'));
-    alertWindow.setIgnoreMouseEvents(true);
+    alertWindow.webContents.on('did-finish-load', () => {
+        alertWindow.webContents.send('settings:updated', config);
+    });
+    alertWindow.setIgnoreMouseEvents(true, { forward: true });
     alertWindow.setAlwaysOnTop(true, 'screen-saver'); // Fix: Ensure it shows over game
     alertWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    alertWindow.hide(); // Hidden by default, shown on alerts
+
 }
 
 // ═══ START SERVICES ═══
@@ -723,6 +803,41 @@ function updateTrayStatus(logConnected, apiConnected) {
 ipcMain.on('app:login', (event, token) => {
     APIClient.token = token;
     APIClient.connectSocket(token);
+    // Register this user's friend code with the server so others can find them
+    if (config.friendCode) APIClient.registerFriendCode(config.friendCode);
+});
+
+// ── Friend / Social IPC ──────────────────────────────────────────────────────
+ipcMain.handle('social:add-friend', async (event, code) => {
+    try {
+        const result = await APIClient.addFriendByCode(code.trim().toUpperCase());
+        // Refresh friend list and push to renderer
+        const friends = await APIClient.fetchFriendList();
+        if (dashboardWindow) dashboardWindow.webContents.send('social:friends-updated', friends);
+        return { success: true, result };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('social:get-friends', async () => {
+    try {
+        const friends = await APIClient.fetchFriendList();
+        return { success: true, friends };
+    } catch (e) {
+        return { success: false, friends: [], error: e.message };
+    }
+});
+
+ipcMain.handle('social:remove-friend', async (event, friendId) => {
+    try {
+        await APIClient.removeFriend(friendId);
+        const friends = await APIClient.fetchFriendList();
+        if (dashboardWindow) dashboardWindow.webContents.send('social:friends-updated', friends);
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
 });
 
 ipcMain.on('app:toggle-overlay', () => {
@@ -856,7 +971,7 @@ ipcMain.handle('ocr:process', async (event, dataUrl) => {
 
 // Alert window control
 ipcMain.on('alert:show', (event, data) => {
-    if (alertWindow && !alertWindow.isDestroyed()) {
+    if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
         alertWindow.show();
         alertWindow.webContents.send('alert:trigger', data);
     }
@@ -904,7 +1019,7 @@ ipcMain.on('command:send', (event, data) => {
     broadcast('command:sent', data);
 
     // v2.2 - Broadcast to Overlay/Alert Windows
-    if (alertWindow && !alertWindow.isDestroyed()) {
+    if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
         alertWindow.show();
         alertWindow.webContents.send('alert:trigger', { type: 'COMMAND', value: data });
     }
@@ -951,6 +1066,10 @@ ipcMain.on('log:ignore-unknown', (event, tag) => {
     LogWatcher.ignoreUnknownPattern(tag); // Ignore + re-emit
 });
 
+ipcMain.handle('log:get-status', () => {
+    return { connected: LogWatcher.isWatching, path: LogWatcher.filePath };
+});
+
 ipcMain.on('command:ack', (event, data) => {
     if (APIClient.socket && APIClient.socket.connected) {
         APIClient.socket.emit('command:ack', data);
@@ -962,6 +1081,12 @@ ipcMain.on('window:minimize', () => {
     if (dashboardWindow && !dashboardWindow.isDestroyed()) {
         dashboardWindow.minimize();
     }
+});
+
+// Window close handler
+ipcMain.on('window:close', () => {
+    isQuitting = true;
+    app.quit();
 });
 
 // Mission rename handler
@@ -1007,7 +1132,25 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.userTeam !== undefined) config.userTeam = newConfig.userTeam;
     if (newConfig.overlayPositions !== undefined) config.overlayPositions = newConfig.overlayPositions;
     if (newConfig.shareHealth !== undefined) config.shareHealth = newConfig.shareHealth;
-    if (newConfig.rsiHandle !== undefined) config.rsiHandle = newConfig.rsiHandle;
+    if (newConfig.rsiHandle !== undefined) {
+        config.rsiHandle = newConfig.rsiHandle;
+        try {
+            require('./parsers/combat').setRsiHandle(config.rsiHandle);
+            require('./parsers/social').setRsiHandle(config.rsiHandle);
+            require('./parsers/navigation').setRsiHandle(config.rsiHandle);
+            require('./parsers/inventory').setRsiHandle(config.rsiHandle);
+        } catch (e) {
+            console.warn('[Main] Could not update RSI handle on parsers:', e.message);
+        }
+    }
+    if (newConfig.rsiId !== undefined) {
+        config.rsiId = newConfig.rsiId;
+        try {
+            require('./parsers/social').setRsiId(config.rsiId);
+        } catch (e) {
+            console.warn('[Main] Could not update RSI ID on parsers:', e.message);
+        }
+    }
 
     // Philips Hue Settings
     if (newConfig.hueEnabled !== undefined) config.hueEnabled = newConfig.hueEnabled;
@@ -1058,6 +1201,29 @@ ipcMain.on('settings:save', (event, newConfig) => {
             console.warn('[Main] Could not update quantum-only mode on parser:', e.message);
         }
     }
+    if (newConfig.quantumExitsOnly !== undefined) {
+        config.quantumExitsOnly = newConfig.quantumExitsOnly;
+    }
+    if (newConfig.suppressMassQuantumAlerts !== undefined) {
+        config.suppressMassQuantumAlerts = newConfig.suppressMassQuantumAlerts;
+    }
+    if (newConfig.hudWarningsEnabled !== undefined) {
+        config.hudWarningsEnabled = newConfig.hudWarningsEnabled;
+    }
+    if (newConfig.hudFlashEnabled !== undefined) {
+        config.hudFlashEnabled = newConfig.hudFlashEnabled;
+    }
+    if (newConfig.filterAIShips !== undefined) {
+        config.filterAIShips = newConfig.filterAIShips;
+        try {
+            const logEngine = require('./parsers');
+            if (logEngine && typeof logEngine.setFilterAIShips === 'function') {
+                logEngine.setFilterAIShips(config.filterAIShips);
+            }
+        } catch (e) {
+            console.warn('[Main] Could not update filter AI ships on parser:', e.message);
+        }
+    }
 
     saveConfig();
 
@@ -1068,6 +1234,11 @@ ipcMain.on('settings:save', (event, newConfig) => {
     broadcast('settings:updated', config);
 });
 
+// Provide current config on demand (used by alert.html on load)
+ipcMain.handle('settings:get', async () => {
+    return config;
+});
+
 // ═══════════════════════════════════════════════════════
 // BROADCAST (ALL WINDOWS)
 // ═══════════════════════════════════════════════════════
@@ -1075,6 +1246,8 @@ ipcMain.on('settings:save', (event, newConfig) => {
 function broadcast(channel, data) {
     if (dashboardWindow && !dashboardWindow.isDestroyed()) dashboardWindow.webContents.send(channel, data);
     if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.webContents.send(channel, data);
+    if (netProximityHudWindow && !netProximityHudWindow.isDestroyed()) netProximityHudWindow.webContents.send(channel, data);
+    if (alertWindow && !alertWindow.isDestroyed()) alertWindow.webContents.send(channel, data);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1126,10 +1299,30 @@ const speak = (text) => {
 };
 
 LogWatcher.on('gamestate', (data) => {
+    // Update gameActive state based on events
+    if (data.type === 'SERVER_CONNECTED' || data.type === 'SESSION_START' || data.type === 'WORLD_LOADED') {
+        gameActive = true;
+    } else if (data.type === 'GAME_LEAVE' || data.type === 'GAME_RESTART') {
+        gameActive = false;
+    }
+
+    // Keep CombatParser currentShip reference in sync
+    if (data.type === 'SHIP_ENTER' || data.type === 'SHIP_CURRENT') {
+        try {
+            require('./parsers/combat').currentShip = data.value;
+        } catch (e) {}
+    } else if (data.type === 'SHIP_EXIT') {
+        try {
+            require('./parsers/combat').currentShip = null;
+        } catch (e) {}
+    }
+
     // ═══ VOICE ALERTS (v2.10) ═══
-    if (data.type === 'SERVER_CONNECTED' && data.value) speak(`Connected to shard ${data.value}`);
-    if (data.type === 'MISSION_ACCEPTED' && data.value) speak(`Mission accepted. ${data.value}`);
-    if (data.type === 'SPAWN_SET' && data.value) speak(`Spawn point set to ${data.value}`);
+    if (gameActive) {
+        if (data.type === 'SERVER_CONNECTED' && data.value) speak(`Connected to shard ${data.value.shard || data.value}`);
+        if (data.type === 'MISSION_ACCEPTED' && data.value) speak(`Mission accepted. ${data.value}`);
+        if (data.type === 'SPAWN_SET' && data.value) speak(`Spawn point set to ${data.value}`);
+    }
 
     // ═══ SHIP IMAGE RESOLUTION (must run BEFORE broadcast) ═══
     // Attach image path to ship events so overlay receives it
@@ -1156,10 +1349,22 @@ LogWatcher.on('gamestate', (data) => {
         }
     }
 
-    broadcast('log:update', data);
+    const isWarning = ['HUD_WARNING', 'HAZARD_FIRE', 'DEATH', 'VEHICLE_DESTRUCTION', 'INTERDICTION', 'TACTICAL_PROXIMITY', 'VEHICLE_DEATH'].includes(data.type) ||
+                      (data.type === 'STATUS' && (data.level === 'WARNING' || ['death', 'suffocating', 'depressurizing'].includes((data.value || '').toLowerCase()))) ||
+                      (data.type === 'CUSTOM' && ['CRITICAL', 'WARN', 'WARNING'].includes(data.level));
+
+    // Suppress HUD_WARNING alerts if the user has turned off HUD Warnings
+    if (data.type === 'HUD_WARNING' && !config.hudWarningsEnabled) {
+        // Still broadcast as informational (feed entry) but not as a warning
+        broadcast('log:update', { ...data, type: 'STATUS', level: 'INFO' });
+    } else if (!gameActive && isWarning) {
+        console.log(`[Main] Suppressed warning/alert broadcast (${data.type}) because gameActive is false.`);
+    } else {
+        broadcast('log:update', data);
+    }
 
     // ═══ VOICE ALERTS (HUD) ═══
-    if (data.type === 'HUD_WARNING' && data.value) {
+    if (gameActive && data.type === 'HUD_WARNING' && data.value) {
         if (data.value.toLowerCase().includes('fire')) {
             speak('Warning. Fire detected.');
         } else {
@@ -1168,19 +1373,37 @@ LogWatcher.on('gamestate', (data) => {
     }
 
     // ═══ PATTERN REACTIONS (v2.8) ═══
-    handlePatternReactions(data);
+    if (gameActive) handlePatternReactions(data);
 
     // ═══ HUE REACTIONS (v2.9) ═══
-    handleHueSituation(data);
+    if (gameActive) handleHueSituation(data);
 
     // ═════ FRIEND SHARING (Phase 5) ═══
     if (data.type === 'LOCATION' && config.shareLocation) {
         APIClient.updateLocation(data);
     }
 
+    // Handle options: quantumExitsOnly and suppressMassQuantumAlerts
+    let isSuppressed = false;
+    if (data.type === 'RADAR_SINGLE' || (data.type === 'TACTICAL_QUANTUM' && data.direction === 'arrival') ||
+        data.type === 'TACTICAL_PROXIMITY') {
+        const now = Date.now();
+        recentDetections.push(now);
+        recentDetections = recentDetections.filter(t => now - t < 5000);
+        if (config.suppressMassQuantumAlerts && recentDetections.length > 3) {
+            isSuppressed = true;
+            console.log(`[Main] Suppressing HUD alert for ${data.type} due to rapid successive arrivals/detections.`);
+        }
+    }
+
+    if (data.type === 'RADAR_SINGLE' && config.quantumExitsOnly) {
+        // Suppress HUD alerts entirely for normal radar detections in quantum-exits-only mode
+        isSuppressed = true;
+    }
+
     // Critical alerts → show alert window + tray notification
-    if (['STATUS', 'ZONE', 'HAZARD_FIRE', 'DEATH', 'VEHICLE_DESTRUCTION'].includes(data.type)) {
-        if (alertWindow && !alertWindow.isDestroyed()) {
+    if (gameActive && ['STATUS', 'ZONE', 'HAZARD_FIRE', 'DEATH', 'VEHICLE_DESTRUCTION', 'RADAR_SINGLE', 'PROXIMITY_DEATH'].includes(data.type)) {
+        if (config.hudWarningsEnabled && !isSuppressed && alertWindow && !alertWindow.isDestroyed()) {
             alertWindow.show();
             alertWindow.webContents.send('alert:trigger', data);
         }
@@ -1189,49 +1412,76 @@ LogWatcher.on('gamestate', (data) => {
             console.log(`[Main] STATUS Event: "${data.value}" source:${data.source || 'unknown'}`);
             if (data.value === 'death') {
                 showTrayNotification('☠️ DEATH DETECTED', 'Your character has died.');
+                LogWatcher.cachedState.ship = null;
+                broadcast('gamestate', { type: 'SHIP_EXIT', value: null });
             } else if (data.value === 'suffocating') {
                 showTrayNotification('🌡️ SUFFOCATING', 'Check your helmet seal!');
             }
         } else if (data.type === 'DEATH') {
             const killer = data.details?.killer || 'Unknown';
             showTrayNotification('☠️ KILLED', `Killed by ${killer}`);
+            LogWatcher.cachedState.ship = null;
+            broadcast('gamestate', { type: 'SHIP_EXIT', value: null });
         } else if (data.type === 'HAZARD_FIRE') {
             showTrayNotification('🔥 FIRE', data.value || 'Fire detected on ship');
+        } else if (data.type === 'PROXIMITY_DEATH') {
+            const displayValue = data.value === 'Nearby Player' ? 'A player' : data.value;
+            showTrayNotification('☠️ PROXIMITY KIA', `${displayValue} was eliminated nearby.`);
+            if (data.value === 'Nearby Player') {
+                speak('Nearby player eliminated.');
+            } else {
+                speak(`Proximity target ${data.value} eliminated.`);
+            }
         }
     }
 
     // ═══ HUD ALERTS (Phase 3) ═══
-    if (data.type === 'INTERDICTION') {
-        if (alertWindow && !alertWindow.isDestroyed()) {
+    if (gameActive && data.type === 'INTERDICTION') {
+        if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
             alertWindow.show();
             alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'interdiction' });
         }
         speak('Warning. Quantum interdiction detected.');
     }
 
-    if (data.type === 'TACTICAL_PROXIMITY') {
+    if (gameActive && data.type === 'TACTICAL_PROXIMITY') {
         const shipName = data.ship || 'Unknown';
         showTrayNotification('⚠️ TACTICAL ALERT', `Interdiction ship nearby: ${shipName}`);
-        speak(`Warning. ${shipName} detected nearby.`);
-        if (alertWindow && !alertWindow.isDestroyed()) {
-            alertWindow.show();
-            alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'tactical_proximity', ship: shipName });
+        if (!isSuppressed) {
+            speak(`Warning. ${shipName} detected nearby.`);
+            if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
+                alertWindow.show();
+                alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'tactical_proximity', ship: shipName });
+            }
         }
     }
-    if (data.type === 'VEHICLE_DEATH') {
-        if (alertWindow && !alertWindow.isDestroyed()) {
+
+    // Quantum ship arrival (FinalStop=0 confirmed signal)
+    if (gameActive && data.type === 'TACTICAL_QUANTUM' && data.direction === 'arrival') {
+        const shipName = data.ship || 'Unknown Ship';
+        showTrayNotification('🌌 QUANTUM ARRIVAL', `${shipName} dropped out of quantum nearby`);
+        if (!isSuppressed) {
+            speak(`Attention. ${shipName} arrived from quantum.`);
+            if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
+                alertWindow.show();
+                alertWindow.webContents.send('alert:trigger', { type: 'TACTICAL_QUANTUM', ship: shipName, value: data.value });
+            }
+        }
+    }
+    if (gameActive && data.type === 'VEHICLE_DEATH') {
+        if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
             alertWindow.show();
             alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'soft_death' });
         }
     }
 
     // Ship events - tray notification
-    if (data.type === 'SHIP_ENTER') {
+    if (gameActive && data.type === 'SHIP_ENTER') {
         showTrayNotification('🚀 Ship Entered', `Boarded: ${data.value}`);
         if (dashboardWindow && !dashboardWindow.isDestroyed()) {
             dashboardWindow.webContents.send('settings:last-ship', data.value);
         }
-    } else if (data.type === 'SHIP_EXIT') {
+    } else if (gameActive && data.type === 'SHIP_EXIT') {
         showTrayNotification('🚀 Ship Exited', `Left: ${data.value}`);
     }
 
@@ -1335,22 +1585,32 @@ LogWatcher.on('gamestate', (data) => {
             }
         }
         else if (data.type === 'MISSION_STATUS') { // Completed/Failed
-            if (config.activeMissions[id]) {
-                config.activeMissions[id].status = data.value; // 'completed', 'failed'
-                // Remove from active list after short delay? 
-                // User wants to see history?
-                // For now, keep it in list but mark status, maybe renderer filters it or shows it dimmed.
-                // Or just delete it if success?
-                // User said "currect contracts in a neat way". Completed are not current.
+            let targetId = id;
+            if (!config.activeMissions[targetId]) {
+                const searchTitle = (data.title || data.value || '').toLowerCase().trim();
+                if (searchTitle) {
+                    const found = Object.values(config.activeMissions).find(m => {
+                        const mTitle = (m.title || '').toLowerCase().trim();
+                        return mTitle === searchTitle || mTitle.includes(searchTitle) || searchTitle.includes(mTitle);
+                    });
+                    if (found) {
+                        targetId = found.id;
+                    }
+                }
+            }
+
+            if (config.activeMissions[targetId]) {
+                config.activeMissions[targetId].status = data.value; // 'completed', 'failed'
                 if (data.value === 'completed' || data.value === 'ended') {
-                    delete config.activeMissions[id];
-                    showTrayNotification('✅ Contract Complete', config.activeMissions[id]?.title || 'Mission');
+                    config.activeMissions[targetId].status = 'completed';
+                    showTrayNotification('✅ Contract Complete', config.activeMissions[targetId].title || 'Mission');
                 } else if (data.value === 'failed') {
-                    config.activeMissions[id].status = 'failed';
-                    showTrayNotification('❌ Contract Failed', config.activeMissions[id]?.title || 'Mission');
+                    config.activeMissions[targetId].status = 'failed';
+                    showTrayNotification('❌ Contract Failed', config.activeMissions[targetId].title || 'Mission');
                 }
             }
         }
+
 
         saveConfig();
         broadcast('mission:list', Object.values(config.activeMissions));
@@ -1372,6 +1632,10 @@ LogWatcher.on('gamestate', (data) => {
     } else if (data.type === 'GAME_LEAVE' || data.type === 'GAME_RESTART') {
         const msg = data.type === 'GAME_LEAVE' ? 'Disconnected from server' : 'Game Client Restarted';
         showTrayNotification('🎮 Game Status', msg);
+
+        // Clear ship state
+        LogWatcher.cachedState.ship = null;
+        broadcast('gamestate', { type: 'SHIP_EXIT', value: null });
 
         // ═══ MISSION CLEANUP ═══
         // Clear active missions on game exit/restart as they are session-based
@@ -1650,9 +1914,45 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     console.log('[Main] Saving custom locations:', locations);
     config.customLocations = locations;
     saveConfig();
-    NavigationParser.setCustomLocations(locations);
+    
+    // Merge with bundled locations to keep navigation parser up-to-date locally
+    let merged = {};
+    const bundledLocPath = path.join(__dirname, '..', '..', 'data', 'locations.json');
+    try {
+        if (fs.existsSync(bundledLocPath)) {
+            merged = JSON.parse(fs.readFileSync(bundledLocPath, 'utf-8'));
+        }
+    } catch (e) {}
+    merged = { ...merged, ...locations };
+    NavigationParser.setCustomLocations(merged);
+    
     broadcast('settings:custom-locations-updated', locations);
     return true;
+});
+
+ipcMain.handle('settings:export-custom-locations', async () => {
+    try {
+        const locations = config.customLocations || {};
+        const devLocPath = path.join(__dirname, '..', '..', 'data', 'locations.json');
+        
+        // Write to dev locations
+        fs.mkdirSync(path.dirname(devLocPath), { recursive: true });
+        fs.writeFileSync(devLocPath, JSON.stringify(locations, null, 2), 'utf-8');
+        
+        // Also check if public directory exists and write there
+        let publicWritten = false;
+        const publicLocPath = path.join(__dirname, '..', '..', '..', 'versecon-link-public', 'data', 'locations.json');
+        if (fs.existsSync(path.dirname(path.dirname(publicLocPath)))) {
+            fs.mkdirSync(path.dirname(publicLocPath), { recursive: true });
+            fs.writeFileSync(publicLocPath, JSON.stringify(locations, null, 2), 'utf-8');
+            publicWritten = true;
+        }
+        
+        return { success: true, count: Object.keys(locations).length, publicWritten };
+    } catch (e) {
+        console.error('[Main] Export locations error:', e);
+        return { success: false, error: e.message };
+    }
 });
 
 let hueRestoreTimers = {};
@@ -2255,10 +2555,19 @@ if (!gotTheLock) {
     });
 
     ipcMain.on('overlay:unlock', (event, unlock) => {
+        const isIgnore = !unlock;
         if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.setIgnoreMouseEvents(isIgnore, { forward: true });
             overlayWindow.webContents.send('overlay:unlock', unlock);
         }
+        if (squadHudWindow && !squadHudWindow.isDestroyed()) {
+            squadHudWindow.setIgnoreMouseEvents(isIgnore, { forward: true });
+        }
+        if (netProximityHudWindow && !netProximityHudWindow.isDestroyed()) {
+            netProximityHudWindow.setIgnoreMouseEvents(isIgnore, { forward: true });
+        }
     });
+
 
     app.whenReady().then(() => {
         loadConfig(); // Load saved config
@@ -2268,11 +2577,40 @@ if (!gotTheLock) {
         squadManager = new SquadManager();
 
         // Initialize NavigationParser with custom locations AFTER config is loaded
-        if (config.customLocations) {
-            NavigationParser.setCustomLocations(config.customLocations);
+        let locations = {};
+        const bundledLocPath = path.join(__dirname, '..', '..', 'data', 'locations.json');
+        try {
+            if (fs.existsSync(bundledLocPath)) {
+                locations = JSON.parse(fs.readFileSync(bundledLocPath, 'utf-8'));
+            }
+        } catch (e) {
+            console.error('[Main] Failed to load bundled locations:', e.message);
         }
+        
+        if (config.customLocations) {
+            locations = { ...locations, ...config.customLocations };
+        }
+        NavigationParser.setCustomLocations(locations);
 
         LogWatcher.setShipMap(config.shipMap); // Apply saved map
+        try {
+            require('./parsers/combat').setRsiHandle(config.rsiHandle);
+            require('./parsers/social').setRsiHandle(config.rsiHandle);
+            require('./parsers/navigation').setRsiHandle(config.rsiHandle);
+            require('./parsers/inventory').setRsiHandle(config.rsiHandle);
+            if (config.rsiId) {
+                require('./parsers/social').setRsiId(config.rsiId);
+            }
+            // Propagate interdiction and AI filtering options on load
+            const logEngine = require('./parsers');
+            if (logEngine) {
+                if (config.interdictionShips) logEngine.setInterdictionShips(config.interdictionShips);
+                if (config.interdictionQuantumOnly !== undefined) logEngine.setInterdictionQuantumOnly(config.interdictionQuantumOnly);
+                if (config.filterAIShips !== undefined) logEngine.setFilterAIShips(config.filterAIShips);
+            }
+        } catch (e) {
+            console.warn('[Main] Could not set RSI handle/ID or config on parsers:', e.message);
+        }
 
         // Only send user-defined custom patterns to the CustomParser
         // Built-in patterns from getBuiltinPatterns() are for Log Database display only
@@ -2286,6 +2624,16 @@ if (!gotTheLock) {
         LogWatcher.on('initial-scan-complete', () => {
             console.log('[Main] Initial log scan complete, re-syncing state to windows.');
             LogWatcher.emitCurrentState();
+            // Also force-set the status indicator in the sidebar
+            if (dashboardWindow && !dashboardWindow.isDestroyed() && LogWatcher.isWatching) {
+                const js = 'try {' +
+                    'var dot = document.getElementById("status-log-dot");' +
+                    'var txt = document.getElementById("status-log-text");' +
+                    'if (dot) dot.className = "dot on";' +
+                    'if (txt) txt.innerText = "Active";' +
+                    '} catch(e) {}';
+                dashboardWindow.webContents.executeJavaScript(js).catch(() => {});
+            }
         });
 
         // ════ SQUAD HUD TELEMETRY (v2.8) ═══
@@ -2380,6 +2728,7 @@ if (!gotTheLock) {
                         if (dashboardWindow) dashboardWindow.webContents.send('auth:success', token);
                         APIClient.token = token;
                         APIClient.connectSocket(token);
+                        if (config.friendCode) APIClient.registerFriendCode(config.friendCode);
                     }, 2000);
                 }
             }
@@ -2485,6 +2834,7 @@ function createSquadHudWindow() {
         y: 100,
         frame: false,
         transparent: true,
+        backgroundColor: '#00000000',
         alwaysOnTop: true,
         resizable: true,
         skipTaskbar: true,
@@ -2494,12 +2844,41 @@ function createSquadHudWindow() {
         }
     });
 
-    squadHudWindow.setIgnoreMouseEvents(false); // Allow clicking for now, can be toggled
+    squadHudWindow.setIgnoreMouseEvents(true, { forward: true });
     squadHudWindow.loadFile(path.join(__dirname, '../renderer/squad-hud.html'));
     squadHudWindow.on('closed', () => { squadHudWindow = null; });
 }
 
 ipcMain.on('squad:open-hud', () => createSquadHudWindow());
+
+// ═══ NET & PROXIMITY HUD LOGIC ═══
+function createNetProximityHudWindow() {
+    if (netProximityHudWindow && !netProximityHudWindow.isDestroyed()) {
+        netProximityHudWindow.focus();
+        return;
+    }
+
+    netProximityHudWindow = new BrowserWindow({
+        width: 360,
+        height: 520,
+        frame: false,
+        transparent: true,
+        backgroundColor: '#00000000',
+        alwaysOnTop: true,
+        resizable: true,
+        skipTaskbar: true,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+
+    netProximityHudWindow.setIgnoreMouseEvents(true, { forward: true });
+    netProximityHudWindow.loadFile(path.join(__dirname, '../renderer/net-proximity-hud.html'));
+    netProximityHudWindow.on('closed', () => { netProximityHudWindow = null; });
+}
+
+ipcMain.on('net-proximity:open-hud', () => createNetProximityHudWindow());
 
 // ═══ OCR DEBUG LOGIC (v2.10.2) ═══
 function createOcrDebugWindow() {
@@ -2514,6 +2893,7 @@ function createOcrDebugWindow() {
         frame: false,
         alwaysOnTop: true,
         transparent: true,
+        backgroundColor: '#00000000',
         resizable: true,
         webPreferences: {
             nodeIntegration: true,
@@ -2536,5 +2916,342 @@ ipcMain.on('ocr:debug-update', (event, dataUrl) => {
 ipcMain.on('ocr:debug-metadata', (event, data) => {
     if (ocrDebugWindow && !ocrDebugWindow.isDestroyed()) {
         ocrDebugWindow.webContents.send('ocr:debug-metadata', data);
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+// BLUEPRINT TRACKER
+// ═══════════════════════════════════════════════════════════
+
+const BLUEPRINT_DATA_FILE = path.join(app.getPath('userData'), 'blueprints.json');
+const BLUEPRINT_RE = /Added notification "Received Blueprint:\s*([^:"]+):\s*"/i;
+const TIMESTAMP_RE_BP = /^<(\d{4}-\d{2}-\d{2}T[\d:.\-+Z]+)>/;
+
+// Scan active log and all historical log backups to populate correct blueprint dates
+async function scanLogForBlueprints(logPath) {
+    if (!logPath || !fs.existsSync(logPath)) return;
+    try {
+        console.log(`[Blueprint] Scanning log and backups for blueprint dates: ${logPath}`);
+        
+        // Find files to scan
+        const filesToScan = [logPath];
+        const logDir = path.dirname(logPath);
+        const backupsDir = path.join(logDir, 'logbackups');
+        if (fs.existsSync(backupsDir)) {
+            const isDir = await fs.promises.stat(backupsDir).then(s => s.isDirectory()).catch(() => false);
+            if (isDir) {
+                const files = await fs.promises.readdir(backupsDir).catch(() => []);
+                for (const file of files) {
+                    const fullPath = path.join(backupsDir, file);
+                    const isFile = await fs.promises.stat(fullPath).then(s => s.isFile()).catch(() => false);
+                    if (isFile && (file.endsWith('.log') || file.endsWith('.txt'))) {
+                        filesToScan.push(fullPath);
+                    }
+                }
+            }
+        }
+
+        const data = loadBlueprintData();
+        const collected = new Set(data.collected);
+        if (!data.collectedAt) data.collectedAt = {};
+        let updatedCount = 0;
+
+        for (const filePath of filesToScan) {
+            try {
+                await new Promise(resolve => setImmediate(resolve));
+                const content = await fs.promises.readFile(filePath, 'utf8');
+                const lines = content.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    if (i > 0 && i % 1000 === 0) {
+                        await new Promise(resolve => setImmediate(resolve));
+                    }
+                    const line = lines[i];
+                    const m = line.match(BLUEPRINT_RE);
+                    if (!m) continue;
+                    const name = m[1].trim();
+                    const ts = line.match(TIMESTAMP_RE_BP);
+                    if (ts) {
+                        const timestamp = ts[1];
+                        const currentTs = data.collectedAt[name];
+                        const isNew = !collected.has(name);
+                        if (isNew || !currentTs || new Date(timestamp) < new Date(currentTs)) {
+                            if (isNew) {
+                                collected.add(name);
+                            }
+                            data.collectedAt[name] = timestamp;
+                            updatedCount++;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(`[Blueprint] Error scanning file ${filePath}:`, err.message);
+            }
+        }
+        
+        // Ensure all collected have a timestamp entry
+        for (const item of collected) {
+            if (!data.collectedAt[item]) {
+                data.collectedAt[item] = new Date().toISOString();
+            }
+        }
+
+        data.collected = Array.from(collected).sort();
+        saveBlueprintData(data);
+        console.log(`[Blueprint] Log directory scan complete: updated/added ${updatedCount} blueprint timestamps`);
+    } catch (e) {
+        console.error('[Blueprint] Failed to scan log directory:', e.message);
+    }
+}
+
+// Wrap LogWatcher.start to scan the log for blueprints on watch start
+const originalLogWatcherStart = LogWatcher.start.bind(LogWatcher);
+LogWatcher.start = function(filePath) {
+    scanLogForBlueprints(filePath);
+    return originalLogWatcherStart(filePath);
+};
+
+function loadBlueprintData() {
+    // Priority 1: full list fetched from sc-craft.tools (run: npm run update-blueprints)
+    const fullListFile = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
+    // Priority 2: hand-curated seed bundled with the app
+    const seedFile     = path.join(__dirname, '..', '..', 'data', 'blueprints.json');
+
+    let masterList = [];
+    try {
+        if (fs.existsSync(fullListFile)) {
+            const full = JSON.parse(fs.readFileSync(fullListFile, 'utf8'));
+            masterList = full.masterList || [];
+            console.log(`[Blueprint] Using full masterList: ${masterList.length} entries`);
+        } else if (fs.existsSync(seedFile)) {
+            const seed = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
+            masterList = seed.masterList || [];
+            console.log(`[Blueprint] Using seed masterList: ${masterList.length} entries`);
+        }
+    } catch (e) {
+        console.warn('[Blueprint] Failed to load masterList:', e.message);
+    }
+
+    try {
+        if (fs.existsSync(BLUEPRINT_DATA_FILE)) {
+            const data = JSON.parse(fs.readFileSync(BLUEPRINT_DATA_FILE, 'utf8'));
+            // Always use the best available masterList (never persist it to userData)
+            data.masterList = masterList;
+            return data;
+        }
+    } catch (e) { /* ignore */ }
+
+    return { collected: [], masterList };
+}
+
+function saveBlueprintData(data) {
+    try {
+        fs.writeFileSync(BLUEPRINT_DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.error('[Blueprint] Failed to save:', e.message);
+    }
+}
+
+// Forward live BLUEPRINT_RECEIVED events to the renderer
+LogWatcher.on('gamestate', (data) => {
+    if (data.type === 'BLUEPRINT_RECEIVED' && dashboardWindow && !dashboardWindow.isDestroyed()) {
+        dashboardWindow.webContents.send('blueprint:received', data);
+    }
+});
+
+// Load current blueprint data
+ipcMain.handle('blueprint:get-data', async () => {
+    return loadBlueprintData();
+});
+
+// Open file picker for old logs, scan them, merge into blueprints.json
+ipcMain.handle('blueprint:scan-logs', async () => {
+    const result = await dialog.showOpenDialog(dashboardWindow, {
+        title: 'Select Game.log file(s) to scan for blueprints',
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'Log Files', extensions: ['log', 'txt'] }]
+    });
+
+    if (result.canceled || result.filePaths.length === 0) return null;
+
+    const data = loadBlueprintData();
+    const collected = new Set(data.collected);
+    if (!data.collectedAt) data.collectedAt = {};
+    const newlyFound = [];
+
+    for (const filePath of result.filePaths) {
+        try {
+            const content = fs.readFileSync(filePath, 'utf8');
+            const lines = content.split('\n');
+            for (const line of lines) {
+                const m = line.match(BLUEPRINT_RE);
+                if (!m) continue;
+                const name = m[1].trim();
+                const ts = line.match(TIMESTAMP_RE_BP);
+                const timestamp = ts ? ts[1] : new Date().toISOString();
+                
+                const currentTs = data.collectedAt[name];
+                const isNew = !collected.has(name);
+                if (isNew || !currentTs || new Date(timestamp) < new Date(currentTs)) {
+                    if (isNew) {
+                        collected.add(name);
+                        newlyFound.push({ name, timestamp, file: path.basename(filePath) });
+                    }
+                    data.collectedAt[name] = timestamp;
+                }
+            }
+        } catch (e) {
+            console.error('[Blueprint] Failed to read log:', filePath, e.message);
+        }
+    }
+
+    data.collected = Array.from(collected).sort();
+    
+    // Ensure all collected have a timestamp entry
+    for (const item of data.collected) {
+        if (!data.collectedAt[item]) {
+            data.collectedAt[item] = new Date().toISOString();
+        }
+    }
+
+    saveBlueprintData(data);
+
+    return { data, newlyFound, scannedFiles: result.filePaths.length };
+});
+
+// Save updated master list
+ipcMain.handle('blueprint:update-master', async (event, masterList) => {
+    const data = loadBlueprintData();
+    data.masterList = masterList;
+    saveBlueprintData(data);
+    return data;
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SQUAD P2P SYSTEM (no external server required)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const { SquadHost } = require('./squad-host');
+const { SquadPeer } = require('./squad-peer');
+
+let squadHost = null;
+let squadPeer = null;
+let mySquadInfo = { handle: 'Player', health: 100, ship: '', location: '' };
+
+function pushSquadUpdate(squad) {
+    if (dashboardWindow && !dashboardWindow.isDestroyed())
+        dashboardWindow.webContents.send('squad:update', squad);
+}
+
+// Host a new session
+ipcMain.handle('squad:host', async () => {
+    if (squadPeer) { squadPeer.disconnect(); squadPeer = null; }
+    if (squadHost) { squadHost.stop(); squadHost = null; }
+
+    squadHost = new SquadHost();
+    squadHost.on('squad:update', pushSquadUpdate);
+
+    // Pre-populate host's own info from config
+    mySquadInfo.handle = config.handle || config.rsiHandle || 'Host';
+    try {
+        const result = await squadHost.start(mySquadInfo, config.squadPort || 30000);
+        return { success: true, ...result };
+    } catch (e) {
+        squadHost = null;
+        return { success: false, error: e.message };
+    }
+});
+
+// Join an existing session via friend code
+ipcMain.handle('squad:join', async (event, code) => {
+    if (squadHost) { squadHost.stop(); squadHost = null; }
+    if (squadPeer) { squadPeer.disconnect(); squadPeer = null; }
+
+    squadPeer = new SquadPeer();
+    mySquadInfo.handle = config.handle || config.rsiHandle || 'Player';
+
+    return new Promise(resolve => {
+        const timeout = setTimeout(() => {
+            resolve({ success: false, error: 'Connection timed out. Check the code or ask the host to verify their port is open.' });
+        }, 10000);
+
+        squadPeer.once('connected', () => {
+            clearTimeout(timeout);
+            resolve({ success: true });
+        });
+        squadPeer.once('error', err => {
+            clearTimeout(timeout);
+            resolve({ success: false, error: err });
+        });
+        squadPeer.on('squad:update', pushSquadUpdate);
+
+        try {
+            squadPeer.connect(code, mySquadInfo);
+        } catch (e) {
+            clearTimeout(timeout);
+            resolve({ success: false, error: e.message });
+        }
+    });
+});
+
+// Leave / disband
+ipcMain.handle('squad:leave', async () => {
+    if (squadHost) { squadHost.stop(); squadHost = null; }
+    if (squadPeer) { squadPeer.disconnect(); squadPeer = null; }
+    return { success: true };
+});
+
+// Push live game events into the squad
+LogWatcher.on('gamestate', data => {
+    let changed = false;
+    if (data.type === 'HEALTH_UPDATE' && data.value !== undefined) {
+        mySquadInfo.health   = data.value;
+        changed = true;
+    }
+    if (data.type === 'LOCATION' && data.value) {
+        mySquadInfo.location = data.value;
+        changed = true;
+    }
+    if ((data.type === 'SHIP_ENTER' || data.type === 'SHIP_CURRENT') && data.value) {
+        mySquadInfo.ship     = data.value;
+        changed = true;
+    }
+    if (data.type === 'SHIP_EXIT') {
+        mySquadInfo.ship     = '';
+        changed = true;
+    }
+
+    if (!changed) return;
+    if (squadHost) squadHost.updateHostStatus(mySquadInfo);
+    if (squadPeer) squadPeer.sendUpdate(mySquadInfo);
+});
+
+// ── Patch/generate personalised StarStrings global.ini mod file ──────────────
+ipcMain.handle('blueprint:generate-mod', async () => {
+    const { generateMod } = require('./blueprint-mod-generator');
+
+    // Ask user to pick their Star Citizen LIVE folder
+    const result = await dialog.showOpenDialog({
+        title: 'Select your Star Citizen LIVE folder',
+        properties: ['openDirectory'],
+        buttonLabel: 'Select LIVE Folder',
+    });
+    if (result.canceled || !result.filePaths.length) return { canceled: true };
+
+    const liveFolder = result.filePaths[0];
+    const cacheFile  = path.join(app.getPath('userData'), 'starstrings-contracts-cache.ini');
+
+    const data      = loadBlueprintData();
+    const collected = data.collected || [];
+
+    try {
+        const info = await generateMod(collected, liveFolder, cacheFile);
+        return {
+            success:      true,
+            outFile:      info.outFile,
+            source:       info.source,
+            markedCount:  info.markedCount,
+        };
+    } catch (err) {
+        return { success: false, error: err.message };
     }
 });
