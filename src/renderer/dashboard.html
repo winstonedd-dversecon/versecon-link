@@ -105,6 +105,39 @@
             text-align: center;
         }
 
+        /* Run Tracker Category Chips */
+        .category-chip {
+            padding: 4px 10px;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .category-chip:hover {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: rgba(255, 165, 0, 0.3);
+            color: var(--accent);
+        }
+        .category-chip.active {
+            background: rgba(255, 165, 0, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 8px rgba(255, 165, 0, 0.15);
+        }
+        /* Run Tracker Row Animation */
+        @keyframes row-flash {
+            0% { background: rgba(0, 255, 136, 0.4); }
+            100% { background: transparent; }
+        }
+        .rt-row.flash {
+            animation: row-flash 1.5s ease-out;
+        }
+
         /* ═══ STATUS BOX ═══ */
         .status-box {
             margin-top: auto;
@@ -588,6 +621,10 @@
         <div class="menu-item no-drag" id="nav-blueprints" onclick="switchTab('blueprints')">
             <span>📐</span> Blueprints
         </div>
+        <div class="menu-item no-drag" id="nav-runtracker" onclick="switchTab('runtracker')">
+            <span>🎯</span> Run Tracker
+            <span class="badge" id="run-tracker-badge" style="display:none; background:#ff7700; margin-left:6px;">0</span>
+        </div>
         <div class="menu-item no-drag" id="nav-overlay-btn" onclick="toggleOverlayUI()" style="transition:color 0.2s;">
             <span id="nav-overlay-icon">📺</span> <span id="nav-overlay-label">Overlay ON</span>
         </div>
@@ -868,6 +905,51 @@
                 <div class="status-row">
                     <span style="color: var(--text-dim);">Filter AI Ships</span>
                     <label style="cursor: pointer;"><input type="checkbox" id="filter-ai-ships" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Cargo Lift Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-cargo-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Oxygen & Stamina Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-oxygen-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Jurisdiction Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-jurisdiction-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Fire Hazard Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-fire-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Corpse Stream Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-corpse-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Death & Kill Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-death-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Vehicle Damage Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-vehicle-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Mission Lifecycle Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-mission-alerts" onchange="saveConfig()">
+                        Enabled</label>
+                </div>
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Crimestat Alerts</span>
+                    <label style="cursor: pointer;"><input type="checkbox" id="config-crimestat-alerts" onchange="saveConfig()">
                         Enabled</label>
                 </div>
             </div>
@@ -1815,6 +1897,56 @@
         </div>
     </div>
 
+    <!-- ═══ RUN TRACKER TAB ═══ -->
+    <div id="view-runtracker" class="view">
+        <div style="display:flex; height: calc(100vh - 120px); gap:15px;">
+            <!-- Left panel: Browser -->
+            <div style="flex:1.2; display:flex; flex-direction:column; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:15px; min-height:0;">
+                <div style="display:flex; gap:10px; margin-bottom:12px; flex-shrink:0;">
+                    <input id="rt-browser-search" type="text" placeholder="🔍 Search item database..." class="modern-input" style="flex:1; margin:0;" oninput="renderItemBrowser()">
+                </div>
+                <!-- Category chips -->
+                <div id="rt-category-chips" style="display:flex; gap:6px; margin-bottom:12px; flex-shrink:0; flex-wrap:wrap; overflow-x:auto;">
+                    <span class="category-chip active" data-cat="all" onclick="setRTCatFilter('all')">All</span>
+                    <span class="category-chip" data-cat="__wikelo__" onclick="setRTCatFilter('__wikelo__')">Wikelo Gathers</span>
+                    <span class="category-chip" data-cat="Weapon" onclick="setRTCatFilter('Weapon')">Weapons</span>
+                    <span class="category-chip" data-cat="Armor" onclick="setRTCatFilter('Armor')">Armor</span>
+                    <span class="category-chip" data-cat="Component" onclick="setRTCatFilter('Component')">Components</span>
+                </div>
+                <div id="rt-browser-count" style="font-size:0.7rem; color:#888; margin-bottom:8px; flex-shrink:0;">Showing 0 / 0 results (capped at 200)</div>
+                <div id="rt-browser-list" style="flex:1; overflow-y:auto; padding-right:5px; display:flex; flex-direction:column; gap:6px;">
+                    <!-- Items here -->
+                </div>
+            </div>
+
+            <!-- Right panel: Active Run Checklist -->
+            <div style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:15px; min-height:0;">
+                <!-- Header with editable run name -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-shrink:0;">
+                    <input id="rt-run-name" type="text" value="Wikelo Run" class="modern-input" style="font-size:0.9rem; font-weight:bold; color:var(--accent); margin:0; flex:1; border-bottom:1px solid rgba(255,255,255,0.15); background:none; padding:4px 0;" onchange="saveRunTracker()">
+                    <div style="display:flex; gap:6px; margin-left:10px;">
+                        <button class="cyber-btn small" onclick="clearRun()" style="margin:0; background:rgba(255,100,100,0.1); border-color:rgba(255,100,100,0.3); color:#ff6666;">Clear</button>
+                        <button class="cyber-btn small" onclick="resetRunCounts()" style="margin:0; background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.2);">Reset</button>
+                    </div>
+                </div>
+                <!-- Run Progress Bar -->
+                <div style="margin-bottom:15px; flex-shrink:0;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#888; margin-bottom:4px;">
+                        <span>RUN PROGRESS</span>
+                        <span id="rt-progress-label">0/0 (0%)</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.1);">
+                        <div id="rt-progress-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.3s ease;"></div>
+                    </div>
+                </div>
+                <!-- Active Run Items list -->
+                <div id="rt-active-list" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:5px;">
+                    <!-- Active run checklist items -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Log DB Add/Edit Modal -->
     <div id="logdb-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
         background:rgba(0,0,0,0.8); z-index:9999; display:none; align-items:center; justify-content:center;">
@@ -2083,13 +2215,15 @@
                 'ocr': ['OCR Scanner', 'Extract text from screen for party sharing'],
                 'players': ['Social Hub', 'Manage friends and shared telemetry'],
                 'logdb': ['Log Database', 'Known Star Citizen log patterns — browse, edit, export'],
-                'blueprints': ['Blueprints', 'Track crafting blueprints collected across sessions']
+                'blueprints': ['Blueprints', 'Track crafting blueprints collected across sessions'],
+                'runtracker': ['Run Tracker', 'Search database and track active items run']
             };
 
             // Auto-load patterns when switching to logdb
             if (tab === 'logdb') loadPatternDB();
             if (tab === 'blueprints') loadBlueprintUI();
             if (tab === 'players') loadFriendList();
+            if (tab === 'runtracker') loadRunTracker();
 
             if (titles[tab]) {
                 document.getElementById('view-title').innerText = titles[tab][0];
@@ -2167,7 +2301,7 @@
                 shareHealth: document.getElementById('config-share-health').checked,
                 squadHostIp: document.getElementById('config-squad-host-ip').value,
 
-                ttsEnabled: document.getElementById('config-tts-enabled').checked,
+                 ttsEnabled: document.getElementById('config-tts-enabled').checked,
                 ttsVolume: document.getElementById('config-tts-volume').value,
                 ttsVoice: document.getElementById('config-tts-voice').value,
                 interdictionShips: Array.from(document.querySelectorAll('.interdiction-ship-tag')).map(el => el.dataset.ship),
@@ -2178,7 +2312,16 @@
                 userTeam: document.getElementById('config-user-team')?.value,
                 healthZone: config.healthZone,
                 monitorHealth: document.getElementById('config-health-monitor').checked,
-                healthFreq: parseInt(document.getElementById('config-health-freq').value)
+                healthFreq: parseInt(document.getElementById('config-health-freq').value),
+                enableFreightElevatorAlerts: document.getElementById('config-cargo-alerts').checked,
+                enableStaminaOxygenAlerts: document.getElementById('config-oxygen-alerts').checked,
+                enableJurisdictionAlerts: document.getElementById('config-jurisdiction-alerts').checked,
+                enableFireAlerts: document.getElementById('config-fire-alerts').checked,
+                enableCorpseAlerts: document.getElementById('config-corpse-alerts').checked,
+                enableDeathAlerts: document.getElementById('config-death-alerts').checked,
+                enableVehicleDestructionAlerts: document.getElementById('config-vehicle-alerts').checked,
+                enableMissionStatusAlerts: document.getElementById('config-mission-alerts').checked,
+                enableCrimestatAlerts: document.getElementById('config-crimestat-alerts').checked
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
@@ -2203,6 +2346,17 @@
             if (config.hudFlashEnabled !== undefined) document.getElementById('hud-flash-enabled').checked = config.hudFlashEnabled;
             if (config.filterAIShips !== undefined) document.getElementById('filter-ai-ships').checked = config.filterAIShips;
             if (config.shareLocation !== undefined && document.getElementById('config-share-location')) document.getElementById('config-share-location').checked = config.shareLocation;
+
+            // Load new alert states (default to true if not configured)
+            document.getElementById('config-cargo-alerts').checked = config.enableFreightElevatorAlerts !== false;
+            document.getElementById('config-oxygen-alerts').checked = config.enableStaminaOxygenAlerts !== false;
+            document.getElementById('config-jurisdiction-alerts').checked = config.enableJurisdictionAlerts !== false;
+            document.getElementById('config-fire-alerts').checked = config.enableFireAlerts !== false;
+            document.getElementById('config-corpse-alerts').checked = config.enableCorpseAlerts !== false;
+            document.getElementById('config-death-alerts').checked = config.enableDeathAlerts !== false;
+            document.getElementById('config-vehicle-alerts').checked = config.enableVehicleDestructionAlerts !== false;
+            document.getElementById('config-mission-alerts').checked = config.enableMissionStatusAlerts !== false;
+            document.getElementById('config-crimestat-alerts').checked = config.enableCrimestatAlerts !== false;
 
             // Hue Settings
             if (config.hueEnabled !== undefined) {
@@ -2314,6 +2468,18 @@
             // Update local state
             soundVolume = (config.volume || 70) / 100;
             soundEnabled = config.soundEnabled !== false;
+
+            // Sync Run Tracker state when configuration updates (startup state sync fix)
+            if (config.activeRun) {
+                rtRun = config.activeRun.items || [];
+                const runNameEl = document.getElementById('rt-run-name');
+                if (runNameEl) runNameEl.value = config.activeRun.name || 'Wikelo Run';
+                if (document.getElementById('view-runtracker').classList.contains('active')) {
+                    renderRunTrackerList();
+                } else {
+                    updateRunTrackerBadge();
+                }
+            }
         });
 
         ipcRenderer.on('log:update', (e, data) => {
@@ -2323,8 +2489,46 @@
                 document.getElementById('health-last-val').textContent = 'DEAD';
                 addDashItem('💀', 'Actor death detected in logs.');
             }
+            if (data.type === 'PLAYER_SPAWNED') {
+                console.log('[Dashboard] Player respawn detected.');
+                ipcRenderer.send('app:update-health', 100);
+                document.getElementById('health-last-val').textContent = '100%';
+                addDashItem('❤️', `Player respawn detected at ${data.value.location}.`);
+            }
             if (data.type === 'NEW_LOCATION') {
                 currentLocation = data.value || data.raw || 'Unknown Location';
+            }
+            if (data.type === 'MISSION_OBJECTIVE') {
+                handleGatherObjective(data.value);
+            }
+            if (data.type === 'ATTACHMENT_RECEIVED') {
+                handleRTAttachment(data.value.archetype);
+            }
+            if (data.type === 'ITEM_RECOVERY') {
+                handleRTAttachment(data.value.archetype);
+            }
+            if (data.type === 'ITEM_TRANSFER') {
+                const helper = (itemClass) => {
+                    if (!itemClass) return 'Unknown Item';
+                    let clean = itemClass
+                        .replace(/^[a-z]+_/i, '')
+                        .replace(/_01_/g, '_')
+                        .replace(/_01/g, '')
+                        .replace(/_mag$/i, ' Magazine')
+                        .split('_')
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(' ');
+                    return clean;
+                };
+                const cleanName = helper(data.value.itemClass);
+                if (data.value.direction === 'withdraw') {
+                    addDashItem('📤', `Withdrew ${cleanName} from storage/freight elevator.`);
+                    handleRTAttachment(data.value.itemClass);
+                } else if (data.value.direction === 'deposit') {
+                    addDashItem('📥', `Deposited ${cleanName} into hangar/storage.`);
+                } else {
+                    addDashItem('📦', `Moved ${cleanName} in inventory.`);
+                }
             }
         });
 
@@ -3253,16 +3457,33 @@
                     else if (data.value === 'Open Space') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
                     break;
                 case 'STATUS':
-                    if (data.value === 'suffocating') { addDashItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span>'); playSound('alert_status'); }
-                    else if (data.value === 'depressurizing') { addDashItem('💨', '<span class="feed-highlight" style="color:#ff4444">DEPRESSURIZATION</span>'); playSound('alert_status'); }
-                    else if (data.value === 'death') { addDashItem('💀', '<span class="feed-highlight" style="color:#ff4444">DEATH DETECTED</span>'); playSound('alert_death'); }
+                    if (data.value === 'suffocating') {
+                        if (config.enableStaminaOxygenAlerts !== false) {
+                            addDashItem('😵', '<span class="feed-highlight" style="color:#ff4444">SUFFOCATING</span>');
+                            playSound('alert_status');
+                        }
+                    }
+                    else if (data.value === 'depressurizing') {
+                        if (config.enableStaminaOxygenAlerts !== false) {
+                            addDashItem('💨', '<span class="feed-highlight" style="color:#ff4444">DEPRESSURIZATION</span>');
+                            playSound('alert_status');
+                        }
+                    }
+                    else if (data.value === 'death') {
+                        if (config.enableDeathAlerts !== false) {
+                            addDashItem('💀', '<span class="feed-highlight" style="color:#ff4444">DEATH DETECTED</span>');
+                            playSound('alert_death');
+                        }
+                    }
                     break;
                 case 'DEATH': {
-                    const d = data.details || {};
-                    const victim = d.victim || 'Unknown';
-                    const killer = d.killer && d.killer !== 'Unknown' ? ` by ${d.killer}` : '';
-                    addDashItem('💀', `<span class="feed-highlight" style="color:#ff4444">${victim} KILLED${killer}</span>`);
-                    playSound('alert_death');
+                    if (config.enableDeathAlerts !== false) {
+                        const d = data.details || {};
+                        const victim = d.victim || 'Unknown';
+                        const killer = d.killer && d.killer !== 'Unknown' ? ` by ${d.killer}` : '';
+                        addDashItem('💀', `<span class="feed-highlight" style="color:#ff4444">${victim} KILLED${killer}</span>`);
+                        playSound('alert_death');
+                    }
                     break;
                 }
                 case 'LOGIN':
@@ -3354,12 +3575,16 @@
                     break;
                 // ═══ Fire & Combat ═══
                 case 'HAZARD_FIRE':
-                    addDashItem('🔥', `<span class="feed-highlight" style="color:#ff2222">FIRE ONBOARD</span> ${data.room ? `(${data.room})` : ''}`);
-                    playSound('alert_death');
+                    if (config.enableFireAlerts !== false) {
+                        addDashItem('🔥', `<span class="feed-highlight" style="color:#ff2222">FIRE ONBOARD</span> ${data.room ? `(${data.room})` : ''}`);
+                        playSound('alert_death');
+                    }
                     break;
                 case 'VEHICLE_DESTRUCTION':
-                    addDashItem('💥', `<span class="feed-highlight" style="color:#ff4444">VEHICLE DESTROYED</span> ${data.value || ''}`);
-                    playSound('alert_death');
+                    if (config.enableVehicleDestructionAlerts !== false) {
+                        addDashItem('💥', `<span class="feed-highlight" style="color:#ff4444">VEHICLE DESTROYED</span> ${data.value || ''}`);
+                        playSound('alert_death');
+                    }
                     break;
                 case 'KILL_PLAYER':
                     addDashItem('☠️', `<span class="feed-highlight" style="color:#ff4444">${data.value || 'Player Kill'}</span>`);
@@ -3369,8 +3594,10 @@
                     addDashItem('🎯', `NPC Kill: <span class="feed-highlight">${data.value || 'Target Down'}</span>`);
                     break;
                 case 'CRIMESTAT':
-                    addDashItem('🚨', `<span class="feed-highlight" style="color:#ff6600">CRIMESTAT ${data.value || ''}</span>`);
-                    playSound('alert_status');
+                    if (config.enableCrimestatAlerts !== false) {
+                        addDashItem('🚨', `<span class="feed-highlight" style="color:#ff6600">CRIMESTAT ${data.value || ''}</span>`);
+                        playSound('alert_status');
+                    }
                     break;
                 // ═══ NEW: Docking ═══
                 case 'DOCKING':
@@ -3892,6 +4119,7 @@
         // ═══ NEW: Mission List Renderer ═══
         ipcRenderer.on('mission:list', (e, missions) => {
             renderMissionList(missions);
+            syncActiveMissionObjectives(missions);
         });
 
         function renderMissionList(missions) {
@@ -5518,11 +5746,29 @@
 
             const src = source ? `<div style="font-size:0.7rem; color:#555; margin-top:1px; padding-left:24px;">${source}</div>` : '';
             const icon = have ? '✅' : '❌';
-            return `<div style="padding:5px 8px; border-radius:4px; margin-bottom:3px; background:rgba(255,255,255,0.03);">
-                        <div style="display:flex; align-items:center;">
-                            <span style="margin-right:8px; flex-shrink:0;">${icon}</span>
-                            <span style="flex:1; font-size:0.85rem;">${name}</span>${metaBadge}${cat}
-                        </div>${tsHtml}${src}
+
+            // Find item in masterList to check for ingredients
+            const bp = blueprintData.masterList.find(b => b.name.toLowerCase() === name.toLowerCase());
+            const ingredients = bp ? bp.ingredients : null;
+            let ingredientsHtml = '';
+            if (ingredients && ingredients.length > 0) {
+                const ingStrings = ingredients.map(ing => `${ing.name} (x${ing.quantity})`).join(', ');
+                ingredientsHtml = `<div style="font-size:0.72rem; color:#aaa; margin-top:2px; padding-left:24px;">🧪 Ingredients: ${ingStrings}</div>`;
+            }
+
+            const trackBtn = `<button class="cyber-btn small no-drag" onclick="trackBlueprint('${escapeJsString(name)}')" style="margin:0 0 0 10px; font-size:0.68rem; padding:1px 6px; flex-shrink:0;">🎯 Track</button>`;
+
+            return `<div style="padding:5px 8px; border-radius:4px; margin-bottom:3px; background:rgba(255,255,255,0.03); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; min-width:0; flex:1;">
+                                <span style="margin-right:8px; flex-shrink:0;">${icon}</span>
+                                <span style="font-size:0.85rem; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; font-weight:600; color:${have ? 'var(--success)' : 'var(--text-main)'};" title="${name}">${name}</span>${metaBadge}${cat}
+                            </div>
+                            ${trackBtn}
+                        </div>
+                        ${ingredientsHtml}
+                        ${tsHtml}
+                        ${src}
                     </div>`;
         }
 
@@ -5606,6 +5852,524 @@
                 renderBlueprintUI();
             }
         });
+
+        // ═══════════════════════════════════════════════════════════
+        // RUN TRACKER UI & LOGIC (v2.11.6+)
+        // ═══════════════════════════════════════════════════════════
+        let rtRun = [];
+        let rtMasterList = [];
+        let rtCatFilter = 'all';
+
+        async function loadRunTracker() {
+            try {
+                rtMasterList = await ipcRenderer.invoke('blueprints:get-master-list');
+            } catch (e) {
+                console.error('[RunTracker] Failed to load master list:', e);
+            }
+
+            // Restore from config
+            if (config && config.activeRun) {
+                rtRun = config.activeRun.items || [];
+                const runNameEl = document.getElementById('rt-run-name');
+                if (runNameEl) runNameEl.value = config.activeRun.name || 'Wikelo Run';
+            }
+
+            renderItemBrowser();
+            renderRunTrackerList();
+        }
+
+        function saveRunTracker() {
+            const runName = document.getElementById('rt-run-name').value.trim() || 'Wikelo Run';
+            config.activeRun = {
+                name: runName,
+                items: rtRun
+            };
+            ipcRenderer.send('settings:save', config);
+            updateRunTrackerBadge();
+        }
+
+        function updateRunTrackerBadge() {
+            const badge = document.getElementById('run-tracker-badge');
+            if (!badge) return;
+            const remaining = rtRun.reduce((sum, item) => sum + Math.max(0, item.needed - item.collected), 0);
+            if (remaining > 0) {
+                badge.style.display = 'inline-block';
+                badge.textContent = remaining;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function setRTCatFilter(cat) {
+            rtCatFilter = cat;
+            document.querySelectorAll('#rt-category-chips .category-chip').forEach(el => {
+                el.classList.toggle('active', el.dataset.cat === cat);
+            });
+            renderItemBrowser();
+        }
+
+        function renderItemBrowser() {
+            const searchInput = document.getElementById('rt-browser-search');
+            const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const listEl = document.getElementById('rt-browser-list');
+            if (!listEl) return;
+
+            let filtered = rtMasterList;
+
+            // Wikelo custom filter
+            if (rtCatFilter === '__wikelo__') {
+                filtered = filtered.filter(item => item.source && item.source.toLowerCase().includes('wikelo'));
+            } else if (rtCatFilter !== 'all') {
+                filtered = filtered.filter(item => item.category === rtCatFilter);
+            }
+
+            if (search) {
+                filtered = filtered.filter(item => item.name.toLowerCase().includes(search));
+            }
+
+            const countEl = document.getElementById('rt-browser-count');
+            if (countEl) {
+                countEl.textContent = `Showing ${Math.min(200, filtered.length)} / ${filtered.length} results (capped at 200)`;
+            }
+
+            listEl.innerHTML = filtered.slice(0, 200).map(item => {
+                const alreadyIn = rtRun.some(r => r.name.toLowerCase() === item.name.toLowerCase());
+                let ingredientsHtml = '';
+                if (item.ingredients && item.ingredients.length > 0) {
+                    const ingStrings = item.ingredients.map(ing => `${ing.name} (x${ing.quantity})`).join(', ');
+                    ingredientsHtml = `<div style="font-size:0.68rem; color:#aaa; margin-top:2px;">🧪 Ingredients: ${ingStrings}</div>`;
+                }
+                return `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:6px 10px; border-radius:4px;">
+                    <div style="flex:1; min-width:0; padding-right:10px;">
+                        <div style="font-size:0.82rem; font-weight:600; color:var(--text-main); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${item.name}</div>
+                        ${ingredientsHtml}
+                        <div style="font-size:0.68rem; color:#888;">${item.category || 'Item'} ${item.source ? `• ${item.source}` : ''}</div>
+                    </div>
+                    <button class="cyber-btn small" onclick="trackBlueprint('${escapeJsString(item.name)}')" style="margin:0; font-size:0.7rem; flex-shrink:0;">
+                        ${alreadyIn ? '✓ Add' : 'Track'}
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function escapeJsString(str) {
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        function renderRunTrackerList() {
+            const listEl = document.getElementById('rt-active-list');
+            if (!listEl) return;
+
+            const total = rtRun.reduce((sum, r) => sum + r.needed, 0);
+            const collected = rtRun.reduce((sum, r) => sum + Math.min(r.collected, r.needed), 0);
+            const doneItems = rtRun.filter(r => r.collected >= r.needed).length;
+            const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+
+            const bar = document.getElementById('rt-progress-bar');
+            const label = document.getElementById('rt-progress-label');
+            if (bar) {
+                bar.style.width = pct + '%';
+                bar.style.background = pct >= 100 ? 'var(--success)' : 'var(--accent)';
+            }
+            if (label) {
+                label.textContent = `${doneItems}/${rtRun.length} items done — ${collected}/${total} (${pct}%)`;
+            }
+
+            if (rtRun.length === 0) {
+                listEl.innerHTML = '<div style="color:#555; font-style:italic; padding:30px; text-align:center; font-size:0.8rem;">No items tracked in this run. Add some from the database browser or accept missions.</div>';
+                updateRunTrackerBadge();
+                return;
+            }
+
+            listEl.innerHTML = rtRun.map((item, index) => {
+                const done = item.collected >= item.needed;
+                return `
+                <div class="rt-row" id="rt-row-${index}" style="display:flex; flex-direction:column; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:8px 12px; border-radius:4px; opacity:${done ? 0.6 : 1}; transition: opacity 0.3s ease;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <div style="flex:1; min-width:0; padding-right:10px;">
+                            <span style="font-size:0.85rem; font-weight:600; text-decoration:${done ? 'line-through' : 'none'}; color:${done ? 'var(--success)' : 'var(--text-main)'}; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:block;" title="${item.name}">${item.name}</span>
+                            <span style="font-size:0.65rem; color:#888;">${item.source || 'Manual Run'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                            <span style="font-family:monospace; font-size:0.85rem; font-weight:bold; color:${done ? 'var(--success)' : 'var(--accent)'};">${item.collected} / ${item.needed}</span>
+                            <div style="display:flex; gap:3px;">
+                                <button class="cyber-btn small" style="margin:0; padding:1px 5px; font-size:0.65rem;" onclick="rtAdjust('${escapeJsString(item.name)}', -1)">-</button>
+                                <button class="cyber-btn small" style="margin:0; padding:1px 5px; font-size:0.65rem;" onclick="rtAdjust('${escapeJsString(item.name)}', 1)">+</button>
+                                <button class="cyber-btn small danger" style="margin:0; padding:1px 5px; font-size:0.65rem;" onclick="rtRemove('${escapeJsString(item.name)}')">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); height:4px; border-radius:2px; overflow:hidden;">
+                        <div style="background:${done ? 'var(--success)' : 'var(--accent)'}; width:${Math.min(100, (item.collected / item.needed) * 100)}%; height:100%;"></div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            updateRunTrackerBadge();
+        }
+
+        function rtAddToRun(itemName, source, category) {
+            const lowerName = itemName.toLowerCase();
+            const archGuess = itemName
+                .toLowerCase()
+                .replace(/['"()]/g, '')
+                .replace(/\s+/g, '_')
+                .replace(/-/g, '_')
+                .substring(0, 30);
+
+            let existing = rtRun.find(r => r.name.toLowerCase() === lowerName);
+            if (existing) {
+                // If it already has this specific source objective, ignore or update needed.
+                const objKey = source || 'Manual Run';
+                if (!existing.objectives) existing.objectives = {};
+                
+                if (existing.objectives[objKey]) {
+                    existing.objectives[objKey].needed += 1;
+                } else {
+                    existing.objectives[objKey] = { needed: 1, collected: 0 };
+                }
+                
+                // Recompute totals
+                existing.needed = Object.values(existing.objectives).reduce((sum, o) => sum + o.needed, 0);
+                existing.collected = Object.values(existing.objectives).reduce((sum, o) => sum + o.collected, 0);
+                
+                // Consolidate sources text
+                existing.source = Object.keys(existing.objectives).join(' / ');
+            } else {
+                const objectives = {};
+                objectives[source || 'Manual Run'] = { needed: 1, collected: 0 };
+                rtRun.push({
+                    name: itemName,
+                    source: source || 'Manual Run',
+                    category: category || 'General',
+                    archKeyword: archGuess,
+                    needed: 1,
+                    collected: 0,
+                    objectives: objectives
+                });
+            }
+
+            saveRunTracker();
+            renderRunTrackerList();
+            renderItemBrowser(); // Update Track checkmarks
+        }
+
+        function trackBlueprint(bpName) {
+            const bp = rtMasterList.find(b => b.name.toLowerCase() === bpName.toLowerCase());
+            if (!bp) {
+                const fallback = blueprintData && blueprintData.masterList ? blueprintData.masterList.find(b => b.name.toLowerCase() === bpName.toLowerCase()) : null;
+                if (fallback) {
+                    trackBlueprintObject(fallback);
+                } else {
+                    rtAddToRun(bpName, 'Manual Track', 'General');
+                }
+                return;
+            }
+            trackBlueprintObject(bp);
+        }
+
+        function trackBlueprintObject(bp) {
+            if (bp.ingredients && bp.ingredients.length > 0) {
+                bp.ingredients.forEach(ing => {
+                    const neededQty = Math.ceil(ing.quantity) || 1;
+                    const ingName = ing.name;
+                    const sourceKey = `Craft: ${bp.name}`;
+                    
+                    const lowerName = ingName.toLowerCase();
+                    const archGuess = ingName
+                        .toLowerCase()
+                        .replace(/['"()]/g, '')
+                        .replace(/\s+/g, '_')
+                        .replace(/-/g, '_')
+                        .substring(0, 30);
+
+                    let existing = rtRun.find(r => r.name.toLowerCase() === lowerName);
+                    if (existing) {
+                        if (!existing.objectives) existing.objectives = {};
+                        if (existing.objectives[sourceKey]) {
+                            existing.objectives[sourceKey].needed += neededQty;
+                        } else {
+                            existing.objectives[sourceKey] = { needed: neededQty, collected: 0 };
+                        }
+                        existing.needed = Object.values(existing.objectives).reduce((sum, o) => sum + o.needed, 0);
+                        existing.collected = Object.values(existing.objectives).reduce((sum, o) => sum + o.collected, 0);
+                        existing.source = Object.keys(existing.objectives).join(' / ');
+                    } else {
+                        const objectives = {};
+                        objectives[sourceKey] = { needed: neededQty, collected: 0 };
+                        rtRun.push({
+                            name: ingName,
+                            source: sourceKey,
+                            category: 'Ingredient',
+                            archKeyword: archGuess,
+                            needed: neededQty,
+                            collected: 0,
+                            objectives: objectives
+                        });
+                    }
+                });
+                addDashItem('📐', `Tracking ingredients for blueprint: <span class="feed-highlight">${bp.name}</span>`);
+                playSound('collect');
+            } else {
+                rtAddToRun(bp.name, `Craft: ${bp.name}`, bp.category);
+            }
+            saveRunTracker();
+            renderRunTrackerList();
+            renderItemBrowser();
+        }
+
+        function rtRemove(itemName) {
+            rtRun = rtRun.filter(r => r.name.toLowerCase() !== itemName.toLowerCase());
+            saveRunTracker();
+            renderRunTrackerList();
+            renderItemBrowser();
+        }
+
+        function rtAdjust(itemName, diff) {
+            const item = rtRun.find(r => r.name.toLowerCase() === itemName.toLowerCase());
+            if (!item) return;
+
+            if (!item.objectives) {
+                item.objectives = { 'Manual Run': { needed: item.needed, collected: item.collected } };
+            }
+
+            // Manually modify overall collected count
+            const newCollected = Math.max(0, item.collected + diff);
+            item.collected = newCollected;
+
+            // Distribute collected count sequentially across objectives
+            let remaining = newCollected;
+            Object.keys(item.objectives).forEach(key => {
+                const obj = item.objectives[key];
+                const take = Math.min(obj.needed, remaining);
+                obj.collected = take;
+                remaining -= take;
+            });
+            // If any leftover, add to the last objective
+            const keys = Object.keys(item.objectives);
+            if (keys.length > 0 && remaining > 0) {
+                item.objectives[keys[keys.length - 1]].collected += remaining;
+            }
+
+            saveRunTracker();
+            renderRunTrackerList();
+        }
+
+        function clearRun() {
+            rtRun = [];
+            saveRunTracker();
+            renderRunTrackerList();
+            renderItemBrowser();
+        }
+
+        function resetRunCounts() {
+            rtRun.forEach(item => {
+                item.collected = 0;
+                if (item.objectives) {
+                    Object.keys(item.objectives).forEach(k => item.objectives[k].collected = 0);
+                }
+            });
+            saveRunTracker();
+            renderRunTrackerList();
+        }
+
+        // Parse objective logs
+        let rtCollectedCache = {};
+        function handleGatherObjective(objText, missionTitle = '') {
+            if (!objText) return;
+            
+            // Check for general filter patterns to ignore layout directions or unneeded items
+            const lowerObj = objText.toLowerCase();
+            if (lowerObj.includes('following') || lowerObj.includes('objective') || lowerObj.includes('choose one') || objText.length > 80) {
+                return;
+            }
+
+            // Ignore location/navigation directions to prevent dummy items in checklist
+            if (lowerObj.startsWith('go to') || 
+                lowerObj.startsWith('travel to') || 
+                lowerObj.startsWith('navigate to') || 
+                lowerObj.startsWith('head to') || 
+                lowerObj.startsWith('fly to') || 
+                lowerObj.startsWith('reach ') || 
+                lowerObj.startsWith('proceed to') || 
+                lowerObj.startsWith('locate ') || 
+                lowerObj.startsWith('investigate ') || 
+                lowerObj.startsWith('clear ') || 
+                lowerObj.startsWith('quantum to') ||
+                lowerObj.includes('facility') ||
+                lowerObj.includes('station') ||
+                lowerObj.includes('outpost') ||
+                lowerObj.includes('hangar') ||
+                lowerObj.includes('elevator') ||
+                lowerObj.includes('pad ')) {
+                return;
+            }
+
+            // Regex parsing supports Deliver 0/2 of Aluminum or just Retrieve Security Data
+            const match = objText.match(/(?:Deliver|Collect|Gather|Bring|Retrieve|Pick\s+up|Take|Find|Search|Need|Acquire|Obtain|Get|Provide|Buy|Copy)\s+(?:(\d+)\/(\d+)\s+)?(?:of\s+)?(.+?)(?:\s+(?:to|at|from|into)\s+(.+))?$/i);
+            
+            if (!match) return;
+
+            const current = match[1] ? parseInt(match[1]) : 0;
+            const needed = match[2] ? parseInt(match[2]) : 1;
+            let itemName = match[3].replace(/:+$/, '').trim();
+            itemName = itemName.replace(/^(?:the|a|an)\s+/i, ''); // Strip leading helper determiners
+            
+            const destination = match[4] ? match[4].replace(/:+$/, '').trim() : '';
+            const sourceText = missionTitle || (destination ? `Mission (to ${destination})` : 'Mission Objective');
+
+            // Restore from cache if possible
+            const cacheKey = `${itemName.toLowerCase()}::${sourceText.toLowerCase()}`;
+            const cachedCollected = rtCollectedCache[cacheKey] !== undefined ? rtCollectedCache[cacheKey] : current;
+            const finalCollected = Math.max(current, cachedCollected);
+
+            // Item Stacking & Consolidation
+            let existing = rtRun.find(r => r.name.toLowerCase() === itemName.toLowerCase());
+            if (existing) {
+                if (!existing.objectives) existing.objectives = {};
+                
+                existing.objectives[sourceText] = { needed: needed, collected: finalCollected };
+                
+                // Recalculate totals
+                existing.needed = Object.values(existing.objectives).reduce((sum, o) => sum + o.needed, 0);
+                existing.collected = Object.values(existing.objectives).reduce((sum, o) => sum + o.collected, 0);
+                existing.source = Object.keys(existing.objectives).join(' / ');
+            } else {
+                const archGuess = itemName
+                    .toLowerCase()
+                    .replace(/['"()]/g, '')
+                    .replace(/\s+/g, '_')
+                    .replace(/-/g, '_')
+                    .substring(0, 30);
+
+                const objectives = {};
+                objectives[sourceText] = { needed: needed, collected: finalCollected };
+
+                rtRun.push({
+                    name: itemName,
+                    source: sourceText,
+                    category: 'Wikelo',
+                    archKeyword: archGuess,
+                    needed: needed,
+                    collected: finalCollected,
+                    objectives: objectives
+                });
+            }
+
+            saveRunTracker();
+            renderRunTrackerList();
+        }
+
+        // Scans all active contracts and populates checklist
+        function syncActiveMissionObjectives(missions) {
+            if (!missions) return;
+
+            // 1. Cache all collected counts
+            rtRun.forEach(item => {
+                if (item.objectives) {
+                    Object.entries(item.objectives).forEach(([key, val]) => {
+                        rtCollectedCache[`${item.name.toLowerCase()}::${key.toLowerCase()}`] = val.collected;
+                    });
+                }
+            });
+
+            // 2. Clear all non-Craft objectives from items
+            rtRun.forEach(item => {
+                if (item.objectives) {
+                    Object.keys(item.objectives).forEach(k => {
+                        if (!k.startsWith('Craft:')) {
+                            delete item.objectives[k];
+                        }
+                    });
+                }
+            });
+
+            // 3. Recalculate totals and filter out items with no objectives left
+            rtRun.forEach(item => {
+                if (item.objectives) {
+                    item.needed = Object.values(item.objectives).reduce((sum, o) => sum + o.needed, 0);
+                    item.collected = Object.values(item.objectives).reduce((sum, o) => sum + o.collected, 0);
+                    item.source = Object.keys(item.objectives).join(' / ');
+                }
+            });
+            rtRun = (rtRun || []).filter(item => item && item.objectives && Object.keys(item.objectives).length > 0);
+
+            // 4. Repopulate active mission objectives
+            Object.values(missions).forEach(m => {
+                if (m.status === 'active') {
+                    // Try parsing the title first, as it often contains the action and target item
+                    if (m.title) {
+                        handleGatherObjective(m.title.trim(), m.title.trim());
+                    }
+                    if (m.objective) {
+                        const lines = m.objective.split('\n');
+                        lines.forEach(line => handleGatherObjective(line.trim(), m.title.trim()));
+                    }
+                }
+            });
+
+            saveRunTracker();
+            renderRunTrackerList();
+        }
+
+        // Log Auto-detection
+        function handleRTAttachment(archetype) {
+            if (!archetype) return;
+            let matched = false;
+            const lowerArch = archetype.toLowerCase();
+
+            rtRun.forEach((item, index) => {
+                const keyword = item.archKeyword ? item.archKeyword.toLowerCase() : '';
+                const lowerName = item.name.toLowerCase();
+
+                let isMatch = keyword && lowerArch.includes(keyword);
+
+                // Hard drive / Mission Item synonym rules
+                if (!isMatch) {
+                    if (lowerArch.includes('harddrive') || lowerArch.includes('hard_drive') || lowerArch.includes('asd_yellow') || lowerArch.includes('delving_hardened')) {
+                        if (lowerName.includes('security data') || lowerName.includes('memory drive') || lowerName.includes('hard drive')) {
+                            isMatch = true;
+                        }
+                    }
+                }
+
+                if (isMatch) {
+                    // Increment collected
+                    const oldCol = item.collected;
+                    item.collected = Math.min(item.needed, item.collected + 1);
+                    if (item.collected > oldCol) {
+                        matched = true;
+                        // Sequential distribution to sub-objectives
+                        let remaining = item.collected;
+                        if (item.objectives) {
+                            Object.keys(item.objectives).forEach(k => {
+                                const obj = item.objectives[k];
+                                const take = Math.min(obj.needed, remaining);
+                                obj.collected = take;
+                                remaining -= take;
+                            });
+                        }
+
+                        // UI Feedback (flash row, add feed, play collect sound)
+                        const row = document.getElementById(`rt-row-${index}`);
+                        if (row) {
+                            row.classList.add('flash');
+                            setTimeout(() => row.classList.remove('flash'), 1500);
+                        }
+                        addDashItem('🎯', `Gathered active item: <span class="feed-highlight">${item.name}</span>`);
+                        playSound('collect');
+                    }
+                }
+            });
+
+            if (matched) {
+                saveRunTracker();
+                renderRunTrackerList();
+            }
+        }
 
         // ═══ SQUAD MANAGEMENT (v2.8) ═══
         function setSquadMode(mode) {

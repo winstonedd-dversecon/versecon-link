@@ -49,3 +49,19 @@ npm run dist
 
 ### 6. Persistent Helmet Warning
 - If you remove your helmet (deduplicated across active hands and attachment ports), a flashing amber `⚠️ NO HELMET` column instantly appears on the overlay HUD. It resets to hidden when you equip a helmet or respawn.
+
+### 7. Storage Kiosk & Freight Elevator Move tracking
+- Whenever you drag/move items via the Freight Elevator terminal or Storage Kiosks, the app parses the `Type[Move]` logs.
+- It displays a clean item transfer name and direction in the dashboard event feed (e.g. `📤 Withdrew Lmg Energy Magazine from storage/freight elevator` or `📥 Deposited Bottle Beer Smoltz A into hangar/storage`).
+- **Run Tracker Integration**: If you withdraw an item that matches a tracked item in your active Run Tracker checklist, the collected count automatically increments.
+
+### 8. Voice Announcement & HUD Feed Deduplication
+- Repeating HUD voice alerts (TTS announcements) like "Entering Armistice Zone" are deduplicated and throttled.
+- If the exact same warning string is repeated within 15 seconds, it is suppressed from being broadcast to overlays or spoken by the voice engine to prevent audio and visual spam during terminal operations.
+- The `PLAYER_SPAWNED` feed entry is only shown when you transition from a dead state (`DEATH`), preventing normal inventory terminal queries from spamming `Respawned / Alive` on the overlays.
+- Zone notifications are suppressed if you haven't left or changed your active zone.
+
+### 9. Dynamic Quantum Travel
+- Support for unplanned/manual blind jumps is included by responding to `<Quantum Drive Arrived>` events.
+- Rather than relying on static system container IDs, quantum entry is dynamically tracked when your character's inventory host location changes while traveling.
+- The HUD immediately updates to `IN QUANTUM` during travel and restores your destination coordinates/zone labels automatically upon dropping out of quantum.

@@ -638,6 +638,11 @@
                 <div class="helmet-warning visible" id="val-helmet">⚠️ NO HELMET</div>
             </div>
 
+            <!-- Suffocation Warning -->
+            <div class="fd-col hidden" id="col-suffocation" style="padding:0 10px;">
+                <div class="helmet-warning visible" id="val-suffocation">⚠️ OXYGEN LOW</div>
+            </div>
+
 
             <!-- Ship -->
             <div class="fd-col" id="col-ship">
@@ -743,6 +748,26 @@
             </div>
         </div>
 
+        <!-- Farming Wishlist Module -->
+        <div class="panel-module" id="module-farming" style="margin-top: 15px;">
+            <div class="panel-header">FARMING WISHLIST</div>
+            <div id="farming-list" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0;">
+                <div style="opacity:0.5; font-style:italic; font-size: 0.75rem;">No active farm</div>
+            </div>
+        </div>
+
+        <!-- Run Tracker Module -->
+        <div class="panel-module" id="module-runtracker" style="margin-top: 15px; display: none;">
+            <div class="panel-header">🎯 RUN TRACKER <span id="overlay-rt-run-name" style="color:var(--accent); font-size:0.75rem; margin-left:4px;"></span></div>
+            <div style="background:rgba(255,255,255,0.07); border-radius:4px; height:8px; overflow:hidden; margin:6px 0;">
+                <div id="overlay-rt-progress-bar" style="height:100%; width:0%; background:var(--accent); border-radius:4px; transition:width 0.4s;"></div>
+            </div>
+            <div id="overlay-rt-progress-label" style="font-size:0.7rem; color:var(--accent); margin-bottom:6px;">0/0 items done</div>
+            <div id="overlay-rt-list" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0; max-height: 250px; overflow-y: auto;">
+                <!-- Tracked items inject here -->
+            </div>
+        </div>
+
         <!-- Event Feed -->
         <div class="panel-module active" id="module-feed" style="margin-top: 20px;">
             <div class="panel-header">Tactical Feed</div>
@@ -785,6 +810,7 @@
         let startTime = null;
         let timerInterval = null;
         let hangarStartTime = null;
+        let currentConfig = {};
 
         const nearbyPlayers = new Set();
         function updateNearbyUI() {
@@ -869,6 +895,86 @@
                 }
             }
         });
+
+
+        function updateFarmingWishlistUI() {
+            const list = document.getElementById('farming-list');
+            if (!list) return;
+            
+            const wishlist = (currentConfig && currentConfig.farmingWishlist) ? currentConfig.farmingWishlist : [];
+            
+            if (wishlist.length === 0) {
+                list.innerHTML = '<div style="opacity:0.5; font-style:italic; font-size: 0.75rem;">No active farm</div>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            wishlist.forEach(item => {
+                const isDone = item.collected >= item.needed;
+                const progressPct = Math.min(100, (item.collected / item.needed) * 100);
+                
+                const div = document.createElement('div');
+                div.className = 'farming-item';
+                div.style.fontSize = '0.8rem';
+                div.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                div.style.padding = '4px 0';
+                
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="font-weight: bold; color: ${isDone ? 'var(--success)' : 'var(--cyan)'}; text-transform: uppercase;">${item.archetype}</span>
+                        <span style="${isDone ? 'color: var(--success); font-weight: bold;' : 'color: var(--text);'}">${item.collected}/${item.needed} ${isDone ? '✓' : ''}</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                        <div style="background: ${isDone ? 'var(--success)' : 'var(--accent)'}; width: ${progressPct}%; height: 100%; transition: width 0.3s ease;"></div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function updateRunTrackerUI() {
+            const module = document.getElementById('module-runtracker');
+            const list = document.getElementById('overlay-rt-list');
+            const runNameEl = document.getElementById('overlay-rt-run-name');
+            const bar = document.getElementById('overlay-rt-progress-bar');
+            const label = document.getElementById('overlay-rt-progress-label');
+            if (!module || !list) return;
+
+            const run = (currentConfig && currentConfig.activeRun) ? currentConfig.activeRun : null;
+            if (!run || !Array.isArray(run.items) || run.items.length === 0) {
+                module.style.display = 'none';
+                return;
+            }
+
+            module.style.display = 'block';
+            if (runNameEl) runNameEl.textContent = run.name ? `[${run.name}]` : '';
+
+            // Calculate progress
+            const total = run.items.reduce((s, r) => s + r.needed, 0);
+            const collected = run.items.reduce((s, r) => s + Math.min(r.collected, r.needed), 0);
+            const doneItems = run.items.filter(r => r.collected >= r.needed).length;
+            const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+
+            if (bar) {
+                bar.style.width = pct + '%';
+                bar.style.background = pct >= 100 ? 'var(--success)' : 'var(--accent)';
+            }
+            if (label) {
+                label.textContent = `${doneItems}/${run.items.length} items done — ${collected}/${total} (${pct}%)`;
+            }
+
+            list.innerHTML = run.items.map(item => {
+                const done = item.collected >= item.needed;
+                return `
+                <div style="display:flex; flex-direction:column; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05); opacity: ${done ? 0.4 : 1}; text-align:right;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
+                        <span style="color:${done ? 'var(--success)' : 'var(--text-main)'}; text-decoration: ${done ? 'line-through' : 'none'}; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:180px; font-weight:600;" title="${item.name}">${item.name}</span>
+                        <span style="color:${done ? 'var(--success)' : 'var(--accent)'}; font-weight:bold; font-size:0.8rem;">${item.collected} / ${item.needed}</span>
+                    </div>
+                    ${item.source ? `<div style="font-size:0.65rem; color:var(--text-dim); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${item.source}">${item.source}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
 
 
         function updateTimer() {
@@ -1005,14 +1111,28 @@
         loadPositions();
 
         // ═══ MOUSE INTERACTION PASS-THROUGH ═══
-        const interactiveEls = document.querySelectorAll('.interactive');
-        interactiveEls.forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                ipcRenderer.send('overlay:details-interaction', { active: true });
-            });
-            el.addEventListener('mouseleave', () => {
-                ipcRenderer.send('overlay:details-interaction', { active: false });
-            });
+        // Only actual controls (button, a, input, select, textarea, [data-clickable]) block
+        // click-through to the game. Panel containers (.interactive) do NOT — they only
+        // have pointer-events:auto for drag-handles and to receive mousemove events.
+        const INTERACTIVE_TAGS = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']);
+        window.addEventListener('mousemove', (event) => {
+            let isInteractive = false;
+            let target = event.target;
+            while (target && target !== document.documentElement) {
+                const tag = target.tagName;
+                if (INTERACTIVE_TAGS.has(tag) ||
+                    (target.dataset && target.dataset.clickable) ||
+                    (target.classList && target.classList.contains('drag-handle'))) {
+                    isInteractive = true;
+                    break;
+                }
+                target = target.parentElement;
+            }
+            ipcRenderer.send('overlay:details-interaction', { active: isInteractive });
+        });
+
+        document.addEventListener('mouseleave', () => {
+            ipcRenderer.send('overlay:details-interaction', { active: false });
         });
 
         // ═══ UI HELPERS ═══
@@ -1056,6 +1176,9 @@
 
         // Settings / Visibility
         ipcRenderer.on('settings:updated', (e, config) => {
+            currentConfig = config;
+            updateFarmingWishlistUI();
+            updateRunTrackerUI();
             if (!config.overlayVisibility) return;
             const ov = config.overlayVisibility;
 
@@ -1072,7 +1195,9 @@
                 shipVisualizer: '#ship-viz-container',
                 nearbyPlayers: '#col-nearby',
                 healthMonitor: '#col-health',
-                networkPanel: '#hud-network-panel'
+                networkPanel: '#hud-network-panel',
+                farmingWishlist: '#module-farming',
+                runTracker: '#module-runtracker'
             };
 
             for (const [key, selector] of Object.entries(visibilityMap)) {
@@ -1211,6 +1336,9 @@
         // State tracking for new feature requests
         let currentSystem = 'Unknown';
         let currentZone = 'Open Space';
+        let currentTelemetryLocation = 'Unknown Orbit';
+        let currentTelemetryLocationRaw = '';
+        let isPlayerDead = false;
 
         // Game Events
         ipcRenderer.on('log:update', (e, data) => {
@@ -1225,6 +1353,8 @@
 
                 case 'LOCATION':
                 case 'LOCATION_HINT':
+                    currentTelemetryLocation = data.value;
+                    currentTelemetryLocationRaw = data.raw || '';
                     const locDisplay = document.getElementById('val-location');
                     // Store raw code for custom location sync
                     if (data.raw) locDisplay.dataset.raw = data.raw;
@@ -1294,6 +1424,8 @@
                 case 'SPAWN_SET': {
                     const deadColSpawn = document.getElementById('col-dead');
                     if (deadColSpawn) deadColSpawn.classList.add('hidden');
+                    const suffocationCol = document.getElementById('col-suffocation');
+                    if (suffocationCol) suffocationCol.classList.add('hidden');
                     // We still track this internally but it's hidden from main HUD now
                     addFeedEntry('🏠', 'Spawn Updated');
                     break;
@@ -1302,6 +1434,8 @@
                 case 'GAME_JOIN': {
                     const deadColJoin = document.getElementById('col-dead');
                     if (deadColJoin) deadColJoin.classList.add('hidden');
+                    const suffocationCol = document.getElementById('col-suffocation');
+                    if (suffocationCol) suffocationCol.classList.add('hidden');
                     document.getElementById('dot-game').classList.add('on');
                     addFeedEntry('🎮', 'Connected');
                     break;
@@ -1328,6 +1462,9 @@
                 }
 
                 case 'ZONE': {
+                    if (currentZone === data.value) {
+                        break;
+                    }
                     currentZone = data.value;
                     const zoneEl = document.getElementById('val-zone');
 
@@ -1349,23 +1486,126 @@
                     }
                     break;
                 }
+                case 'ITEM_TRANSFER': {
+                    const helper = (itemClass) => {
+                        if (!itemClass) return 'Unknown Item';
+                        let clean = itemClass
+                            .replace(/^[a-z]+_/i, '')
+                            .replace(/_01_/g, '_')
+                            .replace(/_01/g, '')
+                            .replace(/_mag$/i, ' Magazine')
+                            .split('_')
+                            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                            .join(' ');
+                        return clean;
+                    };
+                    const cleanName = helper(data.value.itemClass);
+                    if (data.value.direction === 'withdraw') {
+                        addFeedEntry('📤', `Withdrew ${cleanName}`);
+                        addTacticalFeedEntry('📤', `Withdrew: ${cleanName}`);
+                    } else if (data.value.direction === 'deposit') {
+                        addFeedEntry('📥', `Deposited ${cleanName}`);
+                        addTacticalFeedEntry('📥', `Deposited: ${cleanName}`);
+                    }
+                    break;
+                }
 
                 case 'SOCIAL_PROXIMITY':
-                    if (data.action === 'enter') {
-                        nearbyPlayers.add(data.value);
-                        addFeedEntry('👥', `Player inbound: ${data.value}`);
-                        addTacticalFeedEntry('👥', `Proximity connection: Player ID ${data.value}`);
-                    } else if (data.action === 'leave') {
-                        nearbyPlayers.delete(data.value);
-                        addFeedEntry('👥', `Player outbound: ${data.value}`);
-                        addTacticalFeedEntry('👥', `Proximity lost: Player ID ${data.value}`);
+                    if (currentConfig.enableSquadProximityRadar !== false) {
+                        if (data.action === 'enter') {
+                            nearbyPlayers.add(data.value);
+                            addFeedEntry('👥', `Player inbound: ${data.value}`);
+                            addTacticalFeedEntry('👥', `Proximity connection: Player ID ${data.value}`);
+                        } else if (data.action === 'leave') {
+                            nearbyPlayers.delete(data.value);
+                            addFeedEntry('👥', `Player outbound: ${data.value}`);
+                            addTacticalFeedEntry('👥', `Proximity lost: Player ID ${data.value}`);
+                        }
+                        updateNearbyUI();
+                        document.getElementById('prox-count').textContent = `[${nearbyPlayers.size}]`;
                     }
-                    updateNearbyUI();
-                    document.getElementById('prox-count').textContent = `[${nearbyPlayers.size}]`;
                     break;
 
+                case 'PARTY_PROXIMITY':
+                    if (currentConfig.enableSquadProximityRadar !== false) {
+                        const action = data.value.action;
+                        const entityId = data.value.entityId;
+                        if (action === 'stream_in') {
+                            addFeedEntry('👥', `Squadmate inbound (ID ${entityId})`);
+                            addTacticalFeedEntry('👥', `Squadmate in zone (ID ${entityId})`);
+                            showAlert('👥 SQUADMATE INBOUND', `Squadmate (ID ${entityId}) streamed in`);
+                        } else if (action === 'stream_out') {
+                            addFeedEntry('👥', `Squadmate outbound (ID ${entityId})`);
+                            addTacticalFeedEntry('👥', `Squadmate left zone (ID ${entityId})`);
+                        }
+                    }
+                    break;
+
+                case 'CARGO_ELEVATOR':
+                    if (currentConfig.enableFreightElevatorAlerts !== false) {
+                        const { elevatorId, state } = data.value;
+                        showAlert('🛗 CARGO LIFT', `Lift ${elevatorId} state changed to ${state}`);
+                        addFeedEntry('🛗', `Lift ${elevatorId}: ${state}`);
+                        addTacticalFeedEntry('🛗', `Cargo Lift ${elevatorId}: ${state}`);
+                    }
+                    break;
+
+                case 'SUFFOCATION':
+                    if (currentConfig.enableStaminaOxygenAlerts !== false) {
+                        const { status } = data.value;
+                        const suffocationCol = document.getElementById('col-suffocation');
+                        if (suffocationCol) {
+                            if (status === 'started') {
+                                suffocationCol.classList.remove('hidden');
+                                showAlert('⚠️ OXYGEN WARNING', 'Suffocation started!');
+                            } else {
+                                suffocationCol.classList.add('hidden');
+                            }
+                        }
+                    }
+                    break;
+
+                case 'ATTACHMENT_RECEIVED': {
+                    const archetype = data.value.archetype;
+                    if (currentConfig && currentConfig.farmingWishlist) {
+                        let updated = false;
+                        currentConfig.farmingWishlist.forEach(item => {
+                            if (item.archetype && archetype.toLowerCase().includes(item.archetype.toLowerCase())) {
+                                item.collected = (item.collected || 0) + 1;
+                                updated = true;
+                            }
+                        });
+                        if (updated) {
+                            updateFarmingWishlistUI();
+                            ipcRenderer.send('settings:save', currentConfig);
+                        }
+                    }
+                    break;
+                }
+
+                case 'ITEM_RECOVERY': {
+                    const archetype = data.value.archetype;
+                    if (currentConfig && currentConfig.farmingWishlist) {
+                        let updated = false;
+                        currentConfig.farmingWishlist.forEach(item => {
+                            if (item.archetype && archetype.toLowerCase().includes(item.archetype.toLowerCase())) {
+                                item.collected = (item.collected || 0) + 1;
+                                updated = true;
+                            }
+                        });
+                        if (updated) {
+                            updateFarmingWishlistUI();
+                            ipcRenderer.send('settings:save', currentConfig);
+                        }
+                    }
+                    break;
+                }
+
                 case 'JURISDICTION':
-                    addFeedEntry('🏛️', data.value);
+                    if (currentConfig.enableJurisdictionAlerts !== false) {
+                        addFeedEntry('🏛️', data.value);
+                        showAlert('🏛️ JURISDICTION', `Entered ${data.value}`);
+                    }
                     break;
 
                 case 'SERVER_CONNECTED':
@@ -1414,12 +1654,36 @@
                             zoneEl.textContent = 'TRANSIT';
                             zoneEl.style.color = 'var(--cyan)';
                         }
+                    } else if (data.value === 'exited' || data.value === 'arrived') {
+                        // Restore HUD Location info
+                        const locEl = document.getElementById('val-location');
+                        if (locEl) {
+                            const matched = getCustomLocationMatch(currentTelemetryLocationRaw, currentTelemetryLocation, customLocations);
+                            const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
+                            locEl.textContent = customName || currentTelemetryLocation;
+                        }
+                        // Restore Zone info
+                        const zoneEl = document.getElementById('val-zone');
+                        if (zoneEl) {
+                            if (currentZone === 'Armistice Zone') {
+                                zoneEl.textContent = 'ARMISTICE';
+                                zoneEl.style.color = 'var(--success)';
+                            } else if (currentZone === 'Open Space') {
+                                zoneEl.textContent = currentSystem !== 'Unknown' ? `${currentSystem.toUpperCase()} SYSTEM` : 'OPEN SPACE';
+                                zoneEl.style.color = 'var(--accent)';
+                            } else {
+                                zoneEl.textContent = currentZone.toUpperCase();
+                                zoneEl.style.color = 'var(--accent)';
+                            }
+                        }
                     }
                     break;
 
                 case 'HAZARD_FIRE':
-                    showAlert('🔥 FIRE', data.value || 'Fire detected on ship');
-                    addFeedEntry('🔥', `Fire: ${data.value || 'Detected'}`);
+                    if (currentConfig.enableFireAlerts !== false) {
+                        showAlert('🔥 FIRE', data.value || 'Fire detected on ship');
+                        addFeedEntry('🔥', `Fire: ${data.value || 'Detected'}`);
+                    }
                     break;
 
                 case 'ENGINEERING':
@@ -1438,10 +1702,12 @@
                         // showAlert('🛰️ SENSOR CONTACT', `${data.details.chassis.toUpperCase()} detected in area`);
                         
                         // Fullscreen flash effect
-                        const flashDiv = document.createElement('div');
-                        flashDiv.className = 'flash-effect';
-                        document.body.appendChild(flashDiv);
-                        setTimeout(() => flashDiv.remove(), 1500);
+                        if (currentConfig.hudFlashEnabled !== false) {
+                            const flashDiv = document.createElement('div');
+                            flashDiv.className = 'flash-effect';
+                            document.body.appendChild(flashDiv);
+                            setTimeout(() => flashDiv.remove(), 1500);
+                        }
                     }
                     break;
 
@@ -1473,29 +1739,53 @@
                     break;
 
                 case 'CORPSE_DETECTED':
-                    addTacticalFeedEntry('☠️', 'Corpse loaded into zone');
-                    addFeedEntry('💀', 'Corpse Detected');
-                    showAlert('☠️ CORPSE DETECTED', 'A player corpse streamed into your zone!');
-                    
-                    // Fullscreen cyan warning flash
-                    const corpseFlash = document.createElement('div');
-                    corpseFlash.className = 'flash-effect';
-                    corpseFlash.style.background = 'rgba(0, 240, 255, 0.15)';
-                    document.body.appendChild(corpseFlash);
-                    setTimeout(() => corpseFlash.remove(), 1500);
+                    if (currentConfig.enableCorpseAlerts !== false) {
+                        addTacticalFeedEntry('☠️', 'Corpse loaded into zone');
+                        addFeedEntry('💀', 'Corpse Detected');
+                        showAlert('☠️ CORPSE DETECTED', 'A player corpse streamed into your zone!');
+                        
+                        // Fullscreen cyan warning flash
+                        if (currentConfig.hudFlashEnabled !== false) {
+                            const corpseFlash = document.createElement('div');
+                            corpseFlash.className = 'flash-effect';
+                            corpseFlash.style.background = 'rgba(0, 240, 255, 0.15)';
+                            document.body.appendChild(corpseFlash);
+                            setTimeout(() => corpseFlash.remove(), 1500);
+                        }
+                    }
                     break;
 
                 case 'DEATH': {
+                    isPlayerDead = true;
                     const deadCol = document.getElementById('col-dead');
-                    if (deadCol) deadCol.classList.remove('hidden');
-                    if (data.details && data.details.killer) {
-                        showAlert('☠️ KILLED', `${data.details.victim} killed by ${data.details.killer}`);
-                        addFeedEntry('☠️', `${data.details.victim} → ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
-                        addTacticalFeedEntry('💀', `${data.details.victim} killed by ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
-                    } else {
-                        showAlert('💀 DEATH', 'You died');
-                        addFeedEntry('💀', 'Death detected');
-                        addTacticalFeedEntry('💀', `${data.details && data.details.victim ? data.details.victim : 'Player'} died`);
+                    if (deadCol && currentConfig.hudWarningsEnabled !== false) deadCol.classList.remove('hidden');
+                    const suffocationCol = document.getElementById('col-suffocation');
+                    if (suffocationCol) suffocationCol.classList.add('hidden');
+                    
+                    if (currentConfig.enableDeathAlerts !== false) {
+                        if (data.details && data.details.killer) {
+                            showAlert('☠️ KILLED', `${data.details.victim} killed by ${data.details.killer}`);
+                            addFeedEntry('☠️', `${data.details.victim} → ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
+                            addTacticalFeedEntry('💀', `${data.details.victim} killed by ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
+                        } else {
+                            showAlert('💀 DEATH', 'You died');
+                            addFeedEntry('💀', 'Death detected');
+                            addTacticalFeedEntry('💀', `${data.details && data.details.victim ? data.details.victim : 'Player'} died`);
+                        }
+                    }
+                    break;
+                }
+
+                case 'PLAYER_SPAWNED': {
+                    const deadCol = document.getElementById('col-dead');
+                    if (deadCol) deadCol.classList.add('hidden');
+                    const suffocationCol = document.getElementById('col-suffocation');
+                    if (suffocationCol) suffocationCol.classList.add('hidden');
+                    
+                    if (isPlayerDead) {
+                        addFeedEntry('❤️', 'Respawned / Alive');
+                        addTacticalFeedEntry('❤️', `${data.value.player} respawned at ${data.value.location}`);
+                        isPlayerDead = false;
                     }
                     break;
                 }
@@ -1503,7 +1793,7 @@
                 case 'HELMET_STATE': {
                     const helmetCol = document.getElementById('col-helmet');
                     if (helmetCol) {
-                        if (data.value === 'OFF') {
+                        if (data.value === 'OFF' && currentConfig.hudWarningsEnabled !== false) {
                             helmetCol.classList.remove('hidden');
                         } else {
                             helmetCol.classList.add('hidden');
@@ -1514,18 +1804,20 @@
 
 
                 case 'VEHICLE_DESTRUCTION':
-                    if (data.details) {
-                        const shipName = data.details.vehicle || 'Ship';
-                        const msg = data.details.isTotalLoss
-                            ? `${shipName} DESTROYED by ${data.details.attacker || 'Unknown'}`
-                            : `${shipName} CRIPPLED by ${data.details.attacker || 'Unknown'}`;
-                        showAlert(data.details.isTotalLoss ? '💥 DESTROYED' : '⚠️ CRIPPLED', msg);
-                        addFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', msg);
-                        addTacticalFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', `${data.details.driver || 'Pilot'}'s ${shipName} destroyed/crippled by ${data.details.attacker || 'Unknown'}`);
-                    } else {
-                        showAlert('💥 DESTROYED', data.value || 'Vehicle Destroyed');
-                        addFeedEntry('💥', data.value || 'Vehicle Destroyed');
-                        addTacticalFeedEntry('💥', data.value || 'Vehicle Destroyed');
+                    if (currentConfig.enableVehicleDestructionAlerts !== false) {
+                        if (data.details) {
+                            const shipName = data.details.vehicle || 'Ship';
+                            const msg = data.details.isTotalLoss
+                                ? `${shipName} DESTROYED by ${data.details.attacker || 'Unknown'}`
+                                : `${shipName} CRIPPLED by ${data.details.attacker || 'Unknown'}`;
+                            showAlert(data.details.isTotalLoss ? '💥 DESTROYED' : '⚠️ CRIPPLED', msg);
+                            addFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', msg);
+                            addTacticalFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', `${data.details.driver || 'Pilot'}'s ${shipName} destroyed/crippled by ${data.details.attacker || 'Unknown'}`);
+                        } else {
+                            showAlert('💥 DESTROYED', data.value || 'Vehicle Destroyed');
+                            addFeedEntry('💥', data.value || 'Vehicle Destroyed');
+                            addTacticalFeedEntry('💥', data.value || 'Vehicle Destroyed');
+                        }
                     }
                     break;
 
@@ -1539,7 +1831,9 @@
                         addFeedEntry('✅', `Mission Complete${data.title ? ': ' + data.title : ''}`);
                     } else if (data.value === 'failed') {
                         addFeedEntry('❌', `Mission Failed${data.title ? ': ' + data.title : ''}`);
-                        showAlert('❌ FAILED', data.title || 'Mission Failed');
+                        if (currentConfig.enableMissionStatusAlerts !== false) {
+                            showAlert('❌ FAILED', data.title || 'Mission Failed');
+                        }
                     } else if (data.value === 'abandoned') {
                         addFeedEntry('🚪', `Mission Abandoned${data.title ? ': ' + data.title : ''}`);
                     }
@@ -1570,7 +1864,9 @@
                     break;
 
                 case 'CRIME_UPDATE':
-                    showAlert('🚨 CRIMESTAT', data.value);
+                    if (currentConfig.enableCrimestatAlerts !== false) {
+                        showAlert('🚨 CRIMESTAT', data.value);
+                    }
                     addFeedEntry('🚨', data.value);
                     break;
 
@@ -1691,6 +1987,7 @@
 
         // Helper: Show Alert
         function showAlert(title, msg) {
+            if (currentConfig.hudWarningsEnabled === false) return;
             const el = document.getElementById('mod-alert');
             document.getElementById('val-alert-title').textContent = title;
             document.getElementById('val-alert-msg').textContent = msg;

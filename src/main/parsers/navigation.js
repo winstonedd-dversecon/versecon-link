@@ -38,7 +38,7 @@ class NavigationParser extends BaseParser {
             location_generic: /Location\[([^\]]+)\]/i,
 
             // Line 44819: <GenerateLocationProperty> Generated Locations - ... locations: (Hurston Cave [3018817963] [Cave_Unoccupied_Stanton1])
-            generated_location: /<GenerateLocationProperty>.*?locations:\s*\(([^\[]+)\s*\[\d+\]\s*\[([^\]]+)\]\)/i,
+            generated_location: /<GenerateLocationProperty>.*?locations:\s*((?:\([^)]+\))+)/i,
 
             // ── LOCATION HINT (Object Container loading) ──
             // Lines like: data/objectcontainers/pu/loc/flagship/stanton/lorville/...
@@ -71,6 +71,12 @@ class NavigationParser extends BaseParser {
 
             // Region Volume Enter — large area markers
             region_volume: /entering region volume.*?'([A-Za-z][^']{3,})'/i,
+            
+            // Cargo/Freight Elevator updates
+            cargo_elevator: /<CSCLoadingPlatformManager::OnLoadingPlatformStateChanged>.*?\[LoadingPlatformManager_([^\]]+)\] Platform state changed to (\w+)/i,
+
+            // Stamina / Suffocation updates
+            stamina_suffocation: /<\[STAMINA\] Player (started|stopped) suffocating> Player\[([^\]]+)\]/i,
         };
         this.lastLocationHint = null;
         this.lastLocation = null;
@@ -117,18 +123,8 @@ class NavigationParser extends BaseParser {
                 return false;
             }
 
-            const SYSTEM_CONTAINERS = {
-                '3184339241': 'Stanton'
-            };
-
-            if (SYSTEM_CONTAINERS[toLoc]) {
-                const systemName = SYSTEM_CONTAINERS[toLoc];
-                this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
-                this.emitLocation(`Quantum Travel (${systemName})`, `QuantumTravel_${systemName}`);
-            } else if (SYSTEM_CONTAINERS[fromLoc]) {
-                this.emit('gamestate', { type: 'QUANTUM', value: 'exited' });
-                this.emitLocation('Arriving...', 'Arriving');
-            }
+            this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
+            this.emitLocation('In Transit', 'QuantumTravel');
             return true;
         }
 
@@ -189,11 +185,32 @@ class NavigationParser extends BaseParser {
         // ── 4.2 Generated Location Property (Mission Caves/Outposts) ──
         const genMatch = line.match(this.patterns.generated_location);
         if (genMatch) {
-            const rawVal = genMatch[2];             // e.g., "Cave_Unoccupied_Stanton1"
+            // Parse ALL (FriendlyName [numericId] [RawCode]) entries from the locations block
+            const locationsBlock = genMatch[1];
+            const entryPattern = /\(([^[]+?)\s*\[\d+\]\s*\[([^\]]+)\]\)/g;
+            const nameMap = {};
+            let entry;
+            while ((entry = entryPattern.exec(locationsBlock)) !== null) {
+                const friendlyName = entry[1].trim();
+                const rawCode = entry[2].trim();
+                if (rawCode && friendlyName) {
+                    nameMap[rawCode] = friendlyName;
+                    // Also normalise known typos in the raw code key
+                    const normCode = rawCode.replace(/asteriod/gi, 'Asteroid');
+                    if (normCode !== rawCode) nameMap[normCode] = friendlyName;
+                }
+            }
 
-            // Only emit NEW_LOCATION so the UI can log it for custom mapping.
-            // Do NOT forcefully overwrite the current location because these drop continuously.
-            this.emit('gamestate', { type: 'NEW_LOCATION', value: rawVal });
+            // Emit the name hint map so the dashboard can suggest real names
+            if (Object.keys(nameMap).length > 0) {
+                this.emit('gamestate', { type: 'LOCATION_NAME_HINT', value: nameMap });
+            }
+
+            // Also emit each raw code as a NEW_LOCATION for the sniffer queue
+            Object.keys(nameMap).forEach(rawCode => {
+                this.emit('gamestate', { type: 'NEW_LOCATION', value: rawCode });
+            });
+
             return true;
         }
 
@@ -211,6 +228,28 @@ class NavigationParser extends BaseParser {
                     this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
                 }
             }
+        }
+        // ── 4.6 Cargo Elevator Status ──
+        const cargoMatch = line.match(this.patterns.cargo_elevator);
+        if (cargoMatch) {
+            const elevatorId = cargoMatch[1];
+            const state = cargoMatch[2];
+            this.emit('gamestate', {
+                type: 'CARGO_ELEVATOR',
+                value: { elevatorId, state }
+            });
+            handled = true;
+        }
+
+        // ── 4.7 Stamina / Suffocation Alerts ──
+        const staminaMatch = line.match(this.patterns.stamina_suffocation);
+        if (staminaMatch) {
+            const status = staminaMatch[1]; // "started" or "stopped"
+            const player = staminaMatch[2];
+            this.emit('gamestate', {
+                type: 'SUFFOCATION',
+                value: { status, player }
+            });
             handled = true;
         }
 
@@ -219,8 +258,10 @@ class NavigationParser extends BaseParser {
             const locMatch = line.match(this.patterns.location_generic);
             if (locMatch) {
                 const rawVal = locMatch[1];
-                // Filter out noise (numeric IDs, inventory refs, etc.)
-                if (!rawVal.match(/^\d+$/) && !rawVal.includes(':') && rawVal.length > 3) {
+                // Filter out noise (numeric IDs, inventory refs, items like helmets/weapons/components, etc.)
+                const isItemNoise = /_helmet|_armor|_weapon|_backpack|_suit|_mag|_ammo|_item|_device|_att|_attach|_component/i.test(rawVal) || 
+                                    /^(?:rra|item|weapon|equip|component|armor|helmet)_/i.test(rawVal);
+                if (!rawVal.match(/^\d+$/) && !rawVal.includes(':') && rawVal.length > 3 && !isItemNoise) {
                     const cleaned = this.cleanLocationName(rawVal);
                     this.emitLocation(cleaned, rawVal);
                     handled = true;

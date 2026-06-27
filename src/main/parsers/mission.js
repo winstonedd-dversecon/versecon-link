@@ -32,11 +32,17 @@ class MissionParser extends BaseParser {
             mission_ended_tag: /<MissionEnded>/,
             mission_objective_tag: /<ObjectiveUpserted>/,
 
+            // Engine-level objective update: <CMissionLogEntry::UpdateActiveObjective> ... Text=Retrieve Seismic Data from Research Wing
+            update_active_objective: /<CMissionLogEntry::UpdateActiveObjective>.*?\[Text=([^\]]+)\]/i,
+
+            // ObjectiveUpserted with mission_id extraction (SC 4.x)
+            objective_upserted_id: /<ObjectiveUpserted>.*?mission_id\s+(\S+).*?objective_id\s+(\S+)/i,
+
             // Notification-based patterns (from SHUDEvent_OnNotification and UpdateNotificationItem)
-            contract_accepted: /(?:Added notification "Contract Accepted:\s*|Notification "Contract Accepted:\s*)([^"]+)"/i,
-            contract_complete: /(?:Added notification "Contract Complete[d]?:\s*|Notification "Contract Complete:\s*)([^"]+)"/i,
-            contract_failed: /(?:Added notification "Contract Failed:\s*|Notification "Contract Failed:\s*)([^"]+)"/i,
-            new_objective: /(?:Added notification "New Objective:\s*|Notification "New Objective:\s*)([^"]+)"/i,
+            contract_accepted: /(?:Added notification "Contract Accepted:\s*|Notification "Contract Accepted:\s*|(?:\s*|^)"Contract Accepted:\s*)([^"]+)"\s*(?:\[(\d+)\])?/i,
+            contract_complete: /(?:Added notification "Contract Complete[d]?:\s*|Notification "Contract Complete:\s*|(?:\s*|^)"Contract Complete[d]?:\s*)([^"]+)"/i,
+            contract_failed: /(?:Added notification "Contract Failed:\s*|Notification "Contract Failed:\s*|(?:\s*|^)"Contract Failed:\s*)([^"]+)"/i,
+            new_objective: /(?:Added notification "New Objective:\s*|Notification "New Objective:\s*|(?:\s*|^)"New Objective:\s*)([^"]+)"\s*(?:\[(\d+)\])?/i,
 
 
             // MobiGlas accept
@@ -99,6 +105,7 @@ class MissionParser extends BaseParser {
         if (acceptMatch) {
             let title = acceptMatch[1].trim();
             if (title.endsWith(':')) title = title.slice(0, -1).trim();
+            const notifId = acceptMatch[2] ? parseInt(acceptMatch[2]) : null;
 
             if (effectiveId) {
                 this.missionMap.set(effectiveId, title);
@@ -107,19 +114,42 @@ class MissionParser extends BaseParser {
             this.emit('gamestate', {
                 type: 'MISSION_ACCEPTED',
                 value: title,
-                id: effectiveId
+                id: effectiveId,
+                notifId: notifId
             });
             handled = true;
         }
 
-        // ── 3. New Objective (notification) ──
-        const objMatch = line.match(this.patterns.new_objective);
-        if (objMatch) {
-            const objective = objMatch[1].trim();
+        // ── 3a. Engine-level objective update (SC 4.x primary source) ──
+        // <CMissionLogEntry::UpdateActiveObjective> ... [Text=Retrieve Seismic Data from Research Wing]
+        const updateActiveObjMatch = line.match(this.patterns.update_active_objective);
+        if (updateActiveObjMatch) {
+            let objective = updateActiveObjMatch[1].trim();
+            if (objective.endsWith(':')) objective = objective.slice(0, -1).trim();
+            // Extract mission_id if present on the same line
+            const lineMissionIdMatch = line.match(this.patterns.notification_mission_id);
+            const objMissionId = (lineMissionIdMatch && lineMissionIdMatch[1] !== '00000000-0000-0000-0000-000000000000')
+                ? lineMissionIdMatch[1] : effectiveId;
             this.emit('gamestate', {
                 type: 'MISSION_OBJECTIVE',
                 value: objective,
-                id: effectiveId
+                id: objMissionId
+            });
+            handled = true;
+        }
+
+        // ── 3b. New Objective (notification) ──
+        const objMatch = line.match(this.patterns.new_objective);
+        if (objMatch) {
+            let objective = objMatch[1].trim();
+            if (objective.endsWith(':')) objective = objective.slice(0, -1).trim();
+            const notifId = objMatch[2] ? parseInt(objMatch[2]) : null;
+            
+            this.emit('gamestate', {
+                type: 'MISSION_OBJECTIVE',
+                value: objective,
+                id: effectiveId,
+                notifId: notifId
             });
             handled = true;
         }
@@ -158,10 +188,14 @@ class MissionParser extends BaseParser {
         // ── 6. Generic <MissionEnded> fallback (if structured didn't match) ──
         if (!handled && this.patterns.mission_ended_tag.test(line)) {
             const isSuccess = line.includes('Success') || line.includes('Complete') || line.includes('SUCCEEDED');
-            const status = isSuccess ? 'completed' : 'failed';
-            this.emit('gamestate', { type: 'MISSION_STATUS', value: status, id: effectiveId });
-            if (effectiveId) this.missionMap.delete(effectiveId);
-            handled = true;
+            const isFailure = line.includes('Failed') || line.includes('FAILED') || line.includes('Abandoned') || line.includes('Cancelled') || line.includes('Aborted');
+            
+            if (isSuccess || isFailure) {
+                const status = isSuccess ? 'completed' : 'failed';
+                this.emit('gamestate', { type: 'MISSION_STATUS', value: status, id: effectiveId });
+                if (effectiveId) this.missionMap.delete(effectiveId);
+                handled = true;
+            }
         }
 
         // ── 7. Tracked Mission Change ──

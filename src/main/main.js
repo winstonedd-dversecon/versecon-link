@@ -14,6 +14,7 @@ const Tesseract = require('tesseract.js');
 const screenshot = require('screenshot-desktop');
 
 let dashboardWindow;
+let splashWindow;
 let overlayWindow;
 let alertWindow;
 let cncWindow; // v2.8 CNC Overlay
@@ -31,6 +32,9 @@ let isQuitting = false;
 let dndMode = false;
 let gameActive = false;
 let recentDetections = [];
+let recentShipNotifications = {}; // ship name -> last notification timestamp (ms)
+let lastHudWarningTimes = {}; // warning text -> last speech timestamp (ms)
+let lastHudWarningBroadcastTimes = {}; // warning text -> last broadcast timestamp (ms)
 
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
@@ -388,6 +392,12 @@ let config = {
     soundEnabled: false,
     hudWarningsEnabled: false,
     hudFlashEnabled: true,
+    enableFreightElevatorAlerts: true,
+    enableSquadProximityRadar: true,
+    enableJurisdictionAlerts: true,
+    enableStaminaOxygenAlerts: true,
+    farmingWishlist: [],
+    activeRun: null,
     overlayVisibility: {
         hudTop: false,
         sessionInfo: false,
@@ -401,7 +411,8 @@ let config = {
         chatHud: false,
         nearbyPlayers: false,
         healthMonitor: false,
-        networkPanel: false
+        networkPanel: false,
+        farmingWishlist: false
     }
 };
 let patternDatabase = { patterns: [] };
@@ -463,13 +474,14 @@ function loadConfig() {
                     chatHud: false,
                     nearbyPlayers: false,
                     healthMonitor: false,
-                    networkPanel: false
+                    networkPanel: false,
+                    farmingWishlist: false
                 };
             } else {
                 const props = [
                     'hudTop', 'sessionInfo', 'systemInfo', 'shipStatus', 'locationZone',
                     'rightPanel', 'partyList', 'tacticalFeed', 'shipVisualizer', 'chatHud',
-                    'nearbyPlayers', 'healthMonitor', 'networkPanel'
+                    'nearbyPlayers', 'healthMonitor', 'networkPanel', 'farmingWishlist'
                 ];
                 props.forEach(p => {
                     if (config.overlayVisibility[p] === undefined) {
@@ -492,6 +504,17 @@ function loadConfig() {
             if (config.interdictionQuantumOnly === undefined) config.interdictionQuantumOnly = true;
             if (config.quantumExitsOnly === undefined) config.quantumExitsOnly = false;
             if (config.suppressMassQuantumAlerts === undefined) config.suppressMassQuantumAlerts = true;
+            if (config.enableFreightElevatorAlerts === undefined) config.enableFreightElevatorAlerts = true;
+            if (config.enableSquadProximityRadar === undefined) config.enableSquadProximityRadar = true;
+            if (config.enableJurisdictionAlerts === undefined) config.enableJurisdictionAlerts = true;
+            if (config.enableStaminaOxygenAlerts === undefined) config.enableStaminaOxygenAlerts = true;
+            if (config.enableFireAlerts === undefined) config.enableFireAlerts = true;
+            if (config.enableCorpseAlerts === undefined) config.enableCorpseAlerts = true;
+            if (config.enableDeathAlerts === undefined) config.enableDeathAlerts = true;
+            if (config.enableVehicleDestructionAlerts === undefined) config.enableVehicleDestructionAlerts = true;
+            if (config.enableMissionStatusAlerts === undefined) config.enableMissionStatusAlerts = true;
+            if (config.enableCrimestatAlerts === undefined) config.enableCrimestatAlerts = true;
+            if (!config.farmingWishlist) config.farmingWishlist = [];
             if (!config.friendCode) {
                 config.friendCode = generateFriendCode();
                 saveConfig();
@@ -517,11 +540,32 @@ function saveConfig() {
 // ═══════════════════════════════════════════════════════
 
 function createWindows() {
-    // 1. Main Dashboard Window
+    // Create Splash Window
+    splashWindow = new BrowserWindow({
+        width: 420,
+        height: 320,
+        frame: false,
+        show: false,
+        alwaysOnTop: true,
+        resizable: false,
+        backgroundColor: '#0b0c10',
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+    splashWindow.loadFile(path.join(__dirname, '../renderer/splash.html'));
+
+    splashWindow.once('ready-to-show', () => {
+        splashWindow.show();
+    });
+
+    // 1. Main Dashboard Window (show: false)
     dashboardWindow = new BrowserWindow({
         width: 1100,
         height: 750,
         frame: false,
+        show: false,
         title: 'VerseCon Link',
         backgroundColor: '#0b0c10',
         webPreferences: {
@@ -531,6 +575,19 @@ function createWindows() {
     });
 
     dashboardWindow.loadFile(path.join(__dirname, '../renderer/dashboard.html'));
+
+    // Swap splash for dashboard once ready
+    dashboardWindow.once('ready-to-show', () => {
+        setTimeout(() => {
+            if (splashWindow) {
+                splashWindow.destroy();
+                splashWindow = null;
+            }
+            if (dashboardWindow) {
+                dashboardWindow.show();
+            }
+        }, 2000); // Give the themed splash screen longer visibility (2 seconds)
+    });
 
     dashboardWindow.webContents.on('did-finish-load', () => {
         LogWatcher.emitCurrentState();
@@ -1207,6 +1264,15 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.suppressMassQuantumAlerts !== undefined) {
         config.suppressMassQuantumAlerts = newConfig.suppressMassQuantumAlerts;
     }
+    if (newConfig.enableFreightElevatorAlerts !== undefined) config.enableFreightElevatorAlerts = newConfig.enableFreightElevatorAlerts;
+    if (newConfig.enableStaminaOxygenAlerts !== undefined) config.enableStaminaOxygenAlerts = newConfig.enableStaminaOxygenAlerts;
+    if (newConfig.enableJurisdictionAlerts !== undefined) config.enableJurisdictionAlerts = newConfig.enableJurisdictionAlerts;
+    if (newConfig.enableFireAlerts !== undefined) config.enableFireAlerts = newConfig.enableFireAlerts;
+    if (newConfig.enableCorpseAlerts !== undefined) config.enableCorpseAlerts = newConfig.enableCorpseAlerts;
+    if (newConfig.enableDeathAlerts !== undefined) config.enableDeathAlerts = newConfig.enableDeathAlerts;
+    if (newConfig.enableVehicleDestructionAlerts !== undefined) config.enableVehicleDestructionAlerts = newConfig.enableVehicleDestructionAlerts;
+    if (newConfig.enableMissionStatusAlerts !== undefined) config.enableMissionStatusAlerts = newConfig.enableMissionStatusAlerts;
+    if (newConfig.enableCrimestatAlerts !== undefined) config.enableCrimestatAlerts = newConfig.enableCrimestatAlerts;
     if (newConfig.hudWarningsEnabled !== undefined) {
         config.hudWarningsEnabled = newConfig.hudWarningsEnabled;
     }
@@ -1224,6 +1290,8 @@ ipcMain.on('settings:save', (event, newConfig) => {
             console.warn('[Main] Could not update filter AI ships on parser:', e.message);
         }
     }
+    if (newConfig.farmingWishlist !== undefined) config.farmingWishlist = newConfig.farmingWishlist;
+    if (newConfig.activeRun !== undefined) config.activeRun = newConfig.activeRun;
 
     saveConfig();
 
@@ -1317,6 +1385,19 @@ LogWatcher.on('gamestate', (data) => {
         } catch (e) {}
     }
 
+    // Cache states during initial scan
+    if (data.type === 'SPAWN_SET') LogWatcher.cachedState.spawn = data.value;
+    if (data.type === 'SHIP_ENTER') LogWatcher.cachedState.ship = data.value;
+    if (data.type === 'SESSION_START') LogWatcher.cachedState.startTime = data.value;
+    if (data.type === 'BUILD_INFO') LogWatcher.cachedState.build = data.value;
+    if (data.type === 'HANGAR_STATE') LogWatcher.cachedState.hangarState = data.value;
+
+    if (LogWatcher.isInitialScanning) {
+        // Broadcast parsed data to windows so logs tail, but skip alerts / writing to disk
+        broadcast('log:update', data);
+        return;
+    }
+
     // ═══ VOICE ALERTS (v2.10) ═══
     if (gameActive) {
         if (data.type === 'SERVER_CONNECTED' && data.value) speak(`Connected to shard ${data.value.shard || data.value}`);
@@ -1357,6 +1438,23 @@ LogWatcher.on('gamestate', (data) => {
     if (data.type === 'HUD_WARNING' && !config.hudWarningsEnabled) {
         // Still broadcast as informational (feed entry) but not as a warning
         broadcast('log:update', { ...data, type: 'STATUS', level: 'INFO' });
+    } else if (data.type === 'HUD_WARNING') {
+        const warnText = data.value.trim();
+        const now = Date.now();
+        const lastBroadcastTime = lastHudWarningBroadcastTimes[warnText] || 0;
+        
+        if (now - lastBroadcastTime > 15000) {
+            lastHudWarningBroadcastTimes[warnText] = now;
+            if (!gameActive && isWarning) {
+                console.log(`[Main] Suppressed warning/alert broadcast (${data.type}) because gameActive is false.`);
+            } else {
+                broadcast('log:update', data);
+            }
+        } else {
+            console.log(`[Main] Suppressed duplicate HUD warning broadcast: "${warnText}" (last broadcast ${now - lastBroadcastTime}ms ago).`);
+            // Suppress from processing downstream too (TTS, reactions) by clearing data type
+            return;
+        }
     } else if (!gameActive && isWarning) {
         console.log(`[Main] Suppressed warning/alert broadcast (${data.type}) because gameActive is false.`);
     } else {
@@ -1365,10 +1463,19 @@ LogWatcher.on('gamestate', (data) => {
 
     // ═══ VOICE ALERTS (HUD) ═══
     if (gameActive && data.type === 'HUD_WARNING' && data.value) {
-        if (data.value.toLowerCase().includes('fire')) {
-            speak('Warning. Fire detected.');
+        const warnText = data.value.trim();
+        const now = Date.now();
+        const lastSpeakTime = lastHudWarningTimes[warnText] || 0;
+        
+        if (now - lastSpeakTime > 25000) {
+            lastHudWarningTimes[warnText] = now;
+            if (warnText.toLowerCase().includes('fire')) {
+                speak('Warning. Fire detected.');
+            } else {
+                speak(warnText);
+            }
         } else {
-            speak(data.value);
+            console.log(`[Main] Suppressed duplicate HUD voice warning speech: "${warnText}" (last spoken ${now - lastSpeakTime}ms ago).`);
         }
     }
 
@@ -1388,11 +1495,29 @@ LogWatcher.on('gamestate', (data) => {
     if (data.type === 'RADAR_SINGLE' || (data.type === 'TACTICAL_QUANTUM' && data.direction === 'arrival') ||
         data.type === 'TACTICAL_PROXIMITY') {
         const now = Date.now();
+        // --- Global mass-arrival suppression (>2 distinct events in 3s) ---
         recentDetections.push(now);
-        recentDetections = recentDetections.filter(t => now - t < 5000);
-        if (config.suppressMassQuantumAlerts && recentDetections.length > 3) {
+        recentDetections = recentDetections.filter(t => now - t < 3000);
+        if (config.suppressMassQuantumAlerts && recentDetections.length > 2) {
             isSuppressed = true;
-            console.log(`[Main] Suppressing HUD alert for ${data.type} due to rapid successive arrivals/detections.`);
+            console.log(`[Main] Suppressing HUD alert for ${data.type} (mass arrival: ${recentDetections.length} events in 3s).`);
+        }
+        // --- Per-ship-name deduplication (same class within 4s) ---
+        const shipKey = (data.ship || data.value || '').toLowerCase().split(/[_\s]/)[0]; // e.g. 'drak' from 'DRAK_Golem_OX'
+        const fullShipKey = (data.ship || data.value || '').toLowerCase();
+        const lastNotif = recentShipNotifications[fullShipKey] || 0;
+        if (!isSuppressed && now - lastNotif < 4000) {
+            isSuppressed = true;
+            console.log(`[Main] Suppressing duplicate notification for same ship: ${data.ship || data.value} (last notif ${now - lastNotif}ms ago).`);
+        }
+        if (!isSuppressed) {
+            recentShipNotifications[fullShipKey] = now;
+        }
+        // Prune old entries from the map every 30s to avoid memory leak
+        if (Math.random() < 0.05) {
+            for (const k of Object.keys(recentShipNotifications)) {
+                if (now - recentShipNotifications[k] > 30000) delete recentShipNotifications[k];
+            }
         }
     }
 
@@ -1411,26 +1536,28 @@ LogWatcher.on('gamestate', (data) => {
         if (data.type === 'STATUS') {
             console.log(`[Main] STATUS Event: "${data.value}" source:${data.source || 'unknown'}`);
             if (data.value === 'death') {
-                showTrayNotification('☠️ DEATH DETECTED', 'Your character has died.');
+                if (config.enableDeathAlerts !== false) showTrayNotification('☠️ DEATH DETECTED', 'Your character has died.');
                 LogWatcher.cachedState.ship = null;
                 broadcast('gamestate', { type: 'SHIP_EXIT', value: null });
             } else if (data.value === 'suffocating') {
-                showTrayNotification('🌡️ SUFFOCATING', 'Check your helmet seal!');
+                if (config.enableStaminaOxygenAlerts !== false) showTrayNotification('🌡️ SUFFOCATING', 'Check your helmet seal!');
             }
         } else if (data.type === 'DEATH') {
             const killer = data.details?.killer || 'Unknown';
-            showTrayNotification('☠️ KILLED', `Killed by ${killer}`);
+            if (config.enableDeathAlerts !== false) showTrayNotification('☠️ KILLED', `Killed by ${killer}`);
             LogWatcher.cachedState.ship = null;
             broadcast('gamestate', { type: 'SHIP_EXIT', value: null });
         } else if (data.type === 'HAZARD_FIRE') {
-            showTrayNotification('🔥 FIRE', data.value || 'Fire detected on ship');
+            if (config.enableFireAlerts !== false) showTrayNotification('🔥 FIRE', data.value || 'Fire detected on ship');
         } else if (data.type === 'PROXIMITY_DEATH') {
             const displayValue = data.value === 'Nearby Player' ? 'A player' : data.value;
-            showTrayNotification('☠️ PROXIMITY KIA', `${displayValue} was eliminated nearby.`);
-            if (data.value === 'Nearby Player') {
-                speak('Nearby player eliminated.');
-            } else {
-                speak(`Proximity target ${data.value} eliminated.`);
+            if (config.enableDeathAlerts !== false) {
+                showTrayNotification('☠️ PROXIMITY KIA', `${displayValue} was eliminated nearby.`);
+                if (data.value === 'Nearby Player') {
+                    speak('Nearby player eliminated.');
+                } else {
+                    speak(`Proximity target ${data.value} eliminated.`);
+                }
             }
         }
     }
@@ -1459,8 +1586,8 @@ LogWatcher.on('gamestate', (data) => {
     // Quantum ship arrival (FinalStop=0 confirmed signal)
     if (gameActive && data.type === 'TACTICAL_QUANTUM' && data.direction === 'arrival') {
         const shipName = data.ship || 'Unknown Ship';
-        showTrayNotification('🌌 QUANTUM ARRIVAL', `${shipName} dropped out of quantum nearby`);
         if (!isSuppressed) {
+            showTrayNotification('🌌 QUANTUM ARRIVAL', `${shipName} dropped out of quantum nearby`);
             speak(`Attention. ${shipName} arrived from quantum.`);
             if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
                 alertWindow.show();
@@ -1559,22 +1686,74 @@ LogWatcher.on('gamestate', (data) => {
         const now = Date.now();
 
         if (data.type === 'MISSION_ACCEPTED') {
-            config.activeMissions[id] = {
-                id: id,
-                title: data.value,
-                objective: 'Pending objective...',
+            const title = data.value;
+            let existingId = Object.keys(config.activeMissions).find(k => 
+                config.activeMissions[k].status === 'active' && 
+                config.activeMissions[k].title.toLowerCase().trim() === title.toLowerCase().trim()
+            );
+
+            const targetId = existingId || id;
+            
+            config.activeMissions[targetId] = {
+                id: targetId,
+                title: title,
+                objective: config.activeMissions[targetId]?.objective || 'Pending objective...',
                 status: 'active',
-                tracked: true, // Auto-track new ones
+                tracked: true,
                 timestamp: now
             };
-            // Untrack others? Maybe user wants to track the new one.
-            Object.values(config.activeMissions).forEach(m => { if (m.id !== id) m.tracked = false; });
-            showTrayNotification('📋 Contract Accepted', data.value);
+            // Map notifId to missionId
+            if (data.notifId) {
+                if (!config.missionNotifMap) config.missionNotifMap = {};
+                config.missionNotifMap[data.notifId] = targetId;
+            }
+            // Untrack others
+            Object.values(config.activeMissions).forEach(m => { if (m.id !== targetId) m.tracked = false; });
+            if (!existingId) {
+                showTrayNotification('📋 Contract Accepted', title);
+            }
         }
         else if (data.type === 'MISSION_OBJECTIVE') {
-            if (config.activeMissions[id]) {
-                config.activeMissions[id].objective = data.value;
-                config.activeMissions[id].timestamp = now;
+            let targetId = id;
+            
+            // Try resolving via sequential notification ID sequence!
+            if (data.notifId && config.missionNotifMap) {
+                let bestDiff = 999;
+                let foundMissionId = null;
+                Object.keys(config.missionNotifMap).forEach(acceptedNotifId => {
+                    const diff = data.notifId - parseInt(acceptedNotifId);
+                    if (diff >= 0 && diff < 10 && diff < bestDiff) {
+                        bestDiff = diff;
+                        foundMissionId = config.missionNotifMap[acceptedNotifId];
+                    }
+                });
+                if (foundMissionId) {
+                    targetId = foundMissionId;
+                }
+            }
+
+            if (!config.activeMissions[targetId] || targetId.startsWith('unknown_')) {
+                const active = Object.values(config.activeMissions)
+                    .filter(m => m.status === 'active')
+                    .sort((a, b) => b.timestamp - a.timestamp);
+                if (active.length > 0) {
+                    targetId = active[0].id;
+                }
+            }
+
+            if (config.activeMissions[targetId]) {
+                const currentObj = config.activeMissions[targetId].objective || '';
+                const cleanNew = data.value.trim();
+                
+                if (currentObj === 'Pending objective...' || currentObj === '-') {
+                    config.activeMissions[targetId].objective = cleanNew;
+                } else {
+                    const lines = currentObj.split('\n').map(l => l.trim());
+                    if (!lines.includes(cleanNew)) {
+                        config.activeMissions[targetId].objective = currentObj + '\n' + cleanNew;
+                    }
+                }
+                config.activeMissions[targetId].timestamp = now;
             }
         }
         else if (data.type === 'MISSION_CHANGED') { // Tracking update
@@ -1603,10 +1782,10 @@ LogWatcher.on('gamestate', (data) => {
                 config.activeMissions[targetId].status = data.value; // 'completed', 'failed'
                 if (data.value === 'completed' || data.value === 'ended') {
                     config.activeMissions[targetId].status = 'completed';
-                    showTrayNotification('✅ Contract Complete', config.activeMissions[targetId].title || 'Mission');
+                    if (config.enableMissionStatusAlerts !== false) showTrayNotification('✅ Contract Complete', config.activeMissions[targetId].title || 'Mission');
                 } else if (data.value === 'failed') {
                     config.activeMissions[targetId].status = 'failed';
-                    showTrayNotification('❌ Contract Failed', config.activeMissions[targetId].title || 'Mission');
+                    if (config.enableMissionStatusAlerts !== false) showTrayNotification('❌ Contract Failed', config.activeMissions[targetId].title || 'Mission');
                 }
             }
         }
@@ -3018,15 +3197,45 @@ function loadBlueprintData() {
 
     let masterList = [];
     try {
+        let fullList = [];
+        let seedList = [];
+        
         if (fs.existsSync(fullListFile)) {
             const full = JSON.parse(fs.readFileSync(fullListFile, 'utf8'));
-            masterList = full.masterList || [];
-            console.log(`[Blueprint] Using full masterList: ${masterList.length} entries`);
-        } else if (fs.existsSync(seedFile)) {
-            const seed = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
-            masterList = seed.masterList || [];
-            console.log(`[Blueprint] Using seed masterList: ${masterList.length} entries`);
+            fullList = full.masterList || [];
         }
+        if (fs.existsSync(seedFile)) {
+            const seed = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
+            seedList = seed.masterList || [];
+        }
+        
+        // Merge the lists to ensure hand-curated items and Wikelo sources are included
+        const map = new Map();
+        
+        // Add full list first
+        fullList.forEach(item => {
+            map.set(item.name.toLowerCase(), { ...item });
+        });
+        
+        // Merge seed items (preferring curated sources and fields)
+        seedList.forEach(item => {
+            const lower = item.name.toLowerCase();
+            if (map.has(lower)) {
+                const existing = map.get(lower);
+                map.set(lower, {
+                    ...existing,
+                    source: item.source || existing.source,
+                    unreleased: item.unreleased !== undefined ? item.unreleased : existing.unreleased,
+                    ingredients: (item.ingredients && item.ingredients.length > 0) ? item.ingredients : existing.ingredients
+                });
+            } else {
+                map.set(lower, { ...item });
+            }
+        });
+        
+        masterList = Array.from(map.values());
+        masterList.sort((a, b) => a.name.localeCompare(b.name));
+        console.log(`[Blueprint] Loaded ${masterList.length} masterList entries (merged seed & full list)`);
     } catch (e) {
         console.warn('[Blueprint] Failed to load masterList:', e.message);
     }
@@ -3062,6 +3271,13 @@ LogWatcher.on('gamestate', (data) => {
 ipcMain.handle('blueprint:get-data', async () => {
     return loadBlueprintData();
 });
+
+// Run Tracker: expose just the master list (no blueprint collection state needed)
+ipcMain.handle('blueprints:get-master-list', async () => {
+    const data = loadBlueprintData();
+    return data.masterList || [];
+});
+
 
 // Open file picker for old logs, scan them, merge into blueprints.json
 ipcMain.handle('blueprint:scan-logs', async () => {

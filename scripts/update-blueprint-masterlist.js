@@ -120,6 +120,10 @@ async function main() {
         name:     bp.name,
         category: simplifyCategory(bp.category),
         source:   sourceSummary(bp.missions),
+        ingredients: bp.ingredients ? bp.ingredients.map(ing => ({
+            name: ing.name,
+            quantity: ing.quantity_scu
+        })) : []
     }));
 
     // Sort alphabetically

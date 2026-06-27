@@ -11,7 +11,10 @@ class HangarParser extends BaseParser {
             platform_changed: /Loading Platform Manager \[(LoadingPlatformManager_[^\]]+)\] Platform state changed to (\w+)/i,
 
             // Generic ATC Assignment Fallback
-            atc_assigned: /Notification "Landing pad ([^"]+) assigned"/i
+            atc_assigned: /Notification "Landing pad ([^"]+) assigned"/i,
+
+            // ATC request complete / hangar request completed
+            hangar_request: /(?:Added notification "Hangar Request Completed:\s*|Notification "Hangar Request Completed:\s*|(?:\s*|^)"Hangar Request Completed:\s*)([^"]*)"/i
         };
         this.currentState = null;
     }
@@ -74,6 +77,23 @@ class HangarParser extends BaseParser {
             this.emit('gamestate', {
                 type: 'HANGAR_ASSIGNED',
                 value: atcMatch[1]
+            });
+            handled = true;
+        }
+
+        const hangarReqMatch = line.match(this.patterns.hangar_request);
+        if (hangarReqMatch) {
+            this.emit('gamestate', {
+                type: 'HANGAR_STATE',
+                value: 'READY',
+                manager: 'ATC',
+                rawState: 'Hangar Request Completed'
+            });
+            this.emit('gamestate', {
+                type: 'TACTICAL_HANGAR',
+                value: 'Hangar: Opening Doors',
+                manager: 'ATC',
+                rawState: 'Hangar Request Completed'
             });
             handled = true;
         }

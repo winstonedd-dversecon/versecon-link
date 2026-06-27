@@ -16,6 +16,10 @@ class SocialParser extends BaseParser {
             channel_destroyed: /<Channel Destroyed>/i,
             channel_connected: /<Channel Connection Complete>/i,
             channel_disconnected: /<Channel Disconnected>/i,
+            
+            // Squad/Party streaming proximity
+            party_stream_in: /<CPartyMarkerComponent RWES> Streamed in party marker id (\d+)\. TrackedEntityId: (\d+)/i,
+            party_stream_out: /<CPartyMarkerComponent UFES> Streaming out party marker id (\d+)\. TrackedEntityId: (\d+)/i,
         };
         this.rsiHandle = '';
         this.localPlayerId = '';
@@ -115,6 +119,28 @@ class SocialParser extends BaseParser {
                 type: 'VOIP',
                 value: 'Voice Channel Disconnected',
                 level: 'INFO'
+            });
+            handled = true;
+        }
+
+        const partyInMatch = line.match(this.patterns.party_stream_in);
+        if (partyInMatch) {
+            const markerId = partyInMatch[1];
+            const entityId = partyInMatch[2];
+            this.emit('gamestate', {
+                type: 'PARTY_PROXIMITY',
+                value: { action: 'stream_in', markerId, entityId }
+            });
+            handled = true;
+        }
+
+        const partyOutMatch = line.match(this.patterns.party_stream_out);
+        if (partyOutMatch) {
+            const markerId = partyOutMatch[1];
+            const entityId = partyOutMatch[2];
+            this.emit('gamestate', {
+                type: 'PARTY_PROXIMITY',
+                value: { action: 'stream_out', markerId, entityId }
             });
             handled = true;
         }

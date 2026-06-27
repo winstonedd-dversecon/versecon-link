@@ -31,6 +31,7 @@ class LogWatcher extends EventEmitter {
         this.filePath = null;
         this.isWatching = false;
         this.lastSize = 0;
+        this.isInitialScanning = false;
 
         // Attachment tracking for live overlays
         this.attachments = []; // array of { timestamp, attachmentId, archetype, numericId, port, raw }
@@ -284,6 +285,7 @@ class LogWatcher extends EventEmitter {
         this.emit('status', { connected: true, path: this.filePath });
 
         // Initial Scan (Async non-blocking)
+        this.isInitialScanning = true;
         setTimeout(async () => {
             try {
                 const content = await fs.promises.readFile(this.filePath, 'utf-8');
@@ -309,9 +311,11 @@ class LogWatcher extends EventEmitter {
                     await new Promise(resolve => setTimeout(resolve, 5)); // Yield to unblock UI
                 }
                 console.log(`[LogWatcher] Initial scan complete.`);
+                this.isInitialScanning = false;
                 this.emit('initial-scan-complete');
             } catch (e) {
                 console.error('[LogWatcher] Initial scan failed:', e);
+                this.isInitialScanning = false;
             }
         }, 100);
 

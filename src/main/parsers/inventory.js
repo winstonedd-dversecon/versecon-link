@@ -9,10 +9,13 @@ const BaseParser = require('./base');
 class InventoryParser extends BaseParser {
     constructor() {
         super();
-        this.pattern = /<([^>]+)>\s+\[[^\]]+\]\s+<AttachmentReceived>\s+Player\[([^\]]+)\]\s+Attachment\[([^,\]]+),\s*([^,\]]+),\s*([^\]]+)\][^\n]*?Port\[([^\]]+)\]/i;
+        this.pattern = /<([^>]+)>\s+\[[^\]]+\]\s+<AttachmentReceived>\s+Player\[([^\]]+)\]\s+Attachment\[([^,\]]+),\s*([^,\]]+),\s*([^\]]+)\](?:[^\n]*?Port\[([^\]]+)\])?/i;
 
         // Inventory Management tracking (verified in Game.log)
         this.inventoryPattern = /<InventoryManagement>\s+Request\[(\d+)\]\s+for\s+'([^']+)'\s+\[\d+\]\s+Result\[(\w+)\]/i;
+        this.locationInventoryPattern = /<RequestLocationInventory>\s+Player\[([^\]]+)\]\s+requested\s+inventory\s+for\s+Location\[([^\]]+)\]/i;
+        this.recoveryPattern = /<Adding non kept item.*?>\s+Item\s+'[^']+'\s+-\s+Class\(([^)]+)\)/i;
+        this.itemMovePattern = /<InventoryManagement>\s+New\s+request\[\d+\]\s+Player\[([^\]]+)\]\s+Type\[Move\]\s+SourceInventory\[([^\]]+)\]\s+TargetInventory\[([^\]]+)\]\s+ItemClass\[([^\]]+)\]/i;
         this.rsiHandle = '';
         this.playerAttachmentTimes = new Map();
         this.lastAlertTimes = new Map();
@@ -102,6 +105,54 @@ class InventoryParser extends BaseParser {
                     level: 'WARNING'
                 });
             }
+            return true;
+        }
+
+        const locInvMatch = line.match(this.locationInventoryPattern);
+        if (locInvMatch) {
+            const player = locInvMatch[1];
+            const location = locInvMatch[2];
+            this.emit('gamestate', {
+                type: 'PLAYER_SPAWNED',
+                value: { player, location }
+            });
+            return true;
+        }
+
+        const recMatch = line.match(this.recoveryPattern);
+        if (recMatch) {
+            const archetype = recMatch[1];
+            this.emit('gamestate', {
+                type: 'ITEM_RECOVERY',
+                value: { archetype }
+            });
+            return true;
+        }
+
+        const moveMatch = line.match(this.itemMovePattern);
+        if (moveMatch) {
+            const player = moveMatch[1];
+            const source = moveMatch[2];
+            const target = moveMatch[3];
+            const itemClass = moveMatch[4];
+
+            let direction = 'move';
+            if (source.includes(':Location:') && !target.includes(':Location:')) {
+                direction = 'withdraw';
+            } else if (!source.includes(':Location:') && target.includes(':Location:')) {
+                direction = 'deposit';
+            }
+
+            this.emit('gamestate', {
+                type: 'ITEM_TRANSFER',
+                value: {
+                    player,
+                    direction,
+                    itemClass,
+                    source,
+                    target
+                }
+            });
             return true;
         }
 
