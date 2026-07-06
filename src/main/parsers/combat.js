@@ -76,6 +76,9 @@ class CombatParser extends BaseParser {
             // Corpse stream-in (corpse/death details)
             // Captures: "body_01_noMagicPocket_463403260094"
             corpse_stream: /<CSCActorCorpseUtils::PopulateItemPortForItemRecoveryEntitlement>.*?Item\s+'(body_01_noMagicPocket_\d+)/i,
+            
+            // Combat Hit / Damage logs fallback
+            combat_hit: /DamageType|ApplyDamage|OnDamage|OnHit|Shield pool/i,
         };
 
         // Track recent deaths for crew correlation (deaths within 200ms of vehicle destruction)
@@ -103,9 +106,12 @@ class CombatParser extends BaseParser {
         // Character differentiation & OCS Radar State
         this.rsiHandle = '';
         this.recentOcsIds = new Map();
+        this.lastServerRerouteTime = 0;
         this.radarBuffer = [];
         this.radarBufferTimeout = null;
         this.recentAlertedShips = [];
+        this.playerOwnShipIds = new Set();
+        this.hostComponentCounts = new Map();
     }
 
     parse(line, context = {}) {
@@ -126,6 +132,16 @@ class CombatParser extends BaseParser {
             return false;
         }
 
+        // Track pilot seat exits and starmap route calculations to learn own ship ID
+        if (line.includes('ClearDriver') || line.includes('releasing control token')) {
+            const m = line.match(/releasing control token for '[^']+_(\d+)'/i);
+            if (m) this.playerOwnShipIds.add(m[1]);
+        }
+        if (line.includes('Failed to get starmap route data')) {
+            const m = line.match(/Failed to get starmap route data!.*?\s*\|\s*[A-Za-z0-9_]+\[\d+\]_(\d+)/i);
+            if (m) this.playerOwnShipIds.add(m[1]);
+        }
+
         // ── 0. OCS Radar Detections ──
         const ocsMatch = line.match(this.patterns.ocs_radar);
         if (ocsMatch) {
@@ -135,6 +151,13 @@ class CombatParser extends BaseParser {
             const hostId = ocsMatch[4];
 
             const now = Date.now();
+
+            // Track component load counts on this host ID. If >= 8 components are registered, it is heuristically our own ship.
+            const componentCount = (this.hostComponentCounts.get(hostId) || 0) + 1;
+            this.hostComponentCounts.set(hostId, componentCount);
+            if (componentCount >= 8) {
+                this.playerOwnShipIds.add(hostId);
+            }
 
             // Clean up 5-second cache
             for (const [id, ts] of this.recentOcsIds.entries()) {
@@ -149,18 +172,15 @@ class CombatParser extends BaseParser {
                 this.recentOcsIds.set(hostId, now);
 
                 const chassisName = this.getCleanShipName(hostName);
-
-                // Skip if this is the player's own ship
-                const isOwnShip = this.currentShip && (
-                    chassisName.toLowerCase().includes(this.currentShip.toLowerCase()) ||
-                    this.currentShip.toLowerCase().includes(chassisName.toLowerCase())
-                );
-
+                const isServer = /^(?:pub|dev|qa|hub)_/i.test(hostName) || 
+                                 /^(?:pub|dev|qa|hub)_/i.test(entityName) || 
+                                 /^(?:pub|dev|qa|hub)\s/i.test(hostName) ||
+                                 /^(?:pub|dev|qa|hub)\s/i.test(entityName);
                 const isAI = this.filterAIShips && this.isAIShip(entityName, hostName, chassisName);
 
-                if (!isOwnShip && !isAI) {
-                    // Add to buffer for burst grouping
-                    this.radarBuffer.push({ chassisName, hostId, timestamp: now });
+                if (!isAI && !isServer) {
+                    // Add to buffer for burst grouping (we filter own-ship in flush)
+                    this.radarBuffer.push({ chassisName, hostId, rawHostName: hostName, timestamp: now });
                 }
 
                 if (!this.radarBufferTimeout) {
@@ -392,14 +412,28 @@ class CombatParser extends BaseParser {
             const finalStopMatch = line.match(/FinalStop=(-?\d+)/i);
             const finalStop = finalStopMatch ? parseInt(finalStopMatch[1]) : null;
 
-            // Only process FinalStop=0 (confirmed quantum arrival signal)
-            if (finalStop === 0) {
+            if (line.includes('NULL ENTITY')) {
+                const now = Date.now();
+                if ((now - this.lastServerRerouteTime) > 15000) {
+                    this.lastServerRerouteTime = now;
+                    this.emit('gamestate', {
+                        type: 'SERVER_REROUTED',
+                        value: 'Server authority transferred / Meshing boundary crossed'
+                    });
+                    handled = true;
+                }
+            } else if (finalStop === 0) {
                 // Try to extract ship entity name from the line
                 // Matches: RSI_Hermes_509694187799[509694187799] or DRAK_Corsair_512402756909[...]
                 const entityMatch = line.match(/\|\s*([A-Za-z]+_[A-Za-z]+_[A-Za-z0-9_]+)\[\d+\]/i);
                 let shipName = 'Unknown Ship';
+                let hostId = null;
                 if (entityMatch && entityMatch[1]) {
                     shipName = this.getCleanShipName(entityMatch[1]);
+                    const idMatch = entityMatch[1].match(/_(\d{8,18})$/);
+                    if (idMatch) {
+                        hostId = idMatch[1];
+                    }
                 }
 
                 const isOwnShip = this.currentShip && (
@@ -413,7 +447,11 @@ class CombatParser extends BaseParser {
                         type: 'TACTICAL_QUANTUM',
                         value: actionMsg,
                         ship: shipName,
-                        direction: 'arrival'
+                        direction: 'arrival',
+                        details: {
+                            chassis: shipName,
+                            hostId: hostId
+                        }
                     });
                     handled = true;
                 }
@@ -446,6 +484,16 @@ class CombatParser extends BaseParser {
                     }
                 }
             }
+        }
+
+        // ── Combat Hits & Damage ──
+        if (this.patterns.combat_hit && this.patterns.combat_hit.test(line)) {
+            this.emit('gamestate', {
+                type: 'COMBAT_HIT',
+                value: 'Target Damaged',
+                line: line
+            });
+            handled = true;
         }
 
         return handled;
@@ -555,6 +603,9 @@ class CombatParser extends BaseParser {
         const uniqueShips = [];
         const seenIds = new Set();
         for (const s of ships) {
+            // Filter out player's own ship
+            if (this.playerOwnShipIds.has(s.hostId)) continue;
+
             // Check if seen in this burst
             if (seenIds.has(s.hostId)) continue;
             seenIds.add(s.hostId);
@@ -573,7 +624,32 @@ class CombatParser extends BaseParser {
             this.recentAlertedShips.push({ name: s.chassisName, id: s.hostId, timestamp: now });
         }
 
-        if (uniqueShips.length > 3) {
+        // Trigger NEW_SHIP checks for any unmapped ship codes
+        for (const s of uniqueShips) {
+            if (s.rawHostName) {
+                let isMapped = false;
+                if (this.customShipNames) {
+                    if (this.customShipNames[s.rawHostName]) {
+                        isMapped = true;
+                    } else {
+                        for (const key of Object.keys(this.customShipNames)) {
+                            if (s.rawHostName.toLowerCase() === key.toLowerCase() ||
+                                s.rawHostName.toLowerCase().startsWith(key.toLowerCase() + '_') ||
+                                s.rawHostName.toLowerCase().includes('_' + key.toLowerCase() + '_') ||
+                                s.rawHostName.toLowerCase().endsWith('_' + key.toLowerCase())) {
+                                isMapped = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!isMapped) {
+                    this.emit('gamestate', { type: 'NEW_SHIP', value: s.rawHostName });
+                }
+            }
+        }
+
+        if (uniqueShips.length > 1) {
             const uniqueNames = [...new Set(uniqueShips.map(s => s.chassisName))];
             const payload = {
                 type: 'RADAR_GROUP',
@@ -591,7 +667,8 @@ class CombatParser extends BaseParser {
                     value: `Ship detected: ${s.chassisName}`,
                     details: {
                         chassis: s.chassisName,
-                        hostId: s.hostId
+                        hostId: s.hostId,
+                        raw: s.rawHostName
                     }
                 };
                 this.emit('gamestate', payload);

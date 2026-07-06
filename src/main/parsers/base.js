@@ -20,12 +20,33 @@ class BaseParser extends EventEmitter {
         return false;
     }
 
+    setCustomShipNames(map) {
+        this.customShipNames = map || {};
+    }
+
     /**
      * Helper to clean ship names (Standardized Logic)
      */
     getCleanShipName(rawName) {
         if (!rawName) return 'Ship';
         if (rawName === 'unknown') return 'Unknown';
+
+        // Check custom mappings first
+        if (this.customShipNames) {
+            // Exact match
+            if (this.customShipNames[rawName]) {
+                return this.customShipNames[rawName];
+            }
+            // Fuzzy/prefix match
+            for (const [key, value] of Object.entries(this.customShipNames)) {
+                if (rawName.toLowerCase() === key.toLowerCase() || 
+                    rawName.toLowerCase().startsWith(key.toLowerCase() + '_') ||
+                    rawName.toLowerCase().includes('_' + key.toLowerCase() + '_') ||
+                    rawName.toLowerCase().endsWith('_' + key.toLowerCase())) {
+                    return value;
+                }
+            }
+        }
 
         // 1. Remove company prefixes
         let name = rawName.replace(/^[A-Z]{3,4}_/, (match) => {

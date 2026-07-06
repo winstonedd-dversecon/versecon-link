@@ -415,9 +415,20 @@
                 duration: 4000,
                 sound: null
             },
+            radar_group: {
+                label: '● SENSOR CONTACT GROUP',
+                text: '🛰 MULTIPLE SHIPS DETECTED',
+                subtitle: '',
+                vignette: 'vignette-contact',
+                border: 'border-contact',
+                color: '#00e5ff',
+                barColor: '#00e5ff',
+                duration: 4500,
+                sound: null
+            },
             quantum_arrival: {
                 label: '◆ QUANTUM ARRIVAL',
-                text: '🌌 JUMP INBOUND',
+                text: '🌌 QUANTUM ARRIVAL DETECTED',
                 subtitle: '',
                 vignette: 'vignette-quantum',
                 border: 'border-quantum',
@@ -626,13 +637,20 @@
                 }
                 showAlert(config);
 
+            } else if (data.type === 'RADAR_GROUP') {
+                const config = { ...ALERTS.radar_group };
+                if (data.details && data.details.ships) {
+                    config.subtitle = `${data.details.count} SHIPS: ${data.details.ships.join(', ').toUpperCase()}`;
+                }
+                showAlert(config);
+
             } else if (data.type === 'TACTICAL_QUANTUM') {
                 // Ship arrived from quantum (FinalStop=0 confirmed signal)
                 const config = { ...ALERTS.quantum_arrival };
                 if (data.ship) {
-                    config.subtitle = data.ship.toUpperCase();
+                    config.subtitle = `${data.ship} (Quantum Arrival Detected)`.toUpperCase();
                 } else if (data.value) {
-                    config.subtitle = data.value.toUpperCase();
+                    config.subtitle = `${data.value}`.toUpperCase();
                 }
                 showAlert(config);
 

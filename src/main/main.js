@@ -450,6 +450,18 @@ function loadConfig() {
             if (!config.hueLights) config.hueLights = ["1"];
             if (config.hueEnabled === undefined) config.hueEnabled = false;
             
+            // Auto-Recording settings
+            if (config.clipEnabled === undefined) config.clipEnabled = false;
+            if (config.clipHotkey === undefined) config.clipHotkey = '%{F10}';
+            if (config.clipHotkeyCustom === undefined) config.clipHotkeyCustom = '%{F10}';
+            if (config.clipTriggerHit === undefined) config.clipTriggerHit = false;
+            if (config.clipTriggerKill === undefined) config.clipTriggerKill = false;
+            if (config.clipTriggerDeath === undefined) config.clipTriggerDeath = false;
+            if (config.clipTriggerKos === undefined) config.clipTriggerKos = false;
+            if (config.clipTriggerFire === undefined) config.clipTriggerFire = false;
+            if (config.clipTriggerSoftdeath === undefined) config.clipTriggerSoftdeath = false;
+            if (config.clipTriggerQuantum === undefined) config.clipTriggerQuantum = false;
+            
             // Health Monitoring (v2.10)
             if (!config.healthZone) config.healthZone = null;
             if (config.monitorHealth === undefined) config.monitorHealth = false;
@@ -496,6 +508,7 @@ function loadConfig() {
             if (config.logLimit === undefined) config.logLimit = 200;
             if (config.initialScanLimit === undefined) config.initialScanLimit = 5000;
             if (config.ttsEnabled === undefined) config.ttsEnabled = true;
+            if (config.ttsKosNameEnabled === undefined) config.ttsKosNameEnabled = true;
             if (config.ttsVolume === undefined) config.ttsVolume = 0.8;
             if (!config.ttsVoice) config.ttsVoice = '';
             if (config.rsiId === undefined) config.rsiId = '';
@@ -515,6 +528,13 @@ function loadConfig() {
             if (config.enableMissionStatusAlerts === undefined) config.enableMissionStatusAlerts = true;
             if (config.enableCrimestatAlerts === undefined) config.enableCrimestatAlerts = true;
             if (!config.farmingWishlist) config.farmingWishlist = [];
+            if (!config.kosIgnoreList) config.kosIgnoreList = [];
+            if (!config.bodyMap) {
+                config.bodyMap = {
+                    pyro2: "Monox",
+                    RR_P2_L4: "Rough & Ready - Pyro 2 L4"
+                };
+            }
             if (!config.friendCode) {
                 config.friendCode = generateFriendCode();
                 saveConfig();
@@ -1029,7 +1049,7 @@ ipcMain.handle('ocr:process', async (event, dataUrl) => {
 // Alert window control
 ipcMain.on('alert:show', (event, data) => {
     if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
-        alertWindow.show();
+        // alertWindow.show();
         alertWindow.webContents.send('alert:trigger', data);
     }
 });
@@ -1226,6 +1246,7 @@ ipcMain.on('settings:save', (event, newConfig) => {
         config.overlayVisibility = { ...config.overlayVisibility, ...newConfig.overlayVisibility };
     }
     if (newConfig.ttsEnabled !== undefined) config.ttsEnabled = newConfig.ttsEnabled;
+    if (newConfig.ttsKosNameEnabled !== undefined) config.ttsKosNameEnabled = newConfig.ttsKosNameEnabled;
     if (newConfig.ttsVolume !== undefined) config.ttsVolume = newConfig.ttsVolume;
     if (newConfig.ttsVoice !== undefined) config.ttsVoice = newConfig.ttsVoice;
 
@@ -1292,6 +1313,27 @@ ipcMain.on('settings:save', (event, newConfig) => {
     }
     if (newConfig.farmingWishlist !== undefined) config.farmingWishlist = newConfig.farmingWishlist;
     if (newConfig.activeRun !== undefined) config.activeRun = newConfig.activeRun;
+    if (newConfig.kosIgnoreList !== undefined) config.kosIgnoreList = newConfig.kosIgnoreList;
+    if (newConfig.bodyMap !== undefined) {
+        config.bodyMap = newConfig.bodyMap;
+        try {
+            NavigationParser.setBodyMap(config.bodyMap);
+        } catch (e) {
+            console.warn('[Main] Could not update bodyMap on parser:', e.message);
+        }
+    }
+
+    // Auto-Recording Settings (clipping)
+    if (newConfig.clipEnabled !== undefined) config.clipEnabled = newConfig.clipEnabled;
+    if (newConfig.clipHotkey !== undefined) config.clipHotkey = newConfig.clipHotkey;
+    if (newConfig.clipHotkeyCustom !== undefined) config.clipHotkeyCustom = newConfig.clipHotkeyCustom;
+    if (newConfig.clipTriggerHit !== undefined) config.clipTriggerHit = newConfig.clipTriggerHit;
+    if (newConfig.clipTriggerKill !== undefined) config.clipTriggerKill = newConfig.clipTriggerKill;
+    if (newConfig.clipTriggerDeath !== undefined) config.clipTriggerDeath = newConfig.clipTriggerDeath;
+    if (newConfig.clipTriggerKos !== undefined) config.clipTriggerKos = newConfig.clipTriggerKos;
+    if (newConfig.clipTriggerFire !== undefined) config.clipTriggerFire = newConfig.clipTriggerFire;
+    if (newConfig.clipTriggerSoftdeath !== undefined) config.clipTriggerSoftdeath = newConfig.clipTriggerSoftdeath;
+    if (newConfig.clipTriggerQuantum !== undefined) config.clipTriggerQuantum = newConfig.clipTriggerQuantum;
 
     saveConfig();
 
@@ -1343,7 +1385,50 @@ let apiConnected = false;
 let logBuffer = [];
 let logTimeout = null;
 
+let lastKosAlertTimes = {};
+
 LogWatcher.on('raw-line', (line) => {
+    // Check Ignore List
+    if (config.kosIgnoreList && config.kosIgnoreList.some(item => line.includes(item.id))) {
+        return;
+    }
+
+    // KOS Target Scanning
+    if (config.kosTargets && config.kosTargets.length > 0) {
+        const now = Date.now();
+        config.kosTargets.forEach(target => {
+            if (target && target.id && line.includes(target.id)) {
+                const lastSeen = lastKosAlertTimes[target.id] || 0;
+                if (now - lastSeen > 15000) {
+                    lastKosAlertTimes[target.id] = now;
+                    console.log(`[Main] KOS Target Detected! ID: ${target.id}, Label: ${target.label || 'Unknown'}`);
+                    
+                    const alertData = {
+                        type: 'KOS_TARGET_FOUND',
+                        value: target.id,
+                        label: target.label || 'KOS Target',
+                        line: line,
+                        timestamp: now
+                    };
+                    broadcast('log:update', alertData);
+                    
+                    // Voice prompt
+                    if (config.ttsKosNameEnabled) {
+                        speak(`Warning. Target ${target.label || 'acquired'} located in area.`);
+                    } else {
+                        speak(`Warning. Target acquired located in area.`);
+                    }
+                    
+                    // Tray notification
+                    showTrayNotification('🎯 KOS TARGET LOCATED', `Target ${target.label || target.id} detected in logs!`);
+                    
+                    // Auto-Recording clip trigger
+                    if (config.clipTriggerKos) triggerGameplayClip(`KOS Target Detected: ${target.label || target.id}`);
+                }
+            }
+        });
+    }
+
     if (config.performanceMode) return; // Skip raw log IPC in performance mode
 
     logBuffer.push(line);
@@ -1359,6 +1444,40 @@ LogWatcher.on('raw-line', (line) => {
     }
 });
 
+const { exec } = require('child_process');
+
+function triggerGameplayClip(reason) {
+    if (!config.clipEnabled) return;
+    
+    const now = Date.now();
+    if (global.lastClipTriggerTime && now - global.lastClipTriggerTime < 10000) {
+        console.log(`[Main] Suppressing gameplay clip for "${reason}" (cooldown active).`);
+        return;
+    }
+    global.lastClipTriggerTime = now;
+    
+    let hotkey = config.clipHotkey || '%{F10}';
+    if (hotkey === 'custom') {
+        hotkey = config.clipHotkeyCustom || '%{F10}';
+    }
+    
+    console.log(`[Main] Triggering auto-recording gameplay clip for event: "${reason}" using hotkey: ${hotkey}`);
+    
+    const escapedHotkey = hotkey.replace(/["'`$()]/g, '');
+    const psCommand = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${escapedHotkey}')"`;
+    
+    exec(psCommand, (err, stdout, stderr) => {
+        if (err) {
+            console.error('[Main] Failed to send gameplay recording hotkey:', err);
+        } else {
+            console.log('[Main] Gameplay recording hotkey simulated successfully');
+            if (overlayWindow && !overlayWindow.isDestroyed()) {
+                overlayWindow.webContents.send('video:clip-triggered', { reason });
+            }
+        }
+    });
+}
+
 const speak = (text) => {
     if (!config.ttsEnabled) return;
     if (dashboardWindow && !dashboardWindow.isDestroyed()) {
@@ -1366,7 +1485,67 @@ const speak = (text) => {
     }
 };
 
+function isIgnoredEvent(data) {
+    if (!config.kosIgnoreList || config.kosIgnoreList.length === 0) return false;
+    if (data.details) {
+        const hostId = data.details.hostId;
+        if (hostId && config.kosIgnoreList.some(item => String(item.id) === String(hostId))) {
+            return true;
+        }
+    }
+    if (data.value) {
+        const valStr = String(data.value);
+        if (config.kosIgnoreList.some(item => valStr.includes(item.id))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 LogWatcher.on('gamestate', (data) => {
+    if (isIgnoredEvent(data)) {
+        return;
+    }
+    // ═══ AUTO-RECORDING CLIPPING TRIGGERS ═══
+    if (config.clipEnabled) {
+        if (data.type === 'DEATH' || (data.type === 'STATUS' && data.value === 'death')) {
+            if (config.clipTriggerDeath) {
+                triggerGameplayClip('Player Death');
+            }
+        }
+        
+        if (data.type === 'DEATH' && data.details && data.details.killer) {
+            const isLocalKiller = data.details.killer.toLowerCase() === (config.rsiHandle || '').toLowerCase();
+            if (isLocalKiller && config.clipTriggerKill) {
+                triggerGameplayClip(`PvP Kill: ${data.details.victim}`);
+            }
+        }
+        
+        if (data.type === 'COMBAT_HIT') {
+            if (config.clipTriggerHit) {
+                triggerGameplayClip('Combat Hit Dealt');
+            }
+        }
+        
+        if (data.type === 'HAZARD_FIRE') {
+            if (config.clipTriggerFire) {
+                triggerGameplayClip('Fire Alert');
+            }
+        }
+        
+        if (data.type === 'STATUS' && data.value === 'softdeath') {
+            if (config.clipTriggerSoftdeath) {
+                triggerGameplayClip('Soft Death');
+            }
+        }
+        
+        if (data.type === 'QUANTUM') {
+            if (config.clipTriggerQuantum) {
+                triggerGameplayClip(`Quantum State: ${data.value}`);
+            }
+        }
+    }
+
     // Update gameActive state based on events
     if (data.type === 'SERVER_CONNECTED' || data.type === 'SESSION_START' || data.type === 'WORLD_LOADED') {
         gameActive = true;
@@ -1529,7 +1708,7 @@ LogWatcher.on('gamestate', (data) => {
     // Critical alerts → show alert window + tray notification
     if (gameActive && ['STATUS', 'ZONE', 'HAZARD_FIRE', 'DEATH', 'VEHICLE_DESTRUCTION', 'RADAR_SINGLE', 'PROXIMITY_DEATH'].includes(data.type)) {
         if (config.hudWarningsEnabled && !isSuppressed && alertWindow && !alertWindow.isDestroyed()) {
-            alertWindow.show();
+            // alertWindow.show();
             alertWindow.webContents.send('alert:trigger', data);
         }
 
@@ -1565,7 +1744,7 @@ LogWatcher.on('gamestate', (data) => {
     // ═══ HUD ALERTS (Phase 3) ═══
     if (gameActive && data.type === 'INTERDICTION') {
         if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
-            alertWindow.show();
+            // alertWindow.show();
             alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'interdiction' });
         }
         speak('Warning. Quantum interdiction detected.');
@@ -1577,7 +1756,7 @@ LogWatcher.on('gamestate', (data) => {
         if (!isSuppressed) {
             speak(`Warning. ${shipName} detected nearby.`);
             if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
-                alertWindow.show();
+                // alertWindow.show();
                 alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'tactical_proximity', ship: shipName });
             }
         }
@@ -1590,14 +1769,14 @@ LogWatcher.on('gamestate', (data) => {
             showTrayNotification('🌌 QUANTUM ARRIVAL', `${shipName} dropped out of quantum nearby`);
             speak(`Attention. ${shipName} arrived from quantum.`);
             if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
-                alertWindow.show();
+                // alertWindow.show();
                 alertWindow.webContents.send('alert:trigger', { type: 'TACTICAL_QUANTUM', ship: shipName, value: data.value });
             }
         }
     }
     if (gameActive && data.type === 'VEHICLE_DEATH') {
         if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
-            alertWindow.show();
+            // alertWindow.show();
             alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'soft_death' });
         }
     }
@@ -1627,7 +1806,7 @@ LogWatcher.on('gamestate', (data) => {
         // 1. Alert (Full Screen)
         if (p.alert && p.alert !== 'none') {
             if (alertWindow && !alertWindow.isDestroyed()) {
-                alertWindow.show();
+                // alertWindow.show();
                 alertWindow.webContents.send('alert:trigger', {
                     type: p.alert === 'audio' ? 'STATUS' : data.type, // Map to alert UI types
                     value: p.warning || data.value,
@@ -1858,7 +2037,7 @@ LogWatcher.on('gamestate', (data) => {
         // Trigger Global Overlay Alert for WARNING/CRITICAL levels
         if (['CRITICAL', 'WARNING'].includes(data.level)) {
             if (alertWindow && !alertWindow.isDestroyed()) {
-                alertWindow.show();
+                // alertWindow.show();
                 alertWindow.webContents.send('alert:trigger', {
                     type: 'CUSTOM',
                     level: data.level,
@@ -1973,7 +2152,7 @@ APIClient.on('command', (data) => {
     broadcast('command:receive', data);
     // Show alert for commands
     if (alertWindow && !alertWindow.isDestroyed()) {
-        alertWindow.show();
+        // alertWindow.show();
         alertWindow.webContents.send('alert:trigger', { type: 'COMMAND', value: data });
     }
     showTrayNotification(`📢 ${data.from || 'Command'}`, data.text || data.preset || 'New order received');
@@ -2085,6 +2264,30 @@ ipcMain.on('mission:dismiss', (event, id) => {
     }
 });
 
+ipcMain.handle('settings:get-kos-targets', async () => {
+    return config.kosTargets || [];
+});
+
+ipcMain.handle('settings:save-kos-targets', async (event, targets) => {
+    console.log('[Main] Saving KOS targets:', targets);
+    config.kosTargets = targets;
+    saveConfig();
+    broadcast('settings:kos-targets-updated', targets);
+    return true;
+});
+
+ipcMain.handle('settings:get-kos-ignore', async () => {
+    return config.kosIgnoreList || [];
+});
+
+ipcMain.handle('settings:save-kos-ignore', async (event, ignoreList) => {
+    console.log('[Main] Saving KOS ignore list:', ignoreList);
+    config.kosIgnoreList = ignoreList;
+    saveConfig();
+    broadcast('settings:kos-ignore-updated', ignoreList);
+    return true;
+});
+
 ipcMain.handle('settings:get-custom-locations', async () => {
     return config.customLocations || {};
 });
@@ -2109,6 +2312,123 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     return true;
 });
 
+ipcMain.handle('settings:get-body-map', async () => {
+    return config.bodyMap || {};
+});
+
+ipcMain.handle('settings:save-body-map', async (event, bodyMap) => {
+    console.log('[Main] Saving body map:', bodyMap);
+    config.bodyMap = bodyMap;
+    saveConfig();
+    NavigationParser.setBodyMap(bodyMap);
+    broadcast('settings:bodymap-updated', bodyMap);
+    return true;
+});
+
+ipcMain.handle('settings:get-custom-shipnames', async () => {
+    return config.customShipNames || {};
+});
+
+ipcMain.handle('settings:save-custom-shipnames', async (event, shipnames) => {
+    console.log('[Main] Saving custom shipnames:', shipnames);
+    config.customShipNames = shipnames;
+    saveConfig();
+    LogWatcher.setCustomShipNames(shipnames);
+    broadcast('settings:custom-shipnames-updated', shipnames);
+    return true;
+});
+
+ipcMain.handle('settings:export-custom-shipnames-dialog', async () => {
+    try {
+        const shipnames = config.customShipNames || {};
+        const { filePath, canceled } = await dialog.showSaveDialog({
+            title: 'Export Custom Ship Names File',
+            defaultPath: 'custom-shipnames.json',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'Text Files', extensions: ['txt'] }
+            ]
+        });
+        
+        if (canceled || !filePath) return { success: false, canceled: true };
+        
+        const count = Object.keys(shipnames).length;
+        
+        if (filePath.endsWith('.txt')) {
+            let output = `=== VERSECON-LINK CUSTOM SHIP NAMES (Count: ${count}) ===\r\n\r\n`;
+            for (const [raw, cleanName] of Object.entries(shipnames)) {
+                output += `Raw Ship Code: ${raw}\r\nClean Name:    ${cleanName}\r\n--------------------------------------\r\n`;
+            }
+            fs.writeFileSync(filePath, output, 'utf-8');
+        } else {
+            fs.writeFileSync(filePath, JSON.stringify(shipnames, null, 2), 'utf-8');
+        }
+        return { success: true, count, filePath };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('settings:import-custom-shipnames-dialog', async () => {
+    try {
+        const { filePaths, canceled } = await dialog.showOpenDialog({
+            title: 'Import Custom Ship Names File',
+            filters: [
+                { name: 'JSON or Text Files', extensions: ['json', 'txt'] }
+            ],
+            properties: ['openFile']
+        });
+        
+        if (canceled || !filePaths || filePaths.length === 0) return { success: false, canceled: true };
+        const filePath = filePaths[0];
+        const content = fs.readFileSync(filePath, 'utf-8');
+        
+        let importedShips = {};
+
+        if (filePath.endsWith('.json')) {
+            const data = JSON.parse(content);
+            if (typeof data === 'object' && !Array.isArray(data)) {
+                importedShips = data;
+            }
+        } else {
+            // Parse Text File
+            const blocks = content.split(/--------------------------------------/);
+            for (const block of blocks) {
+                const rawMatch = block.match(/Raw Ship Code:\s*([^\r\n]+)/i);
+                const nameMatch = block.match(/Clean Name:\s*([^\r\n]+)/i);
+                if (rawMatch && nameMatch) {
+                    const raw = rawMatch[1].trim();
+                    const name = nameMatch[1].trim();
+                    if (raw && name) {
+                        importedShips[raw] = name;
+                    }
+                }
+            }
+        }
+
+        const keys = Object.keys(importedShips);
+        if (keys.length === 0) {
+            return { success: false, error: 'No valid ship mappings found in file.' };
+        }
+
+        if (!config.customShipNames) config.customShipNames = {};
+        let addedCount = 0;
+        for (const [raw, name] of Object.entries(importedShips)) {
+            if (!config.customShipNames[raw]) {
+                config.customShipNames[raw] = name;
+                addedCount++;
+            }
+        }
+
+        saveConfig();
+        LogWatcher.setCustomShipNames(config.customShipNames);
+        broadcast('settings:custom-shipnames-updated', config.customShipNames);
+        return { success: true, count: addedCount, filePath };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
 ipcMain.handle('settings:export-custom-locations', async () => {
     try {
         const locations = config.customLocations || {};
@@ -2130,6 +2450,139 @@ ipcMain.handle('settings:export-custom-locations', async () => {
         return { success: true, count: Object.keys(locations).length, publicWritten };
     } catch (e) {
         console.error('[Main] Export locations error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('settings:export-custom-locations-dialog', async () => {
+    try {
+        const locations = config.customLocations || {};
+        const { filePath, canceled } = await dialog.showSaveDialog({
+            title: 'Export Custom Locations File',
+            defaultPath: 'custom-locations.json',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'Text Files', extensions: ['txt'] }
+            ]
+        });
+        
+        if (canceled || !filePath) return { success: false, canceled: true };
+        
+        let bundledLoc = {};
+        try {
+            const bundledLocPath = path.join(__dirname, '..', '..', 'data', 'locations.json');
+            if (fs.existsSync(bundledLocPath)) {
+                bundledLoc = JSON.parse(fs.readFileSync(bundledLocPath, 'utf-8'));
+            }
+        } catch (e) {}
+        
+        const unlockedCount = Object.keys(locations).length;
+        const totalCount = Object.keys({ ...bundledLoc, ...locations }).length;
+        
+        if (filePath.endsWith('.txt')) {
+            let output = `=== VERSECON-LINK CUSTOM LOCATIONS (Unlocked Mapped: ${unlockedCount} / Total Known: ${totalCount}) ===\r\n\r\n`;
+            for (const [raw, data] of Object.entries(locations)) {
+                const name = typeof data === 'object' ? data.name : data;
+                const zone = typeof data === 'object' ? data.zone || 'Auto' : 'Auto';
+                const system = typeof data === 'object' ? data.system || 'Auto' : 'Auto';
+                output += `Raw Code: ${raw}\r\nName:     ${name}\r\nZone:     ${zone}\r\nSystem:   ${system}\r\n--------------------------------------\r\n`;
+            }
+            fs.writeFileSync(filePath, output, 'utf-8');
+        } else {
+            const jsonPayload = {
+                unlocked_locations: unlockedCount,
+                total_locations: totalCount,
+                locations: locations
+            };
+            fs.writeFileSync(filePath, JSON.stringify(jsonPayload, null, 2), 'utf-8');
+        }
+        return { success: true, count: unlockedCount, filePath };
+    } catch (e) {
+        console.error('[Main] Export locations dialog error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('settings:export-blueprints-dialog', async () => {
+    try {
+        const bpData = loadBlueprintData();
+        const { filePath, canceled } = await dialog.showSaveDialog({
+            title: 'Export Blueprints File',
+            defaultPath: 'blueprints.json',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'Text Files', extensions: ['txt'] }
+            ]
+        });
+        
+        if (canceled || !filePath) return { success: false, canceled: true };
+        
+        const collectedList = bpData.collected || [];
+        const collectedMap = new Map();
+        collectedList.forEach(c => {
+            if (c) {
+                const nameStr = typeof c === 'string' ? c : (c.name || '');
+                if (nameStr) collectedMap.set(nameStr.toLowerCase(), c);
+            }
+        });
+        
+        const unlockedCount = collectedMap.size;
+        const totalCount = (bpData.masterList || []).length;
+        
+        if (filePath.endsWith('.txt')) {
+            let output = `=== VERSECON-LINK BLUEPRINTS DATABASE (Unlocked: ${unlockedCount} / Total: ${totalCount}) ===\r\n\r\n`;
+            
+            (bpData.masterList || []).forEach(bp => {
+                if (!bp || !bp.name) return;
+                const bpName = bp.name.toLowerCase();
+                const isCollected = collectedMap.has(bpName);
+                
+                let status = '[Not Tracked]';
+                const colInfo = isCollected ? collectedMap.get(bpName) : null;
+                if (colInfo && typeof colInfo === 'object') {
+                    status = `[Tracked: ${colInfo.collected || 0}/${colInfo.needed || 0}]`;
+                } else if (isCollected) {
+                    status = '[Collected / Unlocked]';
+                }
+                
+                const unlockTime = isCollected ? bpData.collectedAt?.[bp.name] : null;
+                const unlockDateStr = unlockTime ? ` | Unlocked At: ${new Date(unlockTime).toLocaleString()}` : '';
+                const release = bp.unreleased ? ' (Unreleased / Unavailable)' : '';
+                
+                output += `Item Name:   ${bp.name}${release}${unlockDateStr}\r\nCategory:    ${bp.category || 'Unknown'}\r\nSource:      ${bp.source || 'Unknown'}\r\nStatus:      ${status}\r\n`;
+                if (bp.ingredients && bp.ingredients.length > 0) {
+                    output += "Ingredients:\r\n";
+                    bp.ingredients.forEach(ing => {
+                        output += `  - ${ing.name}: ${ing.needed}\r\n`;
+                    });
+                }
+                output += "--------------------------------------\r\n";
+            });
+            fs.writeFileSync(filePath, output, 'utf-8');
+        } else {
+            const listPayload = (bpData.masterList || []).map(bp => {
+                if (!bp || !bp.name) return bp;
+                const bpName = bp.name.toLowerCase();
+                const isCollected = collectedMap.has(bpName);
+                const unlockTime = isCollected ? bpData.collectedAt?.[bp.name] || null : null;
+                return {
+                    ...bp,
+                    unlocked: isCollected,
+                    unlocked_at: unlockTime
+                };
+            });
+            
+            const jsonPayload = {
+                unlocked_blueprints: unlockedCount,
+                total_blueprints: totalCount,
+                collected: bpData.collected || [],
+                masterList: listPayload
+            };
+            fs.writeFileSync(filePath, JSON.stringify(jsonPayload, null, 2), 'utf-8');
+        }
+        return { success: true, count: totalCount, filePath };
+    } catch (e) {
+        console.error('[Main] Export blueprints dialog error:', e);
         return { success: false, error: e.message };
     }
 });
@@ -2628,12 +3081,25 @@ ipcMain.handle('patterns:export', async () => {
 
     const result = await dialog.showSaveDialog(dashboardWindow, {
         title: 'Export Pattern Database',
-        defaultPath: `versecon-patterns-${db._meta.lastUpdated}.json`,
-        filters: [{ name: 'JSON', extensions: ['json'] }]
+        defaultPath: `versecon-patterns-${db._meta?.lastUpdated || new Date().toISOString().split('T')[0]}.json`,
+        filters: [
+            { name: 'JSON Files', extensions: ['json'] },
+            { name: 'Text Files', extensions: ['txt'] }
+        ]
     });
     if (!result.canceled && result.filePath) {
-        fs.writeFileSync(result.filePath, JSON.stringify(db, null, 2));
-        return result.filePath;
+        const jsonPath = result.filePath.endsWith('.json') ? result.filePath : result.filePath.replace(/\.txt$/, '.json');
+        const txtPath = result.filePath.endsWith('.txt') ? result.filePath : result.filePath.replace(/\.json$/, '.txt');
+
+        // Formatted text output
+        let output = `=== VERSECON-LINK READABLE LOG PATTERNS (Count: ${db.patterns.length}) ===\r\n\r\n`;
+        for (const p of db.patterns) {
+            output += `Event/Type:  ${p.event || p.id || 'Unknown'}\r\nDescription: ${p.notes || p.description || 'No description'}\r\nLog Pattern: ${p.regex || p.pattern || ''}\r\nCategory:    ${p.category || 'System'}\r\n--------------------------------------\r\n`;
+        }
+
+        fs.writeFileSync(jsonPath, JSON.stringify(db, null, 2), 'utf-8');
+        fs.writeFileSync(txtPath, output, 'utf-8');
+        return `${jsonPath} and ${txtPath}`;
     }
     return null;
 });
@@ -2641,19 +3107,56 @@ ipcMain.handle('patterns:export', async () => {
 ipcMain.handle('patterns:import', async () => {
     const result = await dialog.showOpenDialog(dashboardWindow, {
         title: 'Import Pattern Database',
-        filters: [{ name: 'JSON', extensions: ['json'] }],
+        filters: [{ name: 'JSON/TXT Files', extensions: ['json', 'txt'] }],
         properties: ['openFile']
     });
     if (!result.canceled && result.filePaths[0]) {
+        const filePath = result.filePaths[0];
         try {
-            const imported = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8'));
-            if (imported.patterns && Array.isArray(imported.patterns)) {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            let importedPatterns = [];
+            
+            if (filePath.endsWith('.json')) {
+                const imported = JSON.parse(content);
+                if (imported.patterns && Array.isArray(imported.patterns)) {
+                    importedPatterns = imported.patterns;
+                } else if (Array.isArray(imported)) {
+                    importedPatterns = imported;
+                }
+            } else {
+                // Parse Text File
+                const blocks = content.split(/--------------------------------------/);
+                for (const block of blocks) {
+                    const eventMatch = block.match(/Event\/Type:\s*([^\r\n]+)/i);
+                    const descMatch = block.match(/Description:\s*([^\r\n]+)/i);
+                    const patternMatch = block.match(/Log Pattern:\s*([^\r\n]+)/i);
+                    const catMatch = block.match(/Category:\s*([^\r\n]+)/i);
+                    
+                    if (eventMatch && patternMatch) {
+                        const event = eventMatch[1].trim();
+                        const regex = patternMatch[1].trim();
+                        if (event && regex) {
+                            importedPatterns.push({
+                                id: event.toLowerCase() + '_' + Math.random().toString(36).substr(2, 9),
+                                event,
+                                regex,
+                                notes: descMatch ? descMatch[1].trim() : 'Imported pattern',
+                                category: catMatch ? catMatch[1].trim() : 'System',
+                                source: 'custom'
+                            });
+                        }
+                    }
+                }
+            }
+            
+            if (importedPatterns.length > 0) {
                 const db = loadPatternDB();
-                // Merge: add new patterns, skip duplicates by ID
-                const existingIds = new Set(db.patterns.map(p => p.id));
+                // Merge: add new patterns, skip duplicates by matching regex
+                const existingRegexes = new Set(db.patterns.map(p => (p.regex || p.pattern || '').toLowerCase()));
                 let added = 0;
-                for (const p of imported.patterns) {
-                    if (!existingIds.has(p.id)) {
+                for (const p of importedPatterns) {
+                    const r = (p.regex || p.pattern || '').toLowerCase();
+                    if (r && !existingRegexes.has(r)) {
                         db.patterns.push(p);
                         added++;
                     }
@@ -2661,11 +3164,263 @@ ipcMain.handle('patterns:import', async () => {
                 savePatternDB(db);
                 return { success: true, added, total: db.patterns.length };
             }
+            return { success: false, error: 'No valid patterns found.' };
         } catch (e) {
             return { success: false, error: e.message };
         }
     }
     return null;
+});
+
+ipcMain.handle('settings:import-locations-dialog', async () => {
+    try {
+        const { filePaths, canceled } = await dialog.showOpenDialog({
+            title: 'Import Custom Locations File',
+            filters: [
+                { name: 'JSON or Text Files', extensions: ['json', 'txt'] }
+            ],
+            properties: ['openFile']
+        });
+        
+        if (canceled || !filePaths || filePaths.length === 0) return { success: false, canceled: true };
+        const filePath = filePaths[0];
+        const content = fs.readFileSync(filePath, 'utf-8');
+        
+        let importedLocs = {};
+
+        if (filePath.endsWith('.json')) {
+            const data = JSON.parse(content);
+            if (data.locations && typeof data.locations === 'object') {
+                importedLocs = data.locations;
+            } else if (typeof data === 'object' && !Array.isArray(data)) {
+                importedLocs = data;
+            }
+        } else {
+            // Parse Text File
+            const blocks = content.split(/--------------------------------------/);
+            for (const block of blocks) {
+                const rawMatch = block.match(/Raw Code:\s*([^\r\n]+)/i);
+                const nameMatch = block.match(/Name:\s*([^\r\n]+)/i);
+                const zoneMatch = block.match(/Zone:\s*([^\r\n]+)/i);
+                const systemMatch = block.match(/System:\s*([^\r\n]+)/i);
+                
+                if (rawMatch && nameMatch) {
+                    const raw = rawMatch[1].trim();
+                    const name = nameMatch[1].trim();
+                    const zone = zoneMatch ? zoneMatch[1].trim() : 'Auto';
+                    const system = systemMatch ? systemMatch[1].trim() : 'Auto';
+                    if (raw && name) {
+                        importedLocs[raw] = { name, zone, system };
+                    }
+                }
+            }
+        }
+
+        const keys = Object.keys(importedLocs);
+        if (keys.length === 0) {
+            return { success: false, error: 'No valid locations found in file.' };
+        }
+
+        if (!config.customLocations) config.customLocations = {};
+        let addedCount = 0;
+        for (const [raw, data] of Object.entries(importedLocs)) {
+            if (!config.customLocations[raw]) {
+                config.customLocations[raw] = data;
+                addedCount++;
+            }
+        }
+
+        saveConfig();
+        // Broadcast location updates
+        broadcast('settings:custom-locations-updated', config.customLocations);
+        return { success: true, count: addedCount, filePath };
+    } catch (e) {
+        console.error('[Main] Import locations error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('settings:import-blueprints-dialog', async () => {
+    try {
+        const { filePaths, canceled } = await dialog.showOpenDialog({
+            title: 'Import Blueprints File',
+            filters: [
+                { name: 'JSON or Text Files', extensions: ['json', 'txt'] }
+            ],
+            properties: ['openFile']
+        });
+        
+        if (canceled || !filePaths || filePaths.length === 0) return { success: false, canceled: true };
+        const filePath = filePaths[0];
+        const content = fs.readFileSync(filePath, 'utf-8');
+        
+        let importedCollected = [];
+        let importedCollectedAt = {};
+
+        if (filePath.endsWith('.json')) {
+            const data = JSON.parse(content);
+            if (data.collected && Array.isArray(data.collected)) {
+                importedCollected = data.collected;
+            } else if (Array.isArray(data)) {
+                importedCollected = data;
+            }
+            // Extract unlock dates if available in masterList array
+            if (data.masterList && Array.isArray(data.masterList)) {
+                data.masterList.forEach(item => {
+                    if (item && item.name && item.unlocked) {
+                        importedCollectedAt[item.name] = item.unlocked_at || Date.now();
+                    }
+                });
+            }
+        } else {
+            // Parse Text File
+            const blocks = content.split(/--------------------------------------/);
+            for (const block of blocks) {
+                const nameMatch = block.match(/Item Name:\s*([^\r\n|]+)/i);
+                const statusMatch = block.match(/Status:\s*([^\r\n]+)/i);
+                const dateMatch = block.match(/Unlocked At:\s*([^\r\n|]+)/i);
+                
+                if (nameMatch) {
+                    const name = nameMatch[1].trim();
+                    const statusStr = statusMatch ? statusMatch[1].trim() : '';
+                    const isUnlocked = statusStr.includes('Collected') || statusStr.includes('Tracked');
+                    
+                    if (name && isUnlocked) {
+                        importedCollected.push(name);
+                        if (dateMatch) {
+                            const dateParsed = Date.parse(dateMatch[1].trim());
+                            if (!isNaN(dateParsed)) {
+                                importedCollectedAt[name] = dateParsed;
+                            } else {
+                                importedCollectedAt[name] = Date.now();
+                            }
+                        } else {
+                            importedCollectedAt[name] = Date.now();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (importedCollected.length === 0) {
+            return { success: false, error: 'No unlocked blueprints found in file.' };
+        }
+
+        // Merge with existing collected blueprints
+        const bpData = loadBlueprintData();
+        const existingSet = new Set((bpData.collected || []).map(item => {
+            const nameStr = typeof item === 'string' ? item : (item.name || '');
+            return nameStr.toLowerCase();
+        }));
+
+        let addedCount = 0;
+        importedCollected.forEach(item => {
+            const nameStr = typeof item === 'string' ? item : (item.name || '');
+            if (nameStr && !existingSet.has(nameStr.toLowerCase())) {
+                bpData.collected.push(item);
+                const cleanName = nameStr;
+                bpData.collectedAt[cleanName] = importedCollectedAt[cleanName] || Date.now();
+                addedCount++;
+            }
+        });
+
+        // Save
+        const blueprintPath = path.join(app.getPath('userData'), 'blueprints.json');
+        fs.writeFileSync(blueprintPath, JSON.stringify(bpData, null, 2), 'utf-8');
+        return { success: true, count: addedCount, filePath };
+    } catch (e) {
+        console.error('[Main] Import blueprints error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('settings:export-shipmap-dialog', async () => {
+    try {
+        const map = config.shipMap || {};
+        const { filePath, canceled } = await dialog.showSaveDialog({
+            title: 'Export Ship Mappings File',
+            defaultPath: 'ship-mappings.json',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'Text Files', extensions: ['txt'] }
+            ]
+        });
+        
+        if (canceled || !filePath) return { success: false, canceled: true };
+        
+        const count = Object.keys(map).length;
+        
+        if (filePath.endsWith('.txt')) {
+            let output = `=== VERSECON-LINK SHIP MAPPINGS (Count: ${count}) ===\r\n\r\n`;
+            for (const [key, pathVal] of Object.entries(map)) {
+                output += `Raw Ship Key: ${key}\r\nImage Path:   ${pathVal}\r\n--------------------------------------\r\n`;
+            }
+            fs.writeFileSync(filePath, output, 'utf-8');
+        } else {
+            fs.writeFileSync(filePath, JSON.stringify(map, null, 2), 'utf-8');
+        }
+        return { success: true, count, filePath };
+    } catch (e) {
+        console.error('[Main] Export ship mappings error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('settings:import-shipmap-dialog', async () => {
+    try {
+        const { filePaths, canceled } = await dialog.showOpenDialog({
+            title: 'Import Ship Mappings File',
+            filters: [
+                { name: 'JSON or Text Files', extensions: ['json', 'txt'] }
+            ],
+            properties: ['openFile']
+        });
+        
+        if (canceled || !filePaths || filePaths.length === 0) return { success: false, canceled: true };
+        const filePath = filePaths[0];
+        const content = fs.readFileSync(filePath, 'utf-8');
+        
+        let importedMap = {};
+
+        if (filePath.endsWith('.json')) {
+            importedMap = JSON.parse(content);
+        } else {
+            // Parse Text File
+            const blocks = content.split(/--------------------------------------/);
+            for (const block of blocks) {
+                const keyMatch = block.match(/Raw Ship Key:\s*([^\r\n]+)/i);
+                const pathMatch = block.match(/Image Path:\s*([^\r\n]+)/i);
+                
+                if (keyMatch && pathMatch) {
+                    const key = keyMatch[1].trim();
+                    const pathVal = pathMatch[1].trim();
+                    if (key && pathVal) {
+                        importedMap[key] = pathVal;
+                    }
+                }
+            }
+        }
+
+        const keys = Object.keys(importedMap);
+        if (keys.length === 0) {
+            return { success: false, error: 'No valid ship mappings found in file.' };
+        }
+
+        if (!config.shipMap) config.shipMap = {};
+        let addedCount = 0;
+        for (const [key, pathVal] of Object.entries(importedMap)) {
+            if (!config.shipMap[key]) {
+                config.shipMap[key] = pathVal;
+                addedCount++;
+            }
+        }
+
+        saveConfig();
+        return { success: true, count: addedCount, filePath };
+    } catch (e) {
+        console.error('[Main] Import ship mappings error:', e);
+        return { success: false, error: e.message };
+    }
 });
 
 // ═══════════════════════════════════════════════════════
@@ -2770,6 +3525,13 @@ if (!gotTheLock) {
             locations = { ...locations, ...config.customLocations };
         }
         NavigationParser.setCustomLocations(locations);
+        if (config.bodyMap) {
+            NavigationParser.setBodyMap(config.bodyMap);
+        }
+
+        if (config.customShipNames) {
+            LogWatcher.setCustomShipNames(config.customShipNames);
+        }
 
         LogWatcher.setShipMap(config.shipMap); // Apply saved map
         try {
@@ -3332,6 +4094,19 @@ ipcMain.handle('blueprint:scan-logs', async () => {
     saveBlueprintData(data);
 
     return { data, newlyFound, scannedFiles: result.filePaths.length };
+});
+
+ipcMain.handle('blueprint:add-manual-collected', async (event, { name, timestamp }) => {
+    const data = loadBlueprintData();
+    if (!data.collected) data.collected = [];
+    if (!data.collectedAt) data.collectedAt = {};
+
+    if (!data.collected.includes(name)) {
+        data.collected.push(name);
+    }
+    data.collectedAt[name] = timestamp || new Date().toISOString();
+    saveBlueprintData(data);
+    return data;
 });
 
 // Save updated master list

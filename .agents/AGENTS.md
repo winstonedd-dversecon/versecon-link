@@ -81,6 +81,22 @@ This document records critical implementation details, log parsing formats, and 
 | 2.11.17 | Add ITEM_TRANSFER rendering to overlay.html to display item deposits and withdrawals in the overlay Tactical Feed. |
 | 2.11.18 | Suppress duplicate PLAYER_SPAWNED and ZONE notifications during terminal queries to prevent pushing item logs off the Tactical Feed; add broadcast-level warnings throttling. |
 | 2.11.19 | Resolve dynamic quantum entry logs by tracking container swaps instead of relying on outdated hardcoded system container IDs. |
+| 2.11.20 | Extract cargo hauling commodities directly from engine objective markers to bypass Star Citizen's tag compiler notification failure bug. |
+| 2.11.21 | Add WebSocket broadcasting and tablet.html status dashboard support; enforce user-toggled alert suppressions globally across speech, overlays, and tray notifications. |
+| 2.11.22 | Identify destination planet container on quantum exit to dynamically show the correct orbit location (e.g. microTech Orbit) until entering a sub-location. |
+| 2.11.23 | Cache raw location codes globally upon detection and implement a Grab button fallback to current location if the sniffer queue is empty on start. |
+| 2.11.24 | Implement separate configuration column in settings for HUD and Tablet alerts, allowing independent suppression of alerts on both outputs. |
+| 2.11.25 | Add independent toggles for ship detections (Proximity Feed, Tactical Feed, Overlay HUD, Tablet); disable duplicate small banner warnings in overlay.html to prevent overlaps with the main fullscreen red alert window. |
+| 2.11.26 | Completely disable the duplicate small alert box (showAlert) in overlay.html to resolve overlapping warnings under all scenarios. |
+| 2.11.27 | Sync tablet filters from configuration, group multiple loading ships (>1 threshold), resolve duplicate ship entering alerts, style blueprint category options, and display user's customized location names in respawn alerts. |
+| 2.11.28 | Implement KOS targets tab with a search/filter, a list of recently detected ships/IDs, and settings for auto-recording clips (hotkeys and triggers). |
+
+
+
+
+
+
+
 
 
 

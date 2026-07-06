@@ -65,3 +65,11 @@ npm run dist
 - Support for unplanned/manual blind jumps is included by responding to `<Quantum Drive Arrived>` events.
 - Rather than relying on static system container IDs, quantum entry is dynamically tracked when your character's inventory host location changes while traveling.
 - The HUD immediately updates to `IN QUANTUM` during travel and restores your destination coordinates/zone labels automatically upon dropping out of quantum.
+
+### 10. KOS Targets & Ignore Lists
+- **Ignore / Trust List (`kosIgnoreList`)**: Added the ability to ignore specific ship/player entity IDs. Ignored targets will not trigger KOS notifications, tray alerts, TTS announcements, or overlay indicators.
+- **Ignore Action**: You can add players to the Ignore list directly from the Recent Ships list, from live Tactical Feed action buttons, or manually by typing in their Entity ID.
+- **Enhanced Target Cards**: KOS Targets and Recent Ships lists now display the last known ship type, location name, and timestamp. It dynamically normalizes and cleans these values using your custom named definitions.
+
+### 11. Manual Blueprint Collection
+- **Manual "Collect" Action**: Missing or unreleased blueprints in the database browser can now be manually marked as collected with a custom date and time prompt, enabling quick local progress tracking outside log scans.

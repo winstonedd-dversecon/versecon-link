@@ -275,6 +275,11 @@
             border-color: var(--accent);
         }
 
+        select option {
+            background-color: #111520 !important;
+            color: #fff !important;
+        }
+
         button.cyber-btn {
             background: linear-gradient(45deg, #ffa500, #ff8800);
             color: #000;
@@ -907,50 +912,68 @@
                     <label style="cursor: pointer;"><input type="checkbox" id="filter-ai-ships" onchange="saveConfig()">
                         Enabled</label>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Cargo Lift Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-cargo-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-cargo-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-cargo-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Oxygen & Stamina Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-oxygen-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-oxygen-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-oxygen-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Jurisdiction Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-jurisdiction-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-jurisdiction-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-jurisdiction-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Fire Hazard Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-fire-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-fire-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-fire-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Corpse Stream Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-corpse-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-corpse-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-corpse-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Death & Kill Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-death-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-death-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-death-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Vehicle Damage Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-vehicle-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-vehicle-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-vehicle-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Mission Lifecycle Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-mission-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-mission-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-mission-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
-                <div class="status-row">
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color: var(--text-dim);">Crimestat Alerts</span>
-                    <label style="cursor: pointer;"><input type="checkbox" id="config-crimestat-alerts" onchange="saveConfig()">
-                        Enabled</label>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-crimestat-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-crimestat-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
                 </div>
             </div>
 
@@ -1004,7 +1027,29 @@
                     </label>
                 </div>
             </div>
-            
+
+            <!-- Ship Radar Target Visibility Config (v2.11.25) -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">Radar Ship Detection Toggles</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
+                    Select where radar ship detections are shown.
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="config-ship-prox" onchange="saveConfig()"> Proximity Feed
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="config-ship-tactical" onchange="saveConfig()"> Tactical Feed
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="config-ship-hud" onchange="saveConfig()"> Overlay HUD
+                    </label>
+                    <label style="cursor: pointer; font-size: 0.85rem; color: var(--text-dim);">
+                        <input type="checkbox" id="config-ship-tablet" onchange="saveConfig()"> Tablet HUD
+                    </label>
+                </div>
+            </div>
             <!-- Health Monitoring (v2.10) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -1186,6 +1231,11 @@
                         style="font-size: 0.8rem; color: var(--accent); min-width: 40px;">80%</span>
                 </div>
 
+                <div class="status-row">
+                    <span style="color: var(--text-dim);">Speak KOS Target Names</span>
+                    <input type="checkbox" id="config-tts-kos-name" onchange="saveConfig()" style="margin: 0;">
+                </div>
+
                 <div style="margin-top: 10px; text-align: right;">
                     <button class="cyber-btn small" onclick="testVoice()" style="width: auto; margin:0;">🧪 Test
                         Voice</button>
@@ -1273,6 +1323,66 @@
                 </div>
             </div>
 
+            <!-- Auto-Recording Trigger (Game Clipping) -->
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0; color: var(--accent); display: flex; align-items: center; gap: 8px;">
+                    🎥 Auto-Recording Trigger (Clipping)
+                </div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
+                    Automatically simulate gameplay recording hotkeys (e.g. GeForce ShadowPlay Alt+F10) on telemetry events.
+                </div>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                    <span style="color: #ccc; font-size: 0.8rem; font-weight: bold;">Enable Auto-Clipping</span>
+                    <label class="switch small" style="margin-left: auto;">
+                        <input type="checkbox" id="config-clip-enabled" onchange="saveConfig()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="color: #ccc; font-size: 0.8rem;">Recording Hotkey</span>
+                    <select id="config-clip-hotkey" class="modern-input" style="width: 150px; font-size: 0.75rem; margin: 0;" onchange="updateHotkeySelection()">
+                        <option value="%{F10}">Alt + F10 (GeForce)</option>
+                        <option value="%{F9}">Alt + F9</option>
+                        <option value="{F9}">F9</option>
+                        <option value="{F12}">F12 (Steam)</option>
+                        <option value="^{F12}">Ctrl + F12</option>
+                        <option value="custom">Custom SendKeys...</option>
+                    </select>
+                </div>
+                
+                <div id="custom-clip-hotkey-row" style="display: none; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="color: #888; font-size: 0.75rem;">Custom SendKeys String</span>
+                    <input type="text" id="config-clip-hotkey-custom" class="modern-input" placeholder="e.g. %{F10}" style="width: 150px; font-size: 0.75rem; margin: 0;" onchange="saveConfig()">
+                </div>
+                
+                <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent); margin-bottom: 8px;">Trigger Conditions</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <label style="cursor: pointer; font-size:0.75rem; color:#aaa; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="config-clip-trigger-hit" onchange="saveConfig()"> Hitting a Ship
+                    </label>
+                    <label style="cursor: pointer; font-size:0.75rem; color:#aaa; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="config-clip-trigger-kill" onchange="saveConfig()"> PvP Kill
+                    </label>
+                    <label style="cursor: pointer; font-size:0.75rem; color:#aaa; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="config-clip-trigger-death" onchange="saveConfig()"> Player Death
+                    </label>
+                    <label style="cursor: pointer; font-size:0.75rem; color:#aaa; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="config-clip-trigger-kos" onchange="saveConfig()"> KOS Target Detected
+                    </label>
+                    <label style="cursor: pointer; font-size:0.75rem; color:#aaa; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="config-clip-trigger-fire" onchange="saveConfig()"> Fire Alert
+                    </label>
+                    <label style="cursor: pointer; font-size:0.75rem; color:#aaa; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="config-clip-trigger-softdeath" onchange="saveConfig()"> Soft Death
+                    </label>
+                    <label style="cursor: pointer; font-size:0.75rem; color:#aaa; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="config-clip-trigger-quantum" onchange="saveConfig()"> Quantum Change
+                    </label>
+                </div>
+            </div>
+
             <!-- Ship Image Manager (v2.2) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -1305,6 +1415,10 @@
                 <div id="new-ship-preview-label"
                     style="font-size: 0.75rem; color: var(--accent); margin-top: 5px; display: none;">Selected: <span
                         id="new-ship-filename"></span></div>
+                <div style="display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end;">
+                    <button class="cyber-btn small info" style="width: auto; margin:0;" onclick="exportShipMapToFile()">💾 Export Mappings</button>
+                    <button class="cyber-btn small info" style="width: auto; margin:0; background:rgba(168,85,247,0.15); border-color:#a855f7;" onclick="importShipMapFromFile()">📥 Import Mappings</button>
+                </div>
             </div>
 
 
@@ -1360,6 +1474,10 @@
                         style="font-size: 0.7rem; margin-left: 5px;">🔍 Search</button>
                     <button class="cyber-btn small success" onclick="exportCustomLocationsForPublic()"
                         style="font-size: 0.7rem; margin-left: 5px;">📤 Export to Public</button>
+                    <button class="cyber-btn small info" onclick="exportCustomLocationsToFile()"
+                        style="font-size: 0.7rem; margin-left: 5px; background:rgba(0,150,255,0.15); border-color:#0099ff;">💾 Export File</button>
+                    <button class="cyber-btn small info" onclick="importCustomLocationsFromFile()"
+                        style="font-size: 0.7rem; margin-left: 5px; background:rgba(168,85,247,0.15); border-color:#a855f7;">📥 Import File</button>
                     <!-- Help tooltip -->
                     <span style="font-size:0.7rem; color:#666; margin-left:10px; cursor:help;"
                         onclick="alert('Map raw log values (e.g. OOC_Stanton_1b_Aberdeen) to friendly names (e.g. Vivere PAF-1).\nWorks with Location[...] and RoomName: logs.')">ℹ️
@@ -1388,6 +1506,7 @@
                         <select id="new-loc-zone" class="modern-input" style="width:130px; font-size:0.75rem;">
                             <option value="Auto">Auto Zone</option>
                             <option value="Armistice Zone">Armistice</option>
+                            <option value="Contested Zone">Contested Zone</option>
                             <option value="Open Space">Open Space</option>
                             <option value="Monitored Space">Monitored</option>
                             <option value="Unmonitored">Unmonitored</option>
@@ -1421,8 +1540,12 @@
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span id="last-raw-location"
                                 style="font-family: monospace; font-size: 0.85rem; color: #fff;">None Detected</span>
-                            <button class="cyber-btn small" onclick="grabRawLocation()"
-                                style="width: auto; margin: 0;">Grab</button>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="cyber-btn small" onclick="grabRawLocation()"
+                                    style="width: auto; margin: 0;">Grab</button>
+                                <button class="cyber-btn small" onclick="window.skipRawLocation()"
+                                    style="width: auto; margin: 0; background: rgba(255,100,100,0.15); border-color: #ff4444; color: #ff4444;">Skip</button>
+                            </div>
                         </div>
                         <div id="suggested-location-container" style="font-size: 0.75rem; margin-top: 6px; display: none; color: #aaa; border-top: 1px solid rgba(0,255,136,0.1); padding-top: 6px;">
                             Suggested Name: <span id="suggested-location-name" style="color: var(--success); font-weight: 600;">None</span>
@@ -1432,20 +1555,67 @@
                 </div>
             </div>
 
+            <!-- Custom Ship Names Manager -->
+            <div class="config-section" style="margin-top: 20px;">
+                <div class="section-title">
+                    <span>🛸 Custom Ship Names</span>
+                    <button class="cyber-btn small" onclick="addCustomShipPrompt()" style="font-size: 0.7rem;">+ Add New</button>
+                    <button class="cyber-btn small info" onclick="exportCustomShipNamesToFile()"
+                        style="font-size: 0.7rem; margin-left: 5px; background:rgba(0,150,255,0.15); border-color:#0099ff;">💾 Export File</button>
+                    <button class="cyber-btn small info" onclick="importCustomShipNamesFromFile()"
+                        style="font-size: 0.7rem; margin-left: 5px; background:rgba(168,85,247,0.15); border-color:#a855f7;">📥 Import File</button>
+                </div>
+                <div class="config-desc">
+                    Map raw ship codes (e.g. ANVL_Hornet_F7A) to custom player-visible names (e.g. Anvil Hornet F7A Mk II).
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 10px; margin-top: 10px;">
+                    <!-- Add New Inline Form -->
+                    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+                        <input type="text" id="new-ship-key" placeholder="Raw Ship Code (e.g. ANVL_Hornet_F7A)" class="modern-input" style="flex:1; margin:0;">
+                        <span style="color:#666;">➔</span>
+                        <input type="text" id="new-ship-val" placeholder="Friendly Name (e.g. Hornet F7A Mk2)" class="modern-input" style="flex:1; margin:0;">
+                        <button class="cyber-btn small success" onclick="saveNewCustomShip()" style="width:auto; margin:0;">Save</button>
+                    </div>
+
+                    <!-- List -->
+                    <div id="custom-ship-list" style="max-height: 200px; overflow-y: auto; display:flex; flex-direction:column; gap:5px; margin-bottom:10px;">
+                        <div style="color:#666; font-style:italic; padding:10px; text-align:center;">No custom ship names set.</div>
+                    </div>
+
+                    <!-- Ship Sniffer -->
+                    <div id="ship-sniffer" style="padding: 10px; background: rgba(0,150,255,0.05); border: 1px dashed var(--accent); border-radius: 4px;">
+                        <div style="font-size: 0.7rem; color: var(--accent); opacity: 0.7; text-transform: uppercase; margin-bottom: 5px;">
+                            Last Detected Raw Ship Code
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span id="last-raw-ship" style="font-family: monospace; font-size: 0.85rem; color: #fff;">None Detected</span>
+                            <button class="cyber-btn small" onclick="grabRawShip()" style="width: auto; margin: 0;">Grab</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Remote Access (v2.9) -->
             <div
                 style="background: rgba(170,100,255,0.1); padding: 15px; border-radius: 8px; border: 1px solid #aa64ff; margin-bottom: 15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <div style="font-weight:bold; color:#aa64ff;">Remote Control Access</div>
+                    <div style="font-weight:bold; color:#aa64ff;">Remote & Tablet Access</div>
                     <button class="cyber-btn small" style="margin:0; width:auto; padding: 2px 8px; font-size:0.6rem;"
                         onclick="refreshLocalIP()">Refresh IP</button>
                 </div>
                 <div style="font-size:0.75rem; color:#888; margin-bottom:10px;">
-                    Control your cockpit from a phone or tablet. Connect to this URL on your local network:
+                    Connect a phone or tablet on your local network to access remote dashboards:
                 </div>
-                <div
-                    style="background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; font-family:monospace; font-size:0.85rem; color:#fff; text-align:center;">
-                    http://<span id="local-ip">SEARCHING...</span>:4400/remote.html
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; font-family:monospace; font-size:0.8rem; color:#fff; display: flex; justify-content: space-between;">
+                        <span style="color:#aa64ff; font-weight:bold;">CONTROLS:</span>
+                        <span>http://<span id="local-ip">SEARCHING...</span>:4400/remote.html</span>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; font-family:monospace; font-size:0.8rem; color:#fff; display: flex; justify-content: space-between;">
+                        <span style="color:#00f0ff; font-weight:bold;">TABLET HUD:</span>
+                        <span>http://<span id="local-ip-tablet">SEARCHING...</span>:4400/tablet.html</span>
+                    </div>
                 </div>
             </div>
 
@@ -1709,51 +1879,112 @@
 
     <!-- ═══════════ PLAYERS VIEW (Phase 10) ═══════════ -->
     <div id="view-players" class="view">
-        <div
-            style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; border: 1px solid var(--border); flex: 1; display: flex; flex-direction: column;">
-            <!-- ══ SQUAD SESSION ══ -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                <h3 style="margin:0; color:var(--accent);">SQUAD SESSION</h3>
-                <div id="squad-status-badge" style="font-size:0.75rem; color:#555; letter-spacing:0.05em;">No active session</div>
+        <div style="display:flex; gap:20px; flex-direction:row; flex:1; min-height:0;">
+            <!-- Left Column: Squad Session -->
+            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; border: 1px solid var(--border); flex: 1; display: flex; flex-direction: column;">
+                <!-- ══ SQUAD SESSION ══ -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                    <h3 style="margin:0; color:var(--accent);">SQUAD SESSION</h3>
+                    <div id="squad-status-badge" style="font-size:0.75rem; color:#555; letter-spacing:0.05em;">No active session</div>
+                </div>
+
+                <!-- Action bar -->
+                <div id="squad-action-bar" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+                    <button class="cyber-btn" id="squad-host-btn" onclick="squadHost()" style="margin:0; background:rgba(0,180,80,0.15); border-color:#00cc44;">
+                        🛡 Host Session
+                    </button>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <input id="squad-join-code" type="text" placeholder="Paste session code" maxlength="10"
+                            style="width:160px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                                   border-radius:4px; padding:7px 10px; color:#fff; font-size:0.85rem; font-family:inherit;
+                                   outline:none; text-transform:uppercase; letter-spacing:1px;"
+                            onkeydown="if(event.key==='Enter') squadJoin()">
+                        <button class="cyber-btn" id="squad-join-btn" onclick="squadJoin()" style="margin:0;">⚡ Join</button>
+                    </div>
+                    <button class="cyber-btn small" id="squad-leave-btn" onclick="squadLeave()" style="margin:0; display:none; border-color:#ff6666; color:#ff6666;">
+                        Leave Session
+                    </button>
+                </div>
+
+                <!-- Session code display (shown when hosting) -->
+                <div id="squad-code-panel" style="display:none; background:rgba(0,180,80,0.08); border:1px solid #00cc44;
+                     border-radius:6px; padding:14px 16px; margin-bottom:16px;">
+                    <div style="font-size:0.75rem; color:#00cc44; letter-spacing:0.1em; margin-bottom:6px;">YOUR SESSION CODE — share this with your squad:</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div id="squad-my-code" style="font-family:monospace; font-size:1.4rem; font-weight:700; letter-spacing:4px; color:#fff;"></div>
+                        <button onclick="copySquadCode()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);
+                                border-radius:4px; color:#aaa; cursor:pointer; padding:4px 10px; font-size:0.75rem;">📋 Copy</button>
+                    </div>
+                    <div id="squad-host-note" style="font-size:0.7rem; color:#888; margin-top:6px;"></div>
+                </div>
+
+                <div id="squad-msg" style="font-size:0.8rem; margin-bottom:12px; min-height:18px;"></div>
+
+                <!-- Squad member list -->
+                <div style="flex:1; overflow-y:auto; min-height:0;">
+                    <div id="squad-member-list">
+                        <div style="color:#555; text-align:center; padding:30px; font-style:italic;">
+                            Host a session or join one to see your squad here.
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Action bar -->
-            <div id="squad-action-bar" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
-                <button class="cyber-btn" id="squad-host-btn" onclick="squadHost()" style="margin:0; background:rgba(0,180,80,0.15); border-color:#00cc44;">
-                    🛡 Host Session
-                </button>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <input id="squad-join-code" type="text" placeholder="Paste session code" maxlength="10"
-                        style="width:160px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+            <!-- Right Column: KOS Target Tracker -->
+            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; border: 1px solid var(--border); width: 420px; display: flex; flex-direction: column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                    <h3 style="margin:0; color:var(--danger); font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;">🎯 KOS TARGET TRACKER</h3>
+                    <div style="font-size:0.75rem; color:#ff3300; font-weight: 700; letter-spacing: 0.5px;">ACTIVE RADAR WATCH</div>
+                </div>
+
+                <!-- Add Target Form -->
+                <div style="display:flex; gap:6px; align-items:center; margin-bottom:16px;">
+                    <input id="kos-target-id" type="text" placeholder="Entity ID (e.g. 618068518220)"
+                        style="flex:1.2; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
                                border-radius:4px; padding:7px 10px; color:#fff; font-size:0.85rem; font-family:inherit;
-                               outline:none; text-transform:uppercase; letter-spacing:1px;"
-                        onkeydown="if(event.key==='Enter') squadJoin()">
-                    <button class="cyber-btn" id="squad-join-btn" onclick="squadJoin()" style="margin:0;">⚡ Join</button>
+                               outline:none;">
+                    <input id="kos-target-label" type="text" placeholder="Label/Name"
+                        style="flex:0.8; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                               border-radius:4px; padding:7px 10px; color:#fff; font-size:0.85rem; font-family:inherit;
+                               outline:none;">
+                    <button class="cyber-btn" onclick="addKosTargetFromInput()" style="margin:0; padding: 7px 12px; border-color:var(--danger); color:var(--danger); font-size: 0.8rem; width: auto;">+ Track</button>
                 </div>
-                <button class="cyber-btn small" id="squad-leave-btn" onclick="squadLeave()" style="margin:0; display:none; border-color:#ff6666; color:#ff6666;">
-                    Leave Session
-                </button>
-            </div>
 
-            <!-- Session code display (shown when hosting) -->
-            <div id="squad-code-panel" style="display:none; background:rgba(0,180,80,0.08); border:1px solid #00cc44;
-                 border-radius:6px; padding:14px 16px; margin-bottom:16px;">
-                <div style="font-size:0.75rem; color:#00cc44; letter-spacing:0.1em; margin-bottom:6px;">YOUR SESSION CODE — share this with your squad:</div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <div id="squad-my-code" style="font-family:monospace; font-size:1.4rem; font-weight:700; letter-spacing:4px; color:#fff;"></div>
-                    <button onclick="copySquadCode()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);
-                            border-radius:4px; color:#aaa; cursor:pointer; padding:4px 10px; font-size:0.75rem;">📋 Copy</button>
+                <!-- Targets list scroll area -->
+                <div style="height: 180px; max-height: 180px; overflow-y:auto; min-height:0; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 8px; border: 1px dashed rgba(255,255,255,0.05); margin-bottom: 15px;">
+                    <div id="kos-target-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <div style="color:#555; text-align:center; padding:30px; font-style:italic; font-size: 0.85rem;">
+                            No KOS targets registered. Add a ship Entity ID above to start active tracking.
+                        </div>
+                    </div>
                 </div>
-                <div id="squad-host-note" style="font-size:0.7rem; color:#888; margin-top:6px;"></div>
-            </div>
 
-            <div id="squad-msg" style="font-size:0.8rem; margin-bottom:12px; min-height:18px;"></div>
+                <!-- Ignored Targets Tracker -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; margin-bottom:8px;">
+                    <h4 style="margin:0; color:#55c5ff; font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; font-size:0.9rem;">🛡️ IGNORED SHIPS / FRIENDLIES</h4>
+                    <button class="cyber-btn small" onclick="addIgnoreTargetPrompt()" style="margin:0; padding: 2px 6px; font-size:0.6rem; border-color:#0099ff; color:#0099ff; width:auto;">+ Ignore</button>
+                </div>
+                <!-- Ignored list scroll area -->
+                <div style="height: 140px; max-height: 140px; overflow-y:auto; min-height:0; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 8px; border: 1px dashed rgba(255,255,255,0.05); margin-bottom: 15px;">
+                    <div id="kos-ignore-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <div style="color:#555; text-align:center; padding:20px; font-style:italic; font-size: 0.8rem;">
+                            No ships ignored. Ignored targets won't trigger KOS, proximity, or quantum alerts.
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Squad member list -->
-            <div style="flex:1; overflow-y:auto; min-height:0;">
-                <div id="squad-member-list">
-                    <div style="color:#555; text-align:center; padding:30px; font-style:italic;">
-                        Host a session or join one to see your squad here.
+                <!-- Recent Detected Ships title -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <h4 style="margin:0; color:var(--accent); font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; font-size:0.9rem;">🛰️ RECENT SHIPS DETECTED (LAST 50)</h4>
+                    <button class="cyber-btn small" onclick="clearRecentDetectedShips()" style="margin:0; padding: 2px 6px; font-size:0.6rem; border-color:#555; color:#aaa; width:auto;">Clear</button>
+                </div>
+
+                <!-- Recent detected ships scroll area -->
+                <div style="flex:1; overflow-y:auto; min-height:0; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 8px; border: 1px dashed rgba(255,255,255,0.05);">
+                    <div id="kos-recent-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <div style="color:#555; text-align:center; padding:30px; font-style:italic; font-size: 0.85rem;">
+                            No ships detected recently in logs.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1810,6 +2041,12 @@
             </button>
             <button class="cyber-btn small" onclick="showAddBlueprintForm()" style="margin:0;">
                 + Add to Master List
+            </button>
+            <button class="cyber-btn small info" onclick="exportBlueprintsToFile()" style="margin:0; background:rgba(0,150,255,0.15); border-color:#0099ff;">
+                📤 Export File
+            </button>
+            <button class="cyber-btn small info" onclick="importBlueprintsFromFile()" style="margin:0; background:rgba(168,85,247,0.15); border-color:#a855f7;">
+                📥 Import File
             </button>
             <span id="bp-scan-status" style="font-size:0.75rem; color:#888; margin-left:8px;"></span>
             <span id="bp-mod-status" style="font-size:0.75rem; color:#888; margin-left:8px;"></span>
@@ -2150,6 +2387,7 @@
                     <select id="location-edit-zone" class="modern-input" style="flex:1.5; font-size:0.75rem; margin:0;">
                         <option value="Auto">Auto Zone</option>
                         <option value="Armistice Zone">Armistice</option>
+                        <option value="Contested Zone">Contested Zone</option>
                         <option value="Open Space">Open Space</option>
                         <option value="Station">Space Station / R&R</option>
                         <option value="Facility">Facility</option>
@@ -2185,8 +2423,16 @@
     <script>
         const { ipcRenderer } = require('electron');
 
+        window.addEventListener('error', (event) => {
+            alert(`JS Error: ${event.message} at ${event.filename}:${event.lineno}`);
+        });
+        window.addEventListener('unhandledrejection', (event) => {
+            alert(`Promise Rejection: ${event.reason}`);
+        });
+
         // ═══ STATE ═══
         let config = { teamNames: ['Alpha', 'Bravo', 'Charlie', 'Delta'], healthZone: null, monitorHealth: false, healthFreq: 5 };
+        let dndMode = false;
         let healthMonitorInterval = null;
         let scanFailCount = 0; // v2.10.1 - Fail tracking for Signal Lost detection
         let lastDetectedHealth = 100; // v2.10.2 - For nominal hide fallback
@@ -2222,7 +2468,11 @@
             // Auto-load patterns when switching to logdb
             if (tab === 'logdb') loadPatternDB();
             if (tab === 'blueprints') loadBlueprintUI();
-            if (tab === 'players') loadFriendList();
+            if (tab === 'players') {
+                loadFriendList();
+                loadKosTargets();
+                loadKosIgnoreList();
+            }
             if (tab === 'runtracker') loadRunTracker();
 
             if (titles[tab]) {
@@ -2257,6 +2507,15 @@
             saveConfig();
         }
 
+        function updateHotkeySelection() {
+            const selectEl = document.getElementById('config-clip-hotkey');
+            const customRow = document.getElementById('custom-clip-hotkey-row');
+            if (selectEl && customRow) {
+                customRow.style.display = (selectEl.value === 'custom') ? 'flex' : 'none';
+            }
+            saveConfig();
+        }
+
         // ═══ CONFIG MANAGEMENT ═══
         function saveConfig() {
             const newConfig = { // Fix: Renamed local to avoid TDZ circular reference
@@ -2288,6 +2547,10 @@
                     networkPanel: document.getElementById('vis-networkPanel')?.checked || false
                 },
                 accentColor: document.getElementById('config-accent-color')?.value,
+                ttsEnabled: document.getElementById('config-tts-enabled').checked,
+                ttsKosNameEnabled: document.getElementById('config-tts-kos-name').checked,
+                ttsVolume: document.getElementById('config-tts-volume').value,
+                ttsVoice: document.getElementById('config-tts-voice').value,
                 twitchChannel: document.getElementById('config-twitch-channel')?.value,
                 youtubeChannelId: document.getElementById('config-youtube-channel-id')?.value,
                 youtubeId: document.getElementById('config-youtube-id')?.value,
@@ -2314,14 +2577,39 @@
                 monitorHealth: document.getElementById('config-health-monitor').checked,
                 healthFreq: parseInt(document.getElementById('config-health-freq').value),
                 enableFreightElevatorAlerts: document.getElementById('config-cargo-alerts').checked,
+                enableFreightElevatorTabletAlerts: document.getElementById('config-cargo-tablet-alerts').checked,
                 enableStaminaOxygenAlerts: document.getElementById('config-oxygen-alerts').checked,
+                enableStaminaOxygenTabletAlerts: document.getElementById('config-oxygen-tablet-alerts').checked,
                 enableJurisdictionAlerts: document.getElementById('config-jurisdiction-alerts').checked,
+                enableJurisdictionTabletAlerts: document.getElementById('config-jurisdiction-tablet-alerts').checked,
                 enableFireAlerts: document.getElementById('config-fire-alerts').checked,
+                enableFireTabletAlerts: document.getElementById('config-fire-tablet-alerts').checked,
                 enableCorpseAlerts: document.getElementById('config-corpse-alerts').checked,
+                enableCorpseTabletAlerts: document.getElementById('config-corpse-tablet-alerts').checked,
                 enableDeathAlerts: document.getElementById('config-death-alerts').checked,
+                enableDeathTabletAlerts: document.getElementById('config-death-tablet-alerts').checked,
                 enableVehicleDestructionAlerts: document.getElementById('config-vehicle-alerts').checked,
+                enableVehicleDestructionTabletAlerts: document.getElementById('config-vehicle-tablet-alerts').checked,
                 enableMissionStatusAlerts: document.getElementById('config-mission-alerts').checked,
-                enableCrimestatAlerts: document.getElementById('config-crimestat-alerts').checked
+                enableMissionStatusTabletAlerts: document.getElementById('config-mission-tablet-alerts').checked,
+                enableCrimestatAlerts: document.getElementById('config-crimestat-alerts').checked,
+                enableCrimestatTabletAlerts: document.getElementById('config-crimestat-tablet-alerts').checked,
+                showShipsProximityFeed: document.getElementById('config-ship-prox').checked,
+                showShipsTacticalFeed: document.getElementById('config-ship-tactical').checked,
+                showShipsOverlayHud: document.getElementById('config-ship-hud').checked,
+                showShipsTablet: document.getElementById('config-ship-tablet').checked,
+                
+                // Auto-Recording Settings
+                clipEnabled: document.getElementById('config-clip-enabled').checked,
+                clipHotkey: document.getElementById('config-clip-hotkey').value,
+                clipHotkeyCustom: document.getElementById('config-clip-hotkey-custom').value,
+                clipTriggerHit: document.getElementById('config-clip-trigger-hit').checked,
+                clipTriggerKill: document.getElementById('config-clip-trigger-kill').checked,
+                clipTriggerDeath: document.getElementById('config-clip-trigger-death').checked,
+                clipTriggerKos: document.getElementById('config-clip-trigger-kos').checked,
+                clipTriggerFire: document.getElementById('config-clip-trigger-fire').checked,
+                clipTriggerSoftdeath: document.getElementById('config-clip-trigger-softdeath').checked,
+                clipTriggerQuantum: document.getElementById('config-clip-trigger-quantum').checked
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
@@ -2349,14 +2637,44 @@
 
             // Load new alert states (default to true if not configured)
             document.getElementById('config-cargo-alerts').checked = config.enableFreightElevatorAlerts !== false;
+            document.getElementById('config-cargo-tablet-alerts').checked = config.enableFreightElevatorTabletAlerts !== false;
             document.getElementById('config-oxygen-alerts').checked = config.enableStaminaOxygenAlerts !== false;
+            document.getElementById('config-oxygen-tablet-alerts').checked = config.enableStaminaOxygenTabletAlerts !== false;
             document.getElementById('config-jurisdiction-alerts').checked = config.enableJurisdictionAlerts !== false;
+            document.getElementById('config-jurisdiction-tablet-alerts').checked = config.enableJurisdictionTabletAlerts !== false;
             document.getElementById('config-fire-alerts').checked = config.enableFireAlerts !== false;
+            document.getElementById('config-fire-tablet-alerts').checked = config.enableFireTabletAlerts !== false;
             document.getElementById('config-corpse-alerts').checked = config.enableCorpseAlerts !== false;
+            document.getElementById('config-corpse-tablet-alerts').checked = config.enableCorpseTabletAlerts !== false;
             document.getElementById('config-death-alerts').checked = config.enableDeathAlerts !== false;
+            document.getElementById('config-death-tablet-alerts').checked = config.enableDeathTabletAlerts !== false;
             document.getElementById('config-vehicle-alerts').checked = config.enableVehicleDestructionAlerts !== false;
+            document.getElementById('config-vehicle-tablet-alerts').checked = config.enableVehicleDestructionTabletAlerts !== false;
             document.getElementById('config-mission-alerts').checked = config.enableMissionStatusAlerts !== false;
+            document.getElementById('config-mission-tablet-alerts').checked = config.enableMissionStatusTabletAlerts !== false;
             document.getElementById('config-crimestat-alerts').checked = config.enableCrimestatAlerts !== false;
+            document.getElementById('config-crimestat-tablet-alerts').checked = config.enableCrimestatTabletAlerts !== false;
+
+            document.getElementById('config-ship-prox').checked = config.showShipsProximityFeed !== false;
+            document.getElementById('config-ship-tactical').checked = config.showShipsTacticalFeed !== false;
+            document.getElementById('config-ship-hud').checked = config.showShipsOverlayHud !== false;
+            document.getElementById('config-ship-tablet').checked = config.showShipsTablet !== false;
+
+            // Load Auto-Recording Settings
+            if (config.clipEnabled !== undefined) document.getElementById('config-clip-enabled').checked = config.clipEnabled;
+            if (config.clipHotkey !== undefined) {
+                document.getElementById('config-clip-hotkey').value = config.clipHotkey;
+                const customRow = document.getElementById('custom-clip-hotkey-row');
+                if (customRow) customRow.style.display = (config.clipHotkey === 'custom') ? 'flex' : 'none';
+            }
+            if (config.clipHotkeyCustom !== undefined) document.getElementById('config-clip-hotkey-custom').value = config.clipHotkeyCustom;
+            if (config.clipTriggerHit !== undefined) document.getElementById('config-clip-trigger-hit').checked = config.clipTriggerHit;
+            if (config.clipTriggerKill !== undefined) document.getElementById('config-clip-trigger-kill').checked = config.clipTriggerKill;
+            if (config.clipTriggerDeath !== undefined) document.getElementById('config-clip-trigger-death').checked = config.clipTriggerDeath;
+            if (config.clipTriggerKos !== undefined) document.getElementById('config-clip-trigger-kos').checked = config.clipTriggerKos;
+            if (config.clipTriggerFire !== undefined) document.getElementById('config-clip-trigger-fire').checked = config.clipTriggerFire;
+            if (config.clipTriggerSoftdeath !== undefined) document.getElementById('config-clip-trigger-softdeath').checked = config.clipTriggerSoftdeath;
+            if (config.clipTriggerQuantum !== undefined) document.getElementById('config-clip-trigger-quantum').checked = config.clipTriggerQuantum;
 
             // Hue Settings
             if (config.hueEnabled !== undefined) {
@@ -2374,6 +2692,10 @@
 
             // TTS Settings (v2.10)
             if (config.ttsEnabled !== undefined) document.getElementById('config-tts-enabled').checked = config.ttsEnabled;
+            if (config.ttsKosNameEnabled !== undefined) {
+                const el = document.getElementById('config-tts-kos-name');
+                if (el) el.checked = config.ttsKosNameEnabled;
+            }
             if (config.ttsVolume !== undefined) {
                 document.getElementById('config-tts-volume').value = config.ttsVolume;
                 updateVolumeLabel(config.ttsVolume);
@@ -2493,7 +2815,8 @@
                 console.log('[Dashboard] Player respawn detected.');
                 ipcRenderer.send('app:update-health', 100);
                 document.getElementById('health-last-val').textContent = '100%';
-                addDashItem('❤️', `Player respawn detected at ${data.value.location}.`);
+                const friendlyLoc = getFriendlyLocationName(data.value.location);
+                addDashItem('❤️', `Player respawn detected at ${friendlyLoc}.`);
             }
             if (data.type === 'NEW_LOCATION') {
                 currentLocation = data.value || data.raw || 'Unknown Location';
@@ -2544,15 +2867,61 @@
 
 
         // ═══ FEED HELPERS ═══
-        function addFeedItem(feedId, icon, text) {
+        function addFeedItem(feedId, icon, text, hostId = null, rawShip = '', rawLocation = '') {
             const feed = document.getElementById(feedId);
             const time = new Date().toLocaleTimeString([], { hour12: false });
+            
+            let extraButton = '';
+            if (hostId) {
+                const isServer = /^(?:pub|dev|qa|hub)_/i.test(rawShip) || 
+                                 /^(?:pub|dev|qa|hub)\s/i.test(rawShip) || 
+                                 /^(?:pub|dev|qa|hub)_/i.test(text) || 
+                                 /^(?:pub|dev|qa|hub)\s/i.test(text) ||
+                                 (/pub/i.test(text) && /euw/i.test(text));
+                if (!isServer) {
+                    if (kosIgnoreList && kosIgnoreList.some(item => String(item.id) === String(hostId))) {
+                        return null;
+                    }
+                    const nameLabel = text.replace(/^(Radar Target:\s*|Quantum Arrival:\s*)/i, '');
+                    extraButton = `
+                        <button onclick="addKosTarget('${hostId}', '${nameLabel}')" style="background:none; border:1px solid var(--danger); color:var(--danger); border-radius:3px; cursor:pointer; padding:1px 5px; font-size:0.65rem; margin-left:6px; font-family:inherit; outline:none; font-weight:bold; width:auto; display:inline-block;">🎯 +KOS</button>
+                        <button onclick="addIgnoreTarget('${hostId}', '${nameLabel}')" style="background:none; border:1px solid #0099ff; color:#0099ff; border-radius:3px; cursor:pointer; padding:1px 5px; font-size:0.65rem; margin-left:6px; font-family:inherit; outline:none; font-weight:bold; width:auto; display:inline-block;">🛡️ Ignore</button>
+                    `;
+                    if (window.trackRecentDetectedShip) {
+                        window.trackRecentDetectedShip(hostId, nameLabel, rawShip, rawLocation);
+                    }
+                }
+            } else {
+                // Match things like Entity Name (with numbers like 618068518220)
+                const match = text.match(/(\w+)_(\d{8,18})/);
+                if (match) {
+                    const entityId = match[2];
+                    const rawLabel = match[1];
+                    const isServer = /^(?:pub|dev|qa|hub)_/i.test(rawLabel) || 
+                                     /^(?:pub|dev|qa|hub)\s/i.test(rawLabel) ||
+                                     /pub/i.test(rawLabel);
+                    if (!isServer) {
+                        if (kosIgnoreList && kosIgnoreList.some(item => String(item.id) === String(entityId))) {
+                            return null;
+                        }
+                        const nameLabel = rawLabel.replace(/[+_\s-]/g, ' ');
+                        extraButton = `
+                            <button onclick="addKosTarget('${entityId}', '${nameLabel}')" style="background:none; border:1px solid var(--danger); color:var(--danger); border-radius:3px; cursor:pointer; padding:1px 5px; font-size:0.65rem; margin-left:6px; font-family:inherit; outline:none; font-weight:bold; width:auto; display:inline-block;">🎯 +KOS</button>
+                            <button onclick="addIgnoreTarget('${entityId}', '${nameLabel}')" style="background:none; border:1px solid #0099ff; color:#0099ff; border-radius:3px; cursor:pointer; padding:1px 5px; font-size:0.65rem; margin-left:6px; font-family:inherit; outline:none; font-weight:bold; width:auto; display:inline-block;">🛡️ Ignore</button>
+                        `;
+                        if (window.trackRecentDetectedShip) {
+                            window.trackRecentDetectedShip(entityId, nameLabel, rawShip, rawLocation);
+                        }
+                    }
+                }
+            }
+            
             const item = document.createElement('div');
             item.className = 'feed-item';
             item.innerHTML = `
                 <span class="feed-time">${time}</span>
                 <span class="feed-icon">${icon}</span>
-                <span class="feed-text">${text}</span>
+                <span class="feed-text">${text}${extraButton}</span>
             `;
             feed.prepend(item);
             if (feed.children.length > 150) feed.lastElementChild.remove();
@@ -2623,7 +2992,52 @@
             return bestVal;
         }
 
+        function getFriendlyLocationName(raw) {
+            if (!raw) return 'Unknown';
+            // 1. Custom Location mapping (Priority 1)
+            if (typeof customLocations !== 'undefined') {
+                const matched = getCustomLocationMatch(raw, raw, customLocations);
+                if (matched) return typeof matched === 'object' ? matched.name : matched;
+            }
+
+            // 2. Dynamic Hints (Priority 2)
+            const normRaw = raw.replace(/asteriod/gi, 'Asteroid');
+            if (typeof locationNameHints !== 'undefined') {
+                if (locationNameHints[raw]) return locationNameHints[raw];
+                if (locationNameHints[normRaw]) return locationNameHints[normRaw];
+            }
+
+            // 3. Regex suggestion (Priority 3)
+            let cleaned = raw
+                .replace(/^Stanton\d*_/i, '')
+                .replace(/^Outpost_PAF_/i, '')
+                .replace(/^Outpost_OLP_/i, '')
+                .replace(/^Outpost_/i, '')
+                .replace(/^PrisonMine_/i, 'Prison Mine ')
+                .replace(/_/g, ' ')
+                .trim();
+            cleaned = cleaned.replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim();
+            return cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
         function showNewLocationToast(displayName, rawName) {
+            const lowerRaw = (rawName || '').trim().toLowerCase();
+            const lowerDisplay = (displayName || '').trim().toLowerCase();
+            
+            // Check if this is system noise (e.g. quantum transit, items, armor, undocking)
+            const isSystemNoise = lowerRaw.includes('quantum') || lowerRaw.includes('transit') || 
+                                 lowerRaw.includes('jumppoint') || lowerRaw.includes('inventory') ||
+                                 lowerRaw.includes('weapon') || lowerRaw.includes('helmet') || 
+                                 lowerRaw.includes('armor') || lowerRaw.includes('magazine') || 
+                                 lowerRaw.includes('ammo') || lowerRaw.includes('undock') ||
+                                 lowerRaw.includes('test') || lowerRaw.includes('loading') ||
+                                 lowerRaw.includes('_mag') || lowerRaw.includes('helmethook') ||
+                                 lowerDisplay.includes('quantum') || lowerDisplay.includes('transit');
+            
+            if (isSystemNoise) {
+                return;
+            }
+
             // Check if it's already custom mapped
             if (typeof customLocations !== 'undefined' && getCustomLocationMatch(rawName, displayName, customLocations)) {
                 return; // Skip toast if already mapped
@@ -2752,8 +3166,29 @@
 
         function toggleOverlay() { toggleOverlayUI(); }
 
-        // Init button state on load
-        document.addEventListener('DOMContentLoaded', updateOverlayBtn);
+        // Init state and inject window controls to all headers on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOverlayBtn();
+            
+            document.querySelectorAll('.view > .header').forEach(header => {
+                if (!header.querySelector('.window-controls')) {
+                    const container = document.createElement('div');
+                    container.style.display = 'flex';
+                    container.style.gap = '10px';
+                    container.style.alignItems = 'center';
+                    container.className = 'no-drag';
+                    
+                    const controls = document.createElement('div');
+                    controls.className = 'window-controls no-drag';
+                    controls.innerHTML = `
+                        <button onclick="ipcRenderer.send('window:minimize')" class="win-btn" title="Minimize">🗕</button>
+                        <button onclick="ipcRenderer.send('window:close')" class="win-btn win-close" title="Close Workspace">🗙</button>
+                    `;
+                    container.appendChild(controls);
+                    header.appendChild(container);
+                }
+            });
+        });
 
         function selectLogFile() {
             ipcRenderer.invoke('app:select-log').then(path => {
@@ -3209,13 +3644,17 @@
 
         let lastGlobalLocation = '';
         let lastRawLocation = ''; // Added for Location Sniffing
+        let locationNameHints = {}; // Accumulates LOCATION_NAME_HINT events
 
         ipcRenderer.on('settings:friend-code', (e, code) => {
-            document.getElementById('display-friend-code').textContent = code;
+            const el = document.getElementById('display-friend-code');
+            if (el) el.textContent = code;
         });
 
         function copyFriendCode() {
-            const code = document.getElementById('display-friend-code').textContent;
+            const el = document.getElementById('display-friend-code');
+            if (!el) return;
+            const code = el.textContent;
             navigator.clipboard.writeText(code);
             showNotification('📋 Friend Code Copied', 'Share it with your squadron!');
         }
@@ -3293,6 +3732,335 @@
         }
 
         ipcRenderer.on('social:friends-updated', (e, friends) => renderFriendList(friends));
+
+        // ═════ KOS TARGETS & IGNORE LISTS TRACKER ═════
+        let kosTargets = [];
+        let kosIgnoreList = [];
+        let recentDetectedShips = [];
+
+        window.updateTargetLastSeen = function(id, rawShip, rawLocation) {
+            let changedKos = false;
+            const now = Date.now();
+
+            kosTargets = kosTargets.map(t => {
+                if (String(t.id) === String(id)) {
+                    changedKos = true;
+                    return {
+                        ...t,
+                        rawShip: rawShip || t.rawShip || '',
+                        rawLocation: rawLocation || t.rawLocation || lastRawLocation || '',
+                        lastSeen: now
+                    };
+                }
+                return t;
+            });
+            if (changedKos) {
+                ipcRenderer.invoke('settings:save-kos-targets', kosTargets);
+                window.renderKosTargets();
+            }
+
+            let foundRecent = false;
+            recentDetectedShips = recentDetectedShips.map(s => {
+                if (String(s.id) === String(id)) {
+                    foundRecent = true;
+                    return {
+                        ...s,
+                        rawShip: rawShip || s.rawShip || '',
+                        rawLocation: rawLocation || s.rawLocation || lastRawLocation || '',
+                        timestamp: now
+                    };
+                }
+                return s;
+            });
+            if (foundRecent) {
+                window.renderRecentDetectedShips();
+            }
+        };
+
+        window.trackRecentDetectedShip = function(entityId, nameLabel, rawShip = '', rawLocation = '') {
+            // Filter if ignored
+            if (kosIgnoreList && kosIgnoreList.some(item => String(item.id) === String(entityId))) {
+                return;
+            }
+            // Filter if server name/ID
+            const isServer = /^(?:pub|dev|qa|hub)_/i.test(nameLabel) || 
+                             /^(?:pub|dev|qa|hub)\s/i.test(nameLabel) ||
+                             /pub/i.test(nameLabel) ||
+                             /^(?:pub|dev|qa|hub)_/i.test(rawShip) ||
+                             /^(?:pub|dev|qa|hub)\s/i.test(rawShip);
+            if (isServer) return;
+            
+            const existing = recentDetectedShips.find(s => s.id === entityId);
+            const ship = rawShip || (existing ? existing.rawShip : '');
+            const loc = rawLocation || (existing ? existing.rawLocation : lastRawLocation || '');
+
+            recentDetectedShips = recentDetectedShips.filter(s => s.id !== entityId);
+            recentDetectedShips.unshift({
+                id: entityId,
+                name: nameLabel,
+                rawShip: ship,
+                rawLocation: loc,
+                timestamp: Date.now()
+            });
+            if (recentDetectedShips.length > 50) {
+                recentDetectedShips.pop();
+            }
+            window.renderRecentDetectedShips();
+        };
+
+        window.renderRecentDetectedShips = function() {
+            const listEl = document.getElementById('kos-recent-list');
+            if (!listEl) return;
+            
+            if (recentDetectedShips.length === 0) {
+                listEl.innerHTML = `
+                    <div style="color:#555; text-align:center; padding:30px; font-style:italic; font-size: 0.85rem;">
+                        No ships detected recently in logs.
+                    </div>
+                `;
+                return;
+            }
+            
+            listEl.innerHTML = recentDetectedShips.map(s => {
+                const isTracked = (kosTargets || []).some(t => t.id === s.id);
+                const isIgnored = (kosIgnoreList || []).some(i => i.id === s.id);
+                
+                let btns = '';
+                if (isIgnored) {
+                    btns = `<span style="font-size:0.72rem; color:#55c5ff; font-weight:bold;">🛡️ Ignored</span>`;
+                } else {
+                    const kosDisabled = isTracked ? 'disabled style="opacity:0.5; cursor:default; border-color:#555; color:#555;"' : '';
+                    btns = `
+                        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+                            <button class="cyber-btn small" onclick="addKosTarget('${escapeHtml(s.id)}', '${escapeHtml(s.name)}')" ${kosDisabled} style="margin:0; width:auto; border-color:var(--danger); color:var(--danger); padding:4px 8px; font-size:0.7rem; flex-shrink:0;">
+                                ${isTracked ? 'Tracked' : '🎯 +KOS'}
+                            </button>
+                            <button class="cyber-btn small" onclick="addIgnoreTarget('${escapeHtml(s.id)}', '${escapeHtml(s.name)}')" style="margin:0; width:auto; border-color:#0099ff; color:#0099ff; padding:4px 8px; font-size:0.7rem; flex-shrink:0;">
+                                🛡️ Ignore
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                const displayShip = s.rawShip ? getDisplayShip(s.rawShip) : 'Unknown Ship';
+                const displayLoc = s.rawLocation ? getDisplayLocation(s.rawLocation) : 'Unknown Location';
+                const formattedTime = new Date(s.timestamp).toLocaleString();
+
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; border-radius:4px; gap:10px;">
+                        <div style="display:flex; flex-direction:column; gap:3px; min-width:0; flex:1;">
+                            <span style="font-weight:bold; color:var(--accent); font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(s.name)}</span>
+                            <span style="font-family:monospace; color:#aaa; font-size:0.75rem;">ID: ${escapeHtml(s.id)}</span>
+                            <span style="font-size:0.72rem; color:#888;">🚢 Ship: <strong style="color:#ddd;">${escapeHtml(displayShip)}</strong></span>
+                            <span style="font-size:0.72rem; color:#888;">📍 Loc: <strong style="color:#ddd;">${escapeHtml(displayLoc)}</strong></span>
+                            <span style="font-size:0.68rem; color:#666;">🕒 Last Seen: ${escapeHtml(formattedTime)}</span>
+                        </div>
+                        ${btns}
+                    </div>
+                `;
+            }).join('');
+        };
+
+        window.clearRecentDetectedShips = function() {
+            recentDetectedShips = [];
+            window.renderRecentDetectedShips();
+        };
+
+        window.loadKosTargets = async function() {
+            kosTargets = await ipcRenderer.invoke('settings:get-kos-targets');
+            window.renderKosTargets();
+        };
+
+        window.renderKosTargets = function() {
+            const listEl = document.getElementById('kos-target-list');
+            if (!listEl) return;
+            if (!kosTargets || kosTargets.length === 0) {
+                listEl.innerHTML = `
+                    <div style="color:#555; text-align:center; padding:30px; font-style:italic; font-size: 0.85rem;">
+                        No KOS targets registered. Add a ship Entity ID above to start active tracking.
+                    </div>
+                `;
+                return;
+            }
+            listEl.innerHTML = kosTargets.map(t => {
+                const displayShip = t.rawShip ? getDisplayShip(t.rawShip) : 'Unknown Ship';
+                const displayLoc = t.rawLocation ? getDisplayLocation(t.rawLocation) : 'Unknown Location';
+                const formattedTime = t.lastSeen ? new Date(t.lastSeen).toLocaleString() : (t.addedAt ? new Date(t.addedAt).toLocaleString() : 'Never');
+
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:8px 12px; border-radius:4px; gap:10px;">
+                        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;">
+                            <div style="font-weight:bold; color:#ff4444; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(t.label || 'KOS Target')}</div>
+                            <div style="font-family:monospace; font-size:0.75rem; color:#aaa;">ID: ${escapeHtml(t.id)}</div>
+                            <div style="font-size:0.72rem; color:#888;">🚢 Ship: <strong style="color:#ddd;">${escapeHtml(displayShip)}</strong></div>
+                            <div style="font-size:0.72rem; color:#888;">📍 Loc: <strong style="color:#ddd;">${escapeHtml(displayLoc)}</strong></div>
+                            <div style="font-size:0.68rem; color:#666;">🕒 Last Seen: ${escapeHtml(formattedTime)}</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+                            <button class="cyber-btn small" onclick="window.editKosTargetLabel('${escapeHtml(t.id)}')" style="margin:0; border-color:var(--accent); color:var(--accent); padding:4px 8px; font-size:0.7rem; width:auto; flex-shrink:0;">Rename</button>
+                            <button class="cyber-btn small" onclick="window.removeKosTarget('${escapeHtml(t.id)}')" style="margin:0; border-color:#ff4444; color:#ff4444; padding:4px 8px; font-size:0.7rem; width:auto; flex-shrink:0;">Remove</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            window.renderRecentDetectedShips();
+        };
+
+        window.editKosTargetLabel = async function(id) {
+            const target = kosTargets.find(t => String(t.id) === String(id));
+            const currentLabel = target ? (target.label || '') : '';
+            const newLabel = await vcModal.prompt(`Rename KOS Target`, `Enter custom name for Entity ID ${id}:`, currentLabel);
+            if (newLabel === null) return;
+            const updated = kosTargets.map(t => {
+                if (String(t.id) === String(id)) {
+                    return { ...t, label: newLabel.trim() || `Target ${id.substring(Math.max(0, id.length - 6))}` };
+                }
+                return t;
+            });
+            kosTargets = updated;
+            await ipcRenderer.invoke('settings:save-kos-targets', kosTargets);
+            window.renderKosTargets();
+        };
+
+        window.addKosTargetFromInput = async function() {
+            const idInput = document.getElementById('kos-target-id');
+            const labelInput = document.getElementById('kos-target-label');
+            if (!idInput) return;
+            
+            const id = idInput.value.trim();
+            const label = labelInput ? labelInput.value.trim() : '';
+            if (!id) {
+                alert('Please enter a valid ship/entity ID.');
+                return;
+            }
+            
+            await window.addKosTarget(id, label);
+            idInput.value = '';
+            if (labelInput) labelInput.value = '';
+        };
+
+        window.addKosTarget = async function(id, label) {
+            if (kosTargets.some(t => String(t.id) === String(id))) {
+                alert('This ID is already being tracked.');
+                return;
+            }
+            const customLabel = prompt(`Enter a name/label for KOS Target ID ${id}:`, label || `Target ${id.substring(Math.max(0, id.length - 6))}`);
+            if (customLabel === null) {
+                return;
+            }
+            const finalLabel = customLabel.trim() || label || `Target ${id.substring(Math.max(0, id.length - 6))}`;
+            const newTarget = {
+                id: id,
+                label: finalLabel,
+                addedAt: Date.now(),
+                rawShip: '',
+                rawLocation: lastRawLocation || '',
+                lastSeen: Date.now()
+            };
+            kosTargets.push(newTarget);
+            await ipcRenderer.invoke('settings:save-kos-targets', kosTargets);
+            window.renderKosTargets();
+        };
+
+        window.removeKosTarget = async function(id) {
+            kosTargets = kosTargets.filter(t => String(t.id) !== String(id));
+            await ipcRenderer.invoke('settings:save-kos-targets', kosTargets);
+            window.renderKosTargets();
+        };
+
+        ipcRenderer.on('settings:kos-targets-updated', (e, targets) => {
+            kosTargets = targets;
+            window.renderKosTargets();
+        });
+
+        // ═════ KOS IGNORE LIST FUNCTIONS ═════
+        window.loadKosIgnoreList = async function() {
+            kosIgnoreList = await ipcRenderer.invoke('settings:get-kos-ignore');
+            window.renderKosIgnoreList();
+        };
+
+        window.renderKosIgnoreList = function() {
+            const listEl = document.getElementById('kos-ignore-list');
+            if (!listEl) return;
+            if (!kosIgnoreList || kosIgnoreList.length === 0) {
+                listEl.innerHTML = `
+                    <div style="color:#555; text-align:center; padding:20px; font-style:italic; font-size: 0.8rem;">
+                        No ships ignored. Ignored targets won't trigger KOS, proximity, or quantum alerts.
+                    </div>
+                `;
+                return;
+            }
+            listEl.innerHTML = kosIgnoreList.map(t => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,150,255,0.03); border:1px solid rgba(0,150,255,0.08); padding:8px 12px; border-radius:4px; gap:10px;">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:bold; color:#55c5ff; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(t.label || 'Ignored Target')}</div>
+                        <div style="font-family:monospace; font-size:0.75rem; color:#aaa;">ID: ${escapeHtml(t.id)}</div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="cyber-btn small" onclick="window.editIgnoreTargetLabel('${escapeHtml(t.id)}')" style="margin:0; border-color:var(--accent); color:var(--accent); padding:4px 8px; font-size:0.7rem; width:auto; flex-shrink:0;">Rename</button>
+                        <button class="cyber-btn small" onclick="window.removeIgnoreTarget('${escapeHtml(t.id)}')" style="margin:0; border-color:#ff4444; color:#ff4444; padding:4px 8px; font-size:0.7rem; width:auto; flex-shrink:0;">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+            window.renderRecentDetectedShips();
+        };
+
+        window.editIgnoreTargetLabel = async function(id) {
+            const target = kosIgnoreList.find(t => String(t.id) === String(id));
+            const currentLabel = target ? (target.label || '') : '';
+            const newLabel = await vcModal.prompt(`Rename Ignored Target`, `Enter custom name for Ignored ID ${id}:`, currentLabel);
+            if (newLabel === null) return;
+            const updated = kosIgnoreList.map(t => {
+                if (String(t.id) === String(id)) {
+                    return { ...t, label: newLabel.trim() || `Ignored ${id.substring(Math.max(0, id.length - 6))}` };
+                }
+                return t;
+            });
+            kosIgnoreList = updated;
+            await ipcRenderer.invoke('settings:save-kos-ignore', kosIgnoreList);
+            window.renderKosIgnoreList();
+        };
+
+        window.addIgnoreTargetPrompt = async function() {
+            const id = await vcModal.prompt('Ignore Target', 'Enter Ship/Player Entity ID to ignore:');
+            if (!id || !id.trim()) return;
+            const label = await vcModal.prompt('Ignore Target Label', 'Enter a label/name for this ignored target (optional):');
+            await window.addIgnoreTarget(id.trim(), label ? label.trim() : '');
+        };
+
+        window.addIgnoreTarget = async function(id, label) {
+            if (kosIgnoreList.some(t => String(t.id) === String(id))) {
+                alert('This ID is already ignored.');
+                return;
+            }
+            const finalLabel = label || `Ignored ${id.substring(Math.max(0, id.length - 6))}`;
+            const newIgnore = {
+                id: id,
+                label: finalLabel,
+                addedAt: Date.now()
+            };
+            kosIgnoreList.push(newIgnore);
+            await ipcRenderer.invoke('settings:save-kos-ignore', kosIgnoreList);
+            window.renderKosIgnoreList();
+            
+            // Clean from recent ships & KOS targets list if they were there
+            if (kosTargets.some(t => String(t.id) === String(id))) {
+                await window.removeKosTarget(id);
+            }
+            recentDetectedShips = recentDetectedShips.filter(s => String(s.id) !== String(id));
+            window.renderRecentDetectedShips();
+        };
+
+        window.removeIgnoreTarget = async function(id) {
+            kosIgnoreList = kosIgnoreList.filter(t => String(t.id) !== String(id));
+            await ipcRenderer.invoke('settings:save-kos-ignore', kosIgnoreList);
+            window.renderKosIgnoreList();
+        };
+
+        ipcRenderer.on('settings:kos-ignore-updated', (e, ignoreList) => {
+            kosIgnoreList = ignoreList;
+            window.renderKosIgnoreList();
+        });
 
         // ══════════════════════════════════════════════════════
         // SQUAD P2P SYSTEM
@@ -3422,17 +4190,33 @@
         }
 
         ipcRenderer.on('log:update', (e, data) => {
+            if (data.type === 'LOCATION_NAME_HINT') {
+                locationNameHints = { ...locationNameHints, ...data.value };
+            }
+
+            // Target update hook
+            if (data.type === 'KOS_TARGET_FOUND') {
+                if (window.updateTargetLastSeen) {
+                    window.updateTargetLastSeen(data.value, '', lastRawLocation || lastGlobalLocation);
+                }
+            } else if (data.details && data.details.hostId) {
+                if (window.updateTargetLastSeen) {
+                    window.updateTargetLastSeen(data.details.hostId, data.details.raw || data.details.chassis, lastRawLocation || lastGlobalLocation);
+                }
+            }
+
             // Location Sniffing (v2.6)
-            if (data.type === 'LOCATION' && data.raw) {
-                lastRawLocation = data.raw;
-                const sniffer = document.getElementById('last-raw-location');
-                if (sniffer) sniffer.textContent = data.raw;
-                updateLocationSuggestion(data.raw);
-            } else if (data.type === 'LOCATION_RAW') {
-                lastRawLocation = data.value;
-                const sniffer = document.getElementById('last-raw-location');
-                if (sniffer) sniffer.textContent = data.value;
-                updateLocationSuggestion(data.value);
+            if ((data.type === 'LOCATION' && data.raw) || data.type === 'LOCATION_RAW') {
+                const rawVal = data.type === 'LOCATION' ? data.raw : data.value;
+                const lowerRaw = (rawVal || '').toLowerCase();
+                const isNoise = ['quantum', 'transit', 'undock', 'loading', 'helmet', 'weapon', 'armor', 'magazine', 'ammo', 'test', 'jumppoint', 'inventory'].some(w => lowerRaw.includes(w));
+                
+                if (!isNoise) {
+                    lastRawLocation = rawVal;
+                    const sniffer = document.getElementById('last-raw-location');
+                    if (sniffer) sniffer.textContent = rawVal;
+                    updateLocationSuggestion(rawVal);
+                }
             }
 
 
@@ -3452,8 +4236,26 @@
                     addDashItem('🚀', `Quantum: <span class="feed-highlight">${data.value === 'entered' ? 'ENGAGED' : 'DISENGAGED'}</span>`);
                     playSound('alert_zone');
                     break;
+                case 'RADAR_SINGLE':
+                    if (data.details) {
+                        addFeedItem('event-feed', '🛰️', `Radar Target: ${data.details.chassis}`, data.details.hostId, data.details.raw || data.details.chassis, lastRawLocation || lastGlobalLocation);
+                    } else {
+                        addDashItem('🛰️', `Radar Target: ${data.value}`);
+                    }
+                    break;
+                case 'TACTICAL_QUANTUM':
+                    if (data.details) {
+                        addFeedItem('event-feed', '🚀', `Quantum Arrival: ${data.details.chassis}`, data.details.hostId, data.details.raw || data.details.chassis, lastRawLocation || lastGlobalLocation);
+                    } else {
+                        addDashItem('🚀', `Quantum Arrival: ${data.ship || data.value}`);
+                    }
+                    break;
+                case 'TACTICAL_PROXIMITY':
+                    addDashItem('🛰️', `Proximity alert: ${data.ship || data.value}`);
+                    break;
                 case 'ZONE':
                     if (data.value === 'Armistice Zone') { addDashItem('🛡️', 'Entered <span class="feed-highlight">Armistice Zone</span>'); }
+                    else if (data.value === 'Contested Zone') { addDashItem('☠️', 'Entered <span class="feed-highlight" style="color:var(--danger)">CONTESTED ZONE</span> — Weapons Free'); playSound('alert_status'); }
                     else if (data.value === 'Open Space') { addDashItem('⚠️', '<span class="feed-highlight" style="color:#ffaa00">LEFT ARMISTICE</span> — Weapons Hot'); playSound('alert_zone'); }
                     break;
                 case 'STATUS':
@@ -3545,6 +4347,9 @@
                 case 'NEW_LOCATION':
                     showNewLocationToast(data.value || data.raw, data.raw);
                     break;
+                case 'NEW_SHIP':
+                    if (window.updateNewShipSniffer) window.updateNewShipSniffer(data.value);
+                    break;
                     addDashItem('🎮', '<span class="feed-highlight" style="color:#00ff88">CONNECTED TO SERVER</span>');
                     playSound('notification');
                     break;
@@ -3566,6 +4371,11 @@
                 case 'MISSION_CHANGED':
                     // These are handled via 'mission:list' broadcast usually, but if we get individual events we can ignore or log.
                     // Main.js sends 'mission:list' after these.
+                    break;
+
+                case 'SERVER_REROUTED':
+                    addDashItem('🌐', `<span class="feed-highlight" style="color:#00e5ff">SERVER REROUTED</span>: ${data.value}`);
+                    playSound('alert_status');
                     break;
 
                 // ═══ NEW: Insurance ═══
@@ -3820,6 +4630,7 @@
 
         // DND toggle
         ipcRenderer.on('app:dnd', (e, data) => {
+            dndMode = !!data.enabled;
             addDashItem('🔕', data.enabled ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF');
         });
 
@@ -3891,36 +4702,53 @@
                 return;
             }
 
-            // Clean raw location to suggest a clean title
-            let cleaned = raw
-                .replace(/^Stanton\d*_/i, '')
-                .replace(/^Outpost_PAF_/i, '')
-                .replace(/^Outpost_OLP_/i, '')
-                .replace(/^Outpost_/i, '')
-                .replace(/^PrisonMine_/i, 'Prison Mine ')
-                .replace(/_/g, ' ')
-                .trim();
+            // Priority 1: Check locationNameHints first
+            const normRaw = raw.replace(/asteriod/gi, 'Asteroid');
+            let suggestedName = locationNameHints[raw] || locationNameHints[normRaw];
 
-            // Format to Title Case
-            cleaned = cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            if (!suggestedName) {
+                // Priority 2: Fall back to regex-based CamelCase splitting
+                let cleaned = raw
+                    .replace(/^Stanton\d*_/i, '')
+                    .replace(/^Outpost_PAF_/i, '')
+                    .replace(/^Outpost_OLP_/i, '')
+                    .replace(/^Outpost_/i, '')
+                    .replace(/^PrisonMine_/i, 'Prison Mine ')
+                    .replace(/_/g, ' ')
+                    .trim();
+                cleaned = cleaned.replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim();
+                suggestedName = cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            }
 
-            nameEl.textContent = cleaned;
+            nameEl.textContent = suggestedName;
             container.style.display = 'block';
         }
 
         function grabRawLocation() {
-            if (!lastRawLocation) return;
-            document.getElementById('new-loc-key').value = lastRawLocation;
+            const targetRaw = lastRawLocation || (lastGlobalLocation ? lastGlobalLocation.trim().replace(/\s+/g, '_') : '');
+            if (!targetRaw) return;
+            document.getElementById('new-loc-key').value = targetRaw;
             
             // Auto-fill suggested name
             const nameEl = document.getElementById('suggested-location-name');
             if (nameEl && nameEl.textContent && nameEl.textContent !== 'None') {
                 document.getElementById('new-loc-val').value = nameEl.textContent;
+            } else if (lastGlobalLocation) {
+                document.getElementById('new-loc-val').value = lastGlobalLocation;
             }
             
             // Focus friendly name input for convenience
             document.getElementById('new-loc-val').focus();
         }
+
+        window.skipRawLocation = function() {
+            lastRawLocation = '';
+            lastGlobalLocation = '';
+            const sniffer = document.getElementById('last-raw-location');
+            if (sniffer) sniffer.textContent = 'None Detected';
+            const container = document.getElementById('suggested-location-container');
+            if (container) container.style.display = 'none';
+        };
 
 
         // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
@@ -4341,8 +5169,8 @@
             document.getElementById('new-loc-key').focus();
         }
 
-        window.deleteCustomLocation = function (key) {
-            if (confirm(`Remove location mapping for "${key}"?`)) {
+        window.deleteCustomLocation = async function (key) {
+            if (await vcModal.confirm('Delete Location Mapping', `Remove location mapping for "${key}"?`)) {
                 delete customLocations[key];
                 ipcRenderer.invoke('settings:save-custom-locations', customLocations);
                 renderCustomLocationList();
@@ -4351,6 +5179,177 @@
                     closeLocationSearchModal();
                 }
             }
+        };
+
+        window.getCleanShipName = function(rawName) {
+            if (!rawName) return 'Ship';
+            if (rawName === 'unknown') return 'Unknown';
+
+            // 1. Remove company prefixes
+            let name = rawName.replace(/^[A-Z]{3,4}_/, (match) => {
+                const map = {
+                    'AEGS_': 'Aegis ', 'ANVL_': 'Anvil ', 'DRAK_': 'Drake ',
+                    'MISC_': 'MISC ', 'RSI_': 'RSI ', 'ORIG_': 'Origin ',
+                    'CRUS_': 'Crusader ', 'ARGO_': 'ARGO ', 'CNOU_': 'CO ',
+                    'BANU_': 'Banu ', 'AOPOA_': 'Aopoa ', 'ESPR_': 'Esperia ',
+                    'GATM_': 'Gatac ', 'MIRA_': 'Mirai ',
+                };
+                return map[match] || match.replace('_', ' ');
+            });
+
+            // 2. Remove suffixes & clean underscores
+            return name.replace(/_\d+$/, '').replace(/_/g, ' ').trim();
+        };
+
+        function getDisplayLocation(raw) {
+            if (!raw || raw === 'Unknown') return 'Unknown';
+            if (typeof customLocations !== 'undefined') {
+                const matched = getCustomLocationMatch(raw, raw, customLocations);
+                if (matched) return matched.name;
+            }
+            if (locationNameHints && locationNameHints[raw]) {
+                return locationNameHints[raw];
+            }
+            return cleanRawLocationCode(raw);
+        }
+
+        function cleanRawLocationCode(raw) {
+            if (!raw) return 'Unknown';
+            let cleaned = raw
+                .replace(/^OOC_Stanton_/i, 'Orbit ')
+                .replace(/^OOC_Pyro_/i, 'Orbit ')
+                .replace(/^STN_/i, '')
+                .replace(/^PrisonMine_/i, 'Prison Mine ')
+                .replace(/_/g, ' ')
+                .trim();
+            cleaned = cleaned.replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim();
+            return cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        function getDisplayShip(raw) {
+            if (!raw || raw === 'Unknown') return 'Unknown';
+            if (customShipNames) {
+                if (customShipNames[raw]) return customShipNames[raw];
+                for (const [key, value] of Object.entries(customShipNames)) {
+                    if (raw.toLowerCase() === key.toLowerCase() ||
+                        raw.toLowerCase().startsWith(key.toLowerCase() + '_') ||
+                        raw.toLowerCase().includes('_' + key.toLowerCase() + '_') ||
+                        raw.toLowerCase().endsWith('_' + key.toLowerCase())) {
+                        return value;
+                    }
+                }
+            }
+            return window.getCleanShipName ? window.getCleanShipName(raw) : raw;
+        }
+
+        // ═══ CUSTOM SHIP NAMES ═══
+        let customShipNames = {};
+        let lastRawShip = '';
+
+        function loadCustomShipList() {
+            ipcRenderer.invoke('settings:get-custom-shipnames').then(ships => {
+                customShipNames = ships || {};
+                renderCustomShipList();
+            });
+        }
+
+        function renderCustomShipList() {
+            const list = document.getElementById('custom-ship-list');
+            if (!list) return;
+
+            if (Object.keys(customShipNames).length === 0) {
+                list.innerHTML = '<div style="font-style:italic; color:#555; text-align:center; padding:10px;">No custom ship names set.</div>';
+                return;
+            }
+
+            list.innerHTML = Object.entries(customShipNames).map(([key, name]) => {
+                return `
+                        <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; border-radius:4px; transition:background 0.2s; background:rgba(0,0,0,0.1);" onmouseenter="this.style.background='rgba(255,165,0,0.05)'" onmouseleave="this.style.background='rgba(0,0,0,0.1)'">
+                            <div style="overflow:hidden; flex:1;">
+                                <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
+                                <div style="color:#00c8ff; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}</div>
+                            </div>
+                            <button class="cyber-btn small danger" onclick="removeCustomShip('${escapeHtml(key)}')" style="margin-left:10px; margin:0 0 0 8px; padding:2px 8px;">×</button>
+                        </div>
+                `;
+            }).join('');
+        }
+
+        window.saveNewCustomShip = function() {
+            const keyEl = document.getElementById('new-ship-key');
+            const valEl = document.getElementById('new-ship-val');
+            if (!keyEl || !valEl) return;
+            const key = keyEl.value.trim();
+            const val = valEl.value.trim();
+            if (!key || !val) {
+                alert('Please fill out both the Raw Ship Code and Friendly Name.');
+                return;
+            }
+
+            customShipNames[key] = val;
+            ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
+                keyEl.value = '';
+                valEl.value = '';
+                loadCustomShipList();
+                showNotification('🛸 Mapped Ship Name', `Successfully mapped "${key}" to "${val}"`);
+            });
+        };
+
+        window.removeCustomShip = async function(key) {
+            if (await vcModal.confirm('Remove Custom Ship', `Remove custom mapping for "${key}"?`)) {
+                delete customShipNames[key];
+                ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
+                    loadCustomShipList();
+                });
+            }
+        };
+
+        window.addCustomShipPrompt = async function() {
+            const key = await vcModal.prompt("Add Custom Ship Mapping", "Enter Raw Ship Code (e.g. ANVL_Hornet_F7A_Mk2):");
+            if (!key) return;
+            const name = await vcModal.prompt("Add Custom Ship Mapping", "Enter Custom Friendly Name (e.g. Hornet F7A Mk II):");
+            if (!name) return;
+            
+            customShipNames[key.trim()] = name.trim();
+            ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
+                loadCustomShipList();
+            });
+        };
+
+        window.grabRawShip = function() {
+            const targetRaw = lastRawShip || '';
+            if (!targetRaw) return;
+            document.getElementById('new-ship-key').value = targetRaw;
+            
+            let suggested = targetRaw;
+            if (window.getCleanShipName) {
+                suggested = window.getCleanShipName(targetRaw);
+            }
+            document.getElementById('new-ship-val').value = suggested;
+            document.getElementById('new-ship-val').focus();
+        };
+
+        window.updateNewShipSniffer = function(rawName) {
+            if (!rawName) return;
+            const lowerRaw = rawName.toLowerCase();
+            // Ignore if it's noise
+            const isNoise = ['helmet', 'weapon', 'armor', 'magazine', 'ammo', 'magazine', 'test', 'loading'].some(w => lowerRaw.includes(w));
+            if (isNoise) return;
+
+            // Check if already mapped
+            if (customShipNames && customShipNames[rawName]) return;
+            for (const key of Object.keys(customShipNames)) {
+                if (lowerRaw === key.toLowerCase() ||
+                    lowerRaw.startsWith(key.toLowerCase() + '_') ||
+                    lowerRaw.includes('_' + key.toLowerCase() + '_') ||
+                    lowerRaw.endsWith('_' + key.toLowerCase())) {
+                    return;
+                }
+            }
+
+            lastRawShip = rawName;
+            const sniffer = document.getElementById('last-raw-ship');
+            if (sniffer) sniffer.textContent = rawName;
         };
 
         window.exportCustomLocationsForPublic = function () {
@@ -4367,6 +5366,114 @@
                 } else {
                     addDashItem('❌', `Failed to export locations: ${res.error}`);
                     alert(`Failed to export: ${res.error}`);
+                }
+            });
+        };
+
+        window.exportCustomLocationsToFile = function () {
+            ipcRenderer.invoke('settings:export-custom-locations-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully exported ${res.count} locations to ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to export locations: ${res.error}`);
+                    alert(`Failed to export: ${res.error}`);
+                }
+            });
+        };
+
+        window.exportBlueprintsToFile = function () {
+            ipcRenderer.invoke('settings:export-blueprints-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully exported ${res.count} blueprints progress to ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to export blueprints: ${res.error}`);
+                    alert(`Failed to export: ${res.error}`);
+                }
+            });
+        };
+
+        window.importCustomLocationsFromFile = function () {
+            ipcRenderer.invoke('settings:import-locations-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully imported ${res.count} custom locations from ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                    if (typeof loadCustomLocations === 'function') loadCustomLocations();
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to import locations: ${res.error}`);
+                    alert(`Failed to import: ${res.error}`);
+                }
+            });
+        };
+
+        window.importBlueprintsFromFile = function () {
+            ipcRenderer.invoke('settings:import-blueprints-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully imported ${res.count} blueprints progress from ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                    if (typeof loadBlueprintCollection === 'function') loadBlueprintCollection();
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to import blueprints: ${res.error}`);
+                    alert(`Failed to import: ${res.error}`);
+                }
+            });
+        };
+
+        window.exportShipMapToFile = function () {
+            ipcRenderer.invoke('settings:export-shipmap-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully exported ${res.count} ship mappings to ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to export ship mappings: ${res.error}`);
+                    alert(`Failed to export: ${res.error}`);
+                }
+            });
+        };
+
+        window.importShipMapFromFile = function () {
+            ipcRenderer.invoke('settings:import-shipmap-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully imported ${res.count} ship mappings from ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                    if (typeof loadShipMap === 'function') loadShipMap();
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to import ship mappings: ${res.error}`);
+                    alert(`Failed to import: ${res.error}`);
+                }
+            });
+        };
+
+        window.exportCustomShipNamesToFile = function () {
+            ipcRenderer.invoke('settings:export-custom-shipnames-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully exported ${res.count} custom ship names to ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to export custom ship names: ${res.error}`);
+                    alert(`Failed to export: ${res.error}`);
+                }
+            });
+        };
+
+        window.importCustomShipNamesFromFile = function () {
+            ipcRenderer.invoke('settings:import-custom-shipnames-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully imported ${res.count} custom ship names from ${res.filePath}`;
+                    addDashItem('✅', msg);
+                    alert(msg);
+                    loadCustomShipList();
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to import custom ship names: ${res.error}`);
+                    alert(`Failed to import: ${res.error}`);
                 }
             });
         };
@@ -4943,12 +6050,14 @@
             const ip = await ipcRenderer.invoke('hue:get-ip');
             if (ip) {
                 document.getElementById('local-ip').textContent = ip;
+                document.getElementById('local-ip-tablet').textContent = ip;
                 document.getElementById('sidebar-local-ip').textContent = ip;
             }
         }
 
         ipcRenderer.on('hue:ip', (event, ip) => {
             document.getElementById('local-ip').textContent = ip;
+            document.getElementById('local-ip-tablet').textContent = ip;
             document.getElementById('sidebar-local-ip').textContent = ip;
         });
 
@@ -4956,6 +6065,7 @@
         refreshLocalIP();
         loadBuiltinPatterns();
         loadCustomLocationList();
+        loadCustomShipList();
         loadPatternDB();
         updateTeamUIs();
         function setAccent(color) {
@@ -5756,7 +6866,15 @@
                 ingredientsHtml = `<div style="font-size:0.72rem; color:#aaa; margin-top:2px; padding-left:24px;">🧪 Ingredients: ${ingStrings}</div>`;
             }
 
-            const trackBtn = `<button class="cyber-btn small no-drag" onclick="trackBlueprint('${escapeJsString(name)}')" style="margin:0 0 0 10px; font-size:0.68rem; padding:1px 6px; flex-shrink:0;">🎯 Track</button>`;
+            let actionBtns = '';
+            if (have) {
+                actionBtns = `<button class="cyber-btn small no-drag" onclick="trackBlueprint('${escapeJsString(name)}')" style="margin:0 0 0 10px; font-size:0.68rem; padding:1px 6px; flex-shrink:0;">🎯 Track</button>`;
+            } else {
+                actionBtns = `
+                    <button class="cyber-btn small success no-drag" onclick="window.collectBlueprintManually('${escapeJsString(name)}')" style="margin:0 0 0 10px; font-size:0.68rem; padding:1px 6px; flex-shrink:0; border-color:var(--success); color:var(--success);">✅ Collect</button>
+                    <button class="cyber-btn small no-drag" onclick="trackBlueprint('${escapeJsString(name)}')" style="margin:0 0 0 10px; font-size:0.68rem; padding:1px 6px; flex-shrink:0;">🎯 Track</button>
+                `;
+            }
 
             return `<div style="padding:5px 8px; border-radius:4px; margin-bottom:3px; background:rgba(255,255,255,0.03); display:flex; flex-direction:column;">
                         <div style="display:flex; align-items:center; justify-content:space-between;">
@@ -5764,13 +6882,14 @@
                                 <span style="margin-right:8px; flex-shrink:0;">${icon}</span>
                                 <span style="font-size:0.85rem; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; font-weight:600; color:${have ? 'var(--success)' : 'var(--text-main)'};" title="${name}">${name}</span>${metaBadge}${cat}
                             </div>
-                            ${trackBtn}
+                            ${actionBtns}
                         </div>
                         ${ingredientsHtml}
                         ${tsHtml}
                         ${src}
                     </div>`;
         }
+
 
         async function scanOldLogs() {
             const btn = document.getElementById('bp-scan-btn');
@@ -5839,6 +6958,37 @@
             document.getElementById('bp-add-form').style.display = 'none';
             renderBlueprintUI();
         }
+
+        window.collectBlueprintManually = async function(name) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const defaultDateStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+            const userInput = await vcModal.prompt(`Mark "${name}" as Collected`, `Enter date & time when collected (local time):`, defaultDateStr);
+            if (userInput === null) return;
+
+            let finalTimestamp = new Date().toISOString();
+            if (userInput.trim()) {
+                const parsed = new Date(userInput.trim());
+                if (!isNaN(parsed.getTime())) {
+                    finalTimestamp = parsed.toISOString();
+                } else {
+                    alert('Invalid date format. Using current date & time instead.');
+                }
+            }
+
+            const updatedData = await ipcRenderer.invoke('blueprint:add-manual-collected', { name, timestamp: finalTimestamp });
+            if (updatedData) {
+                blueprintData = updatedData;
+                if (typeof renderBlueprintUI === 'function') renderBlueprintUI();
+                showNotification('📐 Blueprint Collected', `Manually collected: ${name}`);
+            }
+        };
 
         // Live blueprint received (from parser while game is running)
         ipcRenderer.on('blueprint:received', (e, data) => {
@@ -5919,6 +7069,11 @@
             // Wikelo custom filter
             if (rtCatFilter === '__wikelo__') {
                 filtered = filtered.filter(item => item.source && item.source.toLowerCase().includes('wikelo'));
+            } else if (rtCatFilter === 'Component') {
+                const componentCats = ['Ship Component', 'Cooler', 'Quantum Drive', 'Shield', 'Powerplant'];
+                filtered = filtered.filter(item => componentCats.includes(item.category));
+            } else if (rtCatFilter === 'Armor') {
+                filtered = filtered.filter(item => item.category === 'Armor' || item.category === 'Armor/Apparel');
             } else if (rtCatFilter !== 'all') {
                 filtered = filtered.filter(item => item.category === rtCatFilter);
             }
@@ -6486,7 +7641,129 @@
         // Initial request + delayed retry to cover LogWatcher startup race
         requestLogStatus();
         setTimeout(requestLogStatus, 3000);
+
+        // VC Custom Modal helper implementation (v2.11.29)
+        window.vcModal = {
+            prompt: function(title, message, defaultValue = '') {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('vc-custom-modal');
+                    const titleEl = document.getElementById('vc-modal-title');
+                    const messageEl = document.getElementById('vc-modal-message');
+                    const inputEl = document.getElementById('vc-modal-input');
+                    const okBtn = document.getElementById('vc-modal-ok');
+                    const cancelBtn = document.getElementById('vc-modal-cancel');
+                    
+                    titleEl.textContent = title;
+                    messageEl.textContent = message;
+                    inputEl.style.display = 'block';
+                    inputEl.value = defaultValue;
+                    
+                    modal.style.display = 'flex';
+                    inputEl.focus();
+                    inputEl.select();
+                    
+                    const cleanup = () => {
+                        modal.style.display = 'none';
+                        okBtn.onclick = null;
+                        cancelBtn.onclick = null;
+                        inputEl.onkeydown = null;
+                    };
+                    
+                    okBtn.onclick = () => {
+                        const val = inputEl.value;
+                        cleanup();
+                        resolve(val);
+                    };
+                    cancelBtn.onclick = () => {
+                        cleanup();
+                        resolve(null);
+                    };
+                    inputEl.onkeydown = (e) => {
+                        if (e.key === 'Enter') {
+                            okBtn.click();
+                        } else if (e.key === 'Escape') {
+                            cancelBtn.click();
+                        }
+                    };
+                });
+            },
+            confirm: function(title, message) {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('vc-custom-modal');
+                    const titleEl = document.getElementById('vc-modal-title');
+                    const messageEl = document.getElementById('vc-modal-message');
+                    const inputEl = document.getElementById('vc-modal-input');
+                    const okBtn = document.getElementById('vc-modal-ok');
+                    const cancelBtn = document.getElementById('vc-modal-cancel');
+                    
+                    titleEl.textContent = title;
+                    messageEl.textContent = message;
+                    inputEl.style.display = 'none';
+                    
+                    modal.style.display = 'flex';
+                    okBtn.focus();
+                    
+                    const cleanup = () => {
+                        modal.style.display = 'none';
+                        okBtn.onclick = null;
+                        cancelBtn.onclick = null;
+                    };
+                    
+                    okBtn.onclick = () => {
+                        cleanup();
+                        resolve(true);
+                    };
+                    cancelBtn.onclick = () => {
+                        cleanup();
+                        resolve(false);
+                    };
+                });
+            },
+            alert: function(title, message) {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('vc-custom-modal');
+                    const titleEl = document.getElementById('vc-modal-title');
+                    const messageEl = document.getElementById('vc-modal-message');
+                    const inputEl = document.getElementById('vc-modal-input');
+                    const okBtn = document.getElementById('vc-modal-ok');
+                    const cancelBtn = document.getElementById('vc-modal-cancel');
+                    
+                    titleEl.textContent = title;
+                    messageEl.textContent = message;
+                    inputEl.style.display = 'none';
+                    cancelBtn.style.display = 'none';
+                    
+                    modal.style.display = 'flex';
+                    okBtn.focus();
+                    
+                    const cleanup = () => {
+                        modal.style.display = 'none';
+                        cancelBtn.style.display = 'block';
+                        okBtn.onclick = null;
+                        cancelBtn.onclick = null;
+                    };
+                    
+                    okBtn.onclick = () => {
+                        cleanup();
+                        resolve();
+                    };
+                });
+            }
+        };
     </script>
+
+    <!-- VC Custom Modal HTML -->
+    <div id="vc-custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; justify-content:center; align-items:center; backdrop-filter:blur(3px);">
+        <div style="background:#0b0c10; border:2px solid var(--accent); border-radius:8px; padding:20px; width:400px; box-shadow:0 0 25px rgba(255,165,0,0.3); font-family:'Rajdhani', sans-serif;">
+            <h3 id="vc-modal-title" style="margin-top:0; color:var(--accent); font-size:1.2rem; letter-spacing:1px; text-transform:uppercase; border-bottom:1px solid rgba(255,165,0,0.2); padding-bottom:8px;">Prompt</h3>
+            <p id="vc-modal-message" style="color:#e0e0e0; font-size:0.95rem; margin:15px 0 10px;"></p>
+            <input type="text" id="vc-modal-input" style="width:100%; background:#1f2833; border:1px solid rgba(255,255,255,0.15); color:#fff; padding:8px 12px; font-size:0.95rem; border-radius:4px; outline:none; font-family:inherit; margin-bottom:15px;">
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button id="vc-modal-cancel" class="cyber-btn small danger" style="margin:0; width:80px; padding:6px 12px;">Cancel</button>
+                <button id="vc-modal-ok" class="cyber-btn small success" style="margin:0; width:80px; padding:6px 12px;">OK</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

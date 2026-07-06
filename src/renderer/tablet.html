@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VCON Link — Tactical Tablet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #07090e;
+            --panel: rgba(13, 20, 33, 0.7);
+            --border: rgba(0, 240, 255, 0.15);
+            --border-glow: rgba(0, 240, 255, 0.4);
+            --accent: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.3);
+            --text: #e2f1ff;
+            --text-dim: #8ba3c7;
+            --success: #00ff88;
+            --warning: #ffa500;
+            --danger: #ff3b3b;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 240, 255, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(255, 165, 0, 0.03) 0px, transparent 50%);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Fullscreen Alert Banner */
+        #fullscreen-alert {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        #fullscreen-alert.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ═══ VIGNETTE — screen-edge glow ═══ */
+        .vignette {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .vignette-danger {
+            box-shadow: inset 0 0 220px 80px rgba(255, 59, 59, 0.70);
+            animation: vignetteFlash 0.25s ease-in-out infinite alternate;
+        }
+
+        .vignette-warning {
+            box-shadow: inset 0 0 180px 60px rgba(255, 165, 0, 0.60);
+            animation: vignetteFlash 0.35s ease-in-out infinite alternate;
+        }
+
+        .vignette-info {
+            box-shadow: inset 0 0 160px 50px rgba(0, 240, 255, 0.55);
+            animation: vignetteFlash 0.4s ease-in-out infinite alternate;
+        }
+
+        /* ═══ BORDER FLASH ═══ */
+        .border-flash {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .border-danger {
+            border: 6px solid rgba(255, 59, 59, 0.95);
+            animation: borderPulse 0.25s ease-in-out infinite alternate;
+        }
+
+        .border-warning {
+            border: 5px solid rgba(255, 165, 0, 0.85);
+            animation: borderPulse 0.35s ease-in-out infinite alternate;
+        }
+
+        .border-info {
+            border: 5px solid rgba(0, 240, 255, 0.85);
+            animation: borderPulse 0.4s ease-in-out infinite alternate;
+        }
+
+        #alert-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 40px 80px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 12px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 90%;
+        }
+
+        .severity-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            border-radius: 12px 12px 0 0;
+            background: var(--danger);
+        }
+
+        .alert-label {
+            font-size: 0.95rem;
+            letter-spacing: 6px;
+            margin-bottom: 12px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        #alert-title {
+            font-size: 5rem;
+            font-weight: 900;
+            color: var(--danger);
+            margin: 0;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+            line-height: 1.1;
+        }
+
+        #alert-msg {
+            font-size: 2rem;
+            color: #fff;
+            margin: 20px 0 0;
+            letter-spacing: 3px;
+            font-weight: 600;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px currentColor;
+        }
+
+        @keyframes vignetteFlash {
+            0% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes borderPulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* Main Layout */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--panel);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            padding: 15px 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 3px;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        .status-dot.online {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Views Toggle Bar */
+        .hud-toggle-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hud-toggle-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+            color: var(--text-dim);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 1px;
+        }
+
+        .hud-toggle-btn:hover {
+            border-color: var(--border-glow);
+            color: var(--text);
+        }
+
+        .hud-toggle-btn.active {
+            background: rgba(0, 240, 255, 0.12);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .panel-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 380px;
+            max-height: 600px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .panel-card.hidden {
+            display: none !important;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            flex: 1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Alerts Filter Toggles */
+        .toggles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .toggle-btn.active {
+            background: rgba(0, 240, 255, 0.08);
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .toggle-btn input {
+            display: none;
+        }
+
+        .toggle-btn span {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .toggle-btn.active span {
+            color: #fff;
+        }
+
+        /* Live Feed Messages */
+        .feed-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 5px;
+        }
+
+        .feed-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 3px solid var(--accent);
+            border-radius: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .feed-item.warning {
+            border-left-color: var(--warning);
+            background: rgba(255, 165, 0, 0.03);
+        }
+
+        .feed-item.danger {
+            border-left-color: var(--danger);
+            background: rgba(255, 59, 59, 0.04);
+            animation: alertWiggle 0.4s ease;
+        }
+
+        .feed-time {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            padding-top: 2px;
+        }
+
+        .feed-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        /* Right Side Panels */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 0;
+        }
+
+        /* Live Telemetry Ring */
+        .telemetry-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .telemetry-card {
+            flex: 1;
+            background: rgba(13, 20, 33, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .health-ring-box {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .ring-svg {
+            transform: rotate(-90deg);
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 8;
+        }
+
+        .ring-bar {
+            fill: none;
+            stroke: var(--success);
+            stroke-width: 8;
+            stroke-dasharray: 283;
+            stroke-dashoffset: 0;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease, stroke 0.5s ease;
+        }
+
+        .health-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-shadow: 0 0 5px var(--accent-glow);
+            margin: 0;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        /* Run Tracker Checklist */
+        .checklist-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .checklist-item.complete {
+            opacity: 0.5;
+            background: rgba(0, 255, 136, 0.02);
+            border-color: rgba(0, 255, 136, 0.1);
+        }
+
+        .checklist-item-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .checklist-item-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .checklist-item-source {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .checklist-item-progress {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        .checklist-item.complete .checklist-item-progress {
+            color: var(--success);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes alertWiggle {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Fullscreen Alert Banner -->
+    <div id="fullscreen-alert" onclick="dismissFullscreenAlert()">
+        <div class="vignette" id="alert-vignette"></div>
+        <div class="border-flash" id="alert-border"></div>
+        <div id="alert-content">
+            <div class="severity-bar" id="alert-bar"></div>
+            <div class="alert-label" id="alert-label">● ALARM STATUS</div>
+            <h2 id="alert-title">FIRE WARNING</h2>
+            <p id="alert-msg">Fire detected on board the ship! Clear hazards immediately.</p>
+            <p style="font-size:0.8rem; color:var(--text-dim); margin-top:35px; opacity:0.6; font-family:'Outfit',sans-serif; letter-spacing:1px;">TAP SCREEN TO ACKNOWLEDGE</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>TACTICAL COCKPIT LINK</h1>
+        
+        <!-- Toggle Views Buttons -->
+        <div class="hud-toggle-bar">
+            <button class="hud-toggle-btn active" id="toggle-btn-feed" onclick="toggleHudPanel('feed')">📡 ALERTS FEED</button>
+            <button class="hud-toggle-btn active" id="toggle-btn-main-hud" onclick="toggleHudPanel('main-hud')">🧭 MAIN HUD</button>
+            <button class="hud-toggle-btn active" id="toggle-btn-tactical" onclick="toggleHudPanel('tactical')">🛰️ TACTICAL FEED</button>
+            <button class="hud-toggle-btn active" id="toggle-btn-runtracker" onclick="toggleHudPanel('runtracker')">🎯 WIKELO RUN</button>
+        </div>
+
+        <div class="connection-status">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="status-text">Connecting</span>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <!-- Live Alerts Feed Panel -->
+        <div class="panel-card" id="panel-feed">
+            <div class="card-header">
+                <div class="card-title">📡 LIVE ALERTS FEED</div>
+            </div>
+
+            <!-- Alert Filter Checkboxes -->
+            <div class="toggles-grid">
+                <label class="toggle-btn active" id="btn-fire" onclick="toggleFilter('fire')">
+                    <input type="checkbox" id="chk-fire" checked>
+                    <span>🔥 FIRE</span>
+                </label>
+                <label class="toggle-btn active" id="btn-oxy" onclick="toggleFilter('oxy')">
+                    <input type="checkbox" id="chk-oxy" checked>
+                    <span>🌬️ OXYGEN</span>
+                </label>
+                <label class="toggle-btn active" id="btn-cargo" onclick="toggleFilter('cargo')">
+                    <input type="checkbox" id="chk-cargo" checked>
+                    <span>🛗 CARGO LIFT</span>
+                </label>
+                <label class="toggle-btn active" id="btn-death" onclick="toggleFilter('death')">
+                    <input type="checkbox" id="chk-death" checked>
+                    <span>☠️ LIFE SIGNS</span>
+                </label>
+                <label class="toggle-btn active" id="btn-juris" onclick="toggleFilter('juris')">
+                    <input type="checkbox" id="chk-juris" checked>
+                    <span>🏛️ LAWS</span>
+                </label>
+                <label class="toggle-btn active" id="btn-radar" onclick="toggleFilter('radar')">
+                    <input type="checkbox" id="chk-radar" checked>
+                    <span>🛰️ RADAR</span>
+                </label>
+            </div>
+
+            <div class="feed-list" id="feed-list">
+                <div style="opacity: 0.5; font-style: italic; text-align: center; margin-top: 40px;">No alerts streamed yet. Standby...</div>
+            </div>
+        </div>
+
+        <!-- Main System Status Panel -->
+        <div class="panel-card" id="panel-main-hud">
+            <div class="card-header">
+                <div class="card-title">🧭 MAIN SYSTEM STATUS</div>
+            </div>
+            <div class="telemetry-grid">
+                <!-- Character Health Card -->
+                <div class="telemetry-card">
+                    <div class="health-ring-box">
+                        <svg class="ring-svg" width="100" height="100">
+                            <circle class="ring-bg" cx="50" cy="50" r="45"></circle>
+                            <circle class="ring-bar" id="health-ring" cx="50" cy="50" r="45"></circle>
+                        </svg>
+                        <div class="health-text" id="health-pct">100%</div>
+                    </div>
+                    <p class="stat-label">VITALS STATUS</p>
+                </div>
+
+                <!-- Ship Status Card -->
+                <div class="telemetry-card">
+                    <p class="stat-value" id="val-ship" style="font-size: 1.1rem; text-align: center;">EVA / FPS</p>
+                    <p class="stat-label">ACTIVE VEHICLE</p>
+                </div>
+
+                <!-- Current Location Card -->
+                <div class="telemetry-card">
+                    <p class="stat-value" id="val-location" style="font-size: 1rem; text-align: center; color: var(--success);">Stanton</p>
+                    <p class="stat-label">SECTOR CODE</p>
+                </div>
+
+                <!-- Server Shard Info Card -->
+                <div class="telemetry-card" style="display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 15px;">
+                    <div style="font-size: 0.85rem; color: var(--text-dim); text-align: center; width: 100%;">SHARD: <span id="val-shard" style="color: var(--accent); font-weight: bold;">--</span></div>
+                    <div style="font-size: 0.85rem; color: var(--text-dim); text-align: center; width: 100%;">SERVER: <span id="val-net-ip" style="color: var(--accent); font-weight: bold;">0.0.0.0</span></div>
+                    <p class="stat-label" style="margin-top: 5px;">COCKPIT LINK</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tactical Proximity Feed Panel -->
+        <div class="panel-card" id="panel-tactical">
+            <div class="card-header">
+                <div class="card-title">🛰️ TACTICAL PROXIMITY FEED <span id="prox-count" style="color:var(--accent); margin-left:4px;">[0]</span></div>
+            </div>
+            <div id="tactical-feed-list" style="font-size: 0.95rem; display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; padding-right: 5px;">
+                <div style="opacity: 0.5; font-style: italic; text-align: center; margin-top: 40px;">Scanning airspace...</div>
+            </div>
+        </div>
+
+        <!-- Wikelo Run Checklist Panel -->
+        <div class="panel-card" id="panel-runtracker">
+            <div class="card-header">
+                <div class="card-title">🎯 ACTIVE OBJECTIVES CHECKLIST</div>
+            </div>
+            <div class="checklist-list" id="checklist-list">
+                <div style="opacity: 0.5; font-style: italic; text-align: center; margin-top: 40px;">No active missions tracked. Check Blueprints.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const host = window.location.hostname;
+        const port = window.location.port;
+        const wsUrl = `ws://${host}:${port}`;
+        
+        let ws;
+        let filters = {
+            fire: true,
+            oxy: true,
+            cargo: true,
+            death: true,
+            juris: true,
+            radar: true
+        };
+
+        let currentConfig = {};
+        let activeRun = [];
+
+        // Sound Engine (Web Audio API Synthesizer)
+        function playBeep(freq, type, duration) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = type || 'sine';
+                osc.frequency.value = freq || 440;
+                
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {
+                console.error('Audio beep failed:', e);
+            }
+        }
+
+        function playAlertSound(type) {
+            if (type === 'danger') {
+                playBeep(180, 'sawtooth', 0.5);
+                setTimeout(() => playBeep(180, 'sawtooth', 0.5), 150);
+            } else if (type === 'warning') {
+                playBeep(440, 'triangle', 0.3);
+            } else {
+                playBeep(880, 'sine', 0.15);
+            }
+        }
+
+        // Toggle Alert Filtering Buttons
+        function toggleFilter(category) {
+            const btn = document.getElementById(`btn-${category}`);
+            const chk = document.getElementById(`chk-${category}`);
+            filters[category] = !filters[category];
+            chk.checked = filters[category];
+            
+            if (filters[category]) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        // Check if an incoming event matches current filter settings
+        function shouldShowAlert(type, textVal) {
+            const text = (textVal || '').toString().toLowerCase();
+            if (type === 'HAZARD_FIRE' || text.includes('fire')) {
+                return filters.fire;
+            }
+            if (type === 'SUFFOCATION' || text.includes('oxygen') || text.includes('suffocat') || text.includes('asphyx') || text.includes('seal')) {
+                return filters.oxy;
+            }
+            if (type === 'CARGO_ELEVATOR' || text.includes('cargo') || text.includes('lift') || text.includes('elevator')) {
+                return filters.cargo;
+            }
+            if (type === 'DEATH' || type === 'PROXIMITY_DEATH' || text.includes('kill') || text.includes('dead') || text.includes('died')) {
+                return filters.death;
+            }
+            if (type === 'JURISDICTION' || text.includes('armistice') || text.includes('jurisdiction')) {
+                return filters.juris;
+            }
+            if (type === 'RADAR_SINGLE' || type === 'RADAR_GROUP' || type === 'TACTICAL_QUANTUM' || text.includes('radar') || text.includes('detected') || text.includes('contact')) {
+                return filters.radar;
+            }
+            return true;
+        }
+
+        // Fullscreen Alert Trigger
+        function triggerFullscreenAlert(title, msg, type) {
+            const el = document.getElementById('fullscreen-alert');
+            const titleEl = document.getElementById('alert-title');
+            const msgEl = document.getElementById('alert-msg');
+            const vignetteEl = document.getElementById('alert-vignette');
+            const borderEl = document.getElementById('alert-border');
+            const barEl = document.getElementById('alert-bar');
+            const labelEl = document.getElementById('alert-label');
+            
+            titleEl.textContent = title;
+            msgEl.textContent = msg;
+            
+            // Reset classes
+            vignetteEl.className = 'vignette';
+            borderEl.className = 'border-flash';
+            
+            // Adjust visual colors
+            if (type === 'danger') {
+                vignetteEl.classList.add('vignette-danger');
+                borderEl.classList.add('border-danger');
+                barEl.style.backgroundColor = 'var(--danger)';
+                titleEl.style.color = 'var(--danger)';
+                labelEl.textContent = '■ CRITICAL DANGER';
+            } else if (type === 'warning') {
+                vignetteEl.classList.add('vignette-warning');
+                borderEl.classList.add('border-warning');
+                barEl.style.backgroundColor = 'var(--warning)';
+                titleEl.style.color = 'var(--warning)';
+                labelEl.textContent = '▲ ACTIVE WARNING';
+            } else {
+                vignetteEl.classList.add('vignette-info');
+                borderEl.classList.add('border-info');
+                barEl.style.backgroundColor = 'var(--accent)';
+                titleEl.style.color = 'var(--accent)';
+                labelEl.textContent = '● INFO UPDATE';
+            }
+
+            el.classList.add('active');
+            playAlertSound(type);
+
+            // Auto dismiss after 7 seconds if not acknowledged
+            setTimeout(dismissFullscreenAlert, 7000);
+        }
+
+        function dismissFullscreenAlert() {
+            document.getElementById('fullscreen-alert').classList.remove('active');
+        }
+
+        function syncFiltersFromConfig() {
+            if (!currentConfig) return;
+            
+            const mapping = [
+                { key: 'enableFireTabletAlerts', filter: 'fire' },
+                { key: 'enableStaminaOxygenTabletAlerts', filter: 'oxy' },
+                { key: 'enableFreightElevatorTabletAlerts', filter: 'cargo' },
+                { key: 'enableDeathTabletAlerts', filter: 'death' },
+                { key: 'enableJurisdictionTabletAlerts', filter: 'juris' },
+                { key: 'showShipsTablet', filter: 'radar' }
+            ];
+
+            mapping.forEach(m => {
+                const isEnabled = currentConfig[m.key] !== false;
+                filters[m.filter] = isEnabled;
+                
+                const chk = document.getElementById(`chk-${m.filter}`);
+                if (chk) chk.checked = isEnabled;
+                
+                const btn = document.getElementById(`btn-${m.filter}`);
+                if (btn) {
+                    if (isEnabled) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        // HUD Panel Visibility Management
+        let activePanels = {
+            feed: true,
+            'main-hud': true,
+            tactical: true,
+            runtracker: true
+        };
+
+        try {
+            const saved = localStorage.getItem('vcon_active_panels');
+            if (saved) activePanels = JSON.parse(saved);
+        } catch (e) {}
+
+        function toggleHudPanel(panelId) {
+            activePanels[panelId] = !activePanels[panelId];
+            localStorage.setItem('vcon_active_panels', JSON.stringify(activePanels));
+            updatePanelVisibility(panelId);
+        }
+
+        function updatePanelVisibility(panelId) {
+            const btn = document.getElementById(`toggle-btn-${panelId}`);
+            const panel = document.getElementById(`panel-${panelId}`);
+            if (activePanels[panelId]) {
+                if (btn) btn.classList.add('active');
+                if (panel) panel.classList.remove('hidden');
+            } else {
+                if (btn) btn.classList.remove('active');
+                if (panel) panel.classList.add('hidden');
+            }
+        }
+
+        // WebSocket Connection
+        function connect() {
+            ws = new WebSocket(wsUrl);
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+
+            ws.onopen = () => {
+                dot.className = 'status-dot online';
+                text.textContent = 'Operational';
+            };
+
+            ws.onclose = () => {
+                dot.className = 'status-dot';
+                text.textContent = 'Offline';
+                setTimeout(connect, 3000); // Retry reconnect in 3s
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    handleEvent(msg.channel, msg.data);
+                } catch (e) {
+                    console.error('Failed parsing WS message:', e);
+                }
+            };
+        }
+        function handleEvent(channel, data) {
+            if (channel === 'init') {
+                currentConfig = data.config || {};
+                activeRun = currentConfig.activeRun || [];
+                
+                // Initialize widgets
+                if (data.cachedState) {
+                    updateTelemetryUI(data.cachedState);
+                    if (data.cachedState.shard) {
+                        updateShardUI(data.cachedState.shard);
+                    }
+                }
+                updateChecklistUI();
+                syncFiltersFromConfig();
+                
+                // Restore Panel Visibilities
+                Object.keys(activePanels).forEach(updatePanelVisibility);
+                return;
+            }
+
+            if (channel === 'settings:updated') {
+                currentConfig = data;
+                activeRun = data.activeRun || [];
+                updateChecklistUI();
+                syncFiltersFromConfig();
+                return;
+            }
+
+            if (channel === 'player:health-update') {
+                const health = data;
+                document.getElementById('health-pct').textContent = health + '%';
+                
+                const ring = document.getElementById('health-ring');
+                const offset = 283 - (283 * health / 100);
+                ring.style.strokeDashoffset = offset;
+                
+                if (health < 30) {
+                    ring.style.stroke = 'var(--danger)';
+                    playAlertSound('warning');
+                } else if (health < 60) {
+                    ring.style.stroke = 'var(--warning)';
+                } else {
+                    ring.style.stroke = 'var(--success)';
+                }
+                return;
+            }
+
+            if (channel === 'log:update') {
+                // If it matches a filter category and the category is muted, ignore it
+                if (!shouldShowAlert(data.type, data.value)) {
+                    return;
+                }
+
+                let title = data.type.replace(/_/g, ' ');
+                let msg = typeof data.value === 'object' ? JSON.stringify(data.value) : data.value;
+                let type = 'info';
+                let isCritical = false;
+
+                if (data.type === 'HAZARD_FIRE') {
+                    title = '🔥 FIRE DETECTED';
+                    msg = data.value || 'Fire reported on ship!';
+                    type = 'danger';
+                    isCritical = true;
+                } else if (data.type === 'DEATH') {
+                    title = '💀 DEATH REPORT';
+                    msg = data.details && data.details.killer ? `${data.details.victim} killed by ${data.details.killer}` : 'Death detected.';
+                    type = 'danger';
+                    isCritical = true;
+                } else if (data.type === 'SUFFOCATION') {
+                    const status = data.value ? data.value.status : '';
+                    title = '🌡️ SUFFOCATION ALERT';
+                    msg = status === 'started' ? 'Losing oxygen! Check helmet seal.' : 'Oxygen levels stabilized.';
+                    type = status === 'started' ? 'danger' : 'success';
+                    isCritical = status === 'started';
+                } else if (data.type === 'VEHICLE_DESTRUCTION') {
+                    title = '💥 SHIP LOST';
+                    msg = data.value || 'Critical hull breach!';
+                    type = 'danger';
+                    isCritical = true;
+                } else if (data.type === 'STATUS') {
+                    const v = (data.value || '').toLowerCase();
+                    if (v === 'death') {
+                        title = '💀 VITALS LOST';
+                        msg = 'Killed in action.';
+                        type = 'danger';
+                        isCritical = true;
+                    } else if (v === 'suffocating') {
+                        title = '🌡️ OXYGEN DANGER';
+                        msg = 'Atmospheric pressure failing / Suffocating!';
+                        type = 'danger';
+                        isCritical = true;
+                    } else if (v === 'depressurizing') {
+                        title = '💨 DEPRESSURIZATION';
+                        msg = 'Hull breach detected!';
+                        type = 'danger';
+                        isCritical = true;
+                    } else if (data.level === 'WARNING') {
+                        title = '⚠️ STATUS ALERT';
+                        msg = data.value;
+                        type = 'warning';
+                        isCritical = true;
+                    } else {
+                        title = 'ℹ️ STATUS UPDATE';
+                        msg = data.value;
+                        type = 'info';
+                    }
+                } else if (data.type === 'ZONE') {
+                    title = '🧭 ZONE CHANGE';
+                    msg = data.value;
+                    type = 'warning';
+                    isCritical = true;
+                } else if (data.type === 'RADAR_SINGLE') {
+                    title = '🛰️ SENSOR CONTACT';
+                    msg = `Ship Detected: ${data.value}`;
+                    type = 'info';
+                    isCritical = false;
+                } else if (data.type === 'RADAR_GROUP') {
+                    title = '🛰️ GROUP CONTACT';
+                    msg = data.value;
+                    type = 'info';
+                    isCritical = false;
+                } else if (data.type === 'PROXIMITY_DEATH') {
+                    title = '☠️ TARGET ELIMINATED';
+                    msg = `${data.value} destroyed nearby.`;
+                    type = 'info';
+                    isCritical = false;
+                } else if (data.type === 'SERVER_REROUTED') {
+                    title = '🌐 SERVER TRANSIT';
+                    msg = data.value;
+                    type = 'info';
+                    isCritical = true;
+                    addTacticalFeedEntry('🌐', 'Server authority transferred.');
+                } else if (data.type === 'HUD_WARNING') {
+                    title = '⚠️ WARNING';
+                    msg = data.value;
+                    type = 'warning';
+                    isCritical = true;
+                } else if (data.type === 'JURISDICTION') {
+                    title = '🏛️ JURISDICTION';
+                    msg = `Entered ${data.value}`;
+                    type = 'info';
+                    isCritical = true;
+                    addTacticalFeedEntry('🏛️', `Entered: ${data.value}`);
+                } else if (data.type === 'CARGO_ELEVATOR') {
+                    const state = data.value.state;
+                    title = '🛗 CARGO LIFT';
+                    msg = `Lift ${data.value.elevatorId} is ${state}`;
+                    type = 'info';
+                    isCritical = true;
+                    addTacticalFeedEntry('🛗', `Cargo Lift ${data.value.elevatorId}: ${state}`);
+                } else if (data.type === 'CORPSE_DETECTED') {
+                    title = '☠️ CORPSE DETECTED';
+                    msg = 'A player corpse streamed into your zone!';
+                    type = 'warning';
+                    isCritical = true;
+                    addTacticalFeedEntry('☠️', 'Corpse loaded into zone');
+                } else if (data.type === 'PARTY_PROXIMITY') {
+                    const action = data.value.action;
+                    const entityId = data.value.entityId;
+                    title = '👥 SQUADMATE PROXIMITY';
+                    msg = action === 'stream_in' ? `Squadmate inbound (ID ${entityId})` : `Squadmate outbound (ID ${entityId})`;
+                    type = 'info';
+                    isCritical = action === 'stream_in';
+                    addTacticalFeedEntry('👥', action === 'stream_in' ? `Squadmate in zone (ID ${entityId})` : `Squadmate left zone (ID ${entityId})`);
+                } else if (data.type === 'SOCIAL_PROXIMITY') {
+                    title = '👥 PLAYER PROXIMITY';
+                    msg = data.action === 'enter' ? `Player inbound: ${data.value}` : `Player outbound: ${data.value}`;
+                    type = 'info';
+                    addTacticalFeedEntry('👥', data.action === 'enter' ? `Proximity connection: Player ID ${data.value}` : `Proximity lost: Player ID ${data.value}`);
+                } else if (data.type === 'TACTICAL_QUANTUM') {
+                    title = data.direction === 'arrival' ? '🌌 QUANTUM ARRIVAL' : '🌌 QUANTUM EXIT';
+                    msg = data.value;
+                    type = 'info';
+                    addTacticalFeedEntry('🌌', data.direction === 'arrival' ? `↓ QUANTUM ARRIVAL: ${data.ship || data.value}` : `↑ QUANTUM EXIT: ${data.value}`);
+                } else if (data.type === 'TACTICAL_HANGAR') {
+                    title = '🛗 HANGAR ALERT';
+                    msg = data.value;
+                    type = 'info';
+                    addTacticalFeedEntry('🛗', data.value);
+                } else if (data.type === 'QUANTUM') {
+                    title = '🌌 QUANTUM TRANSIT';
+                    msg = `Quantum ${data.value}`;
+                    type = 'info';
+                    addTacticalFeedEntry('🌌', `Quantum ${data.value}`);
+                    if (data.value === 'entered') {
+                        document.getElementById('prox-count').textContent = '[0]';
+                        const tlist = document.getElementById('tactical-feed-list');
+                        if (tlist) tlist.innerHTML = '<div style="opacity:0.5; font-style:italic; text-align: center; margin-top: 40px;">Scanning airspace...</div>';
+                        document.getElementById('val-location').textContent = 'IN QUANTUM';
+                    }
+                } else if (data.type === 'PLAYER_SPAWNED') {
+                    title = '❤️ RESPAWNED';
+                    msg = `${data.value.player} spawned at ${data.value.location}`;
+                    type = 'success';
+                    addTacticalFeedEntry('❤️', `${data.value.player} respawned at ${data.value.location}`);
+                } else if (data.type === 'SERVER_CONNECTED') {
+                    title = '🌐 SHARD CONNECTED';
+                    msg = data.value.shard || data.value;
+                    type = 'info';
+                    updateShardUI(data.value);
+                    addTacticalFeedEntry('🌐', `Shard updated: ${data.value.shard || data.value}`);
+                } else if (data.type === 'ITEM_TRANSFER') {
+                    const cleanName = data.value.itemClass
+                        .replace(/^[a-z]+_/i, '')
+                        .replace(/_01_/g, '_')
+                        .replace(/_01/g, '')
+                        .split('_')
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(' ');
+                    const action = data.value.direction === 'withdraw' ? 'Withdrew' : 'Deposited';
+                    title = '📦 ITEM TRANSFER';
+                    msg = `${action} ${cleanName}`;
+                    type = 'info';
+                    addTacticalFeedEntry(data.value.direction === 'withdraw' ? '📤' : '📥', `${action}: ${cleanName}`);
+                } else if (data.type === 'RADAR_SINGLE') {
+                    addTacticalFeedEntry('🛰️', `Radar Target: ${data.details ? data.details.chassis : data.value}`);
+                } else if (data.type === 'RADAR_GROUP') {
+                    addTacticalFeedEntry('🚨', data.value);
+                } else if (data.type === 'PROXIMITY_DEATH') {
+                    addTacticalFeedEntry('💀', `☠ PROXIMITY KIA: ${data.value}`);
+                } else if (data.type === 'VEHICLE_DESTRUCTION') {
+                    addTacticalFeedEntry('💥', data.value || 'Vehicle Destroyed');
+                }
+
+                // Add to feed list
+                addFeedItem(title, msg, type);
+
+                // Trigger fullscreen popup warning on critical severity
+                if (isCritical) {
+                    triggerFullscreenAlert(title, msg, type);
+                }
+
+                // Update location cache if location changed
+                if (data.type === 'LOCATION') {
+                    let locText = data.value;
+                    const planetVal = data.planet || 'Unknown';
+                    const systemVal = data.system || 'Unknown';
+                    if (planetVal !== 'Unknown' || systemVal !== 'Unknown') {
+                        locText += ` (${planetVal !== 'Unknown' ? planetVal : ''}${planetVal !== 'Unknown' && systemVal !== 'Unknown' ? ', ' : ''}${systemVal !== 'Unknown' ? systemVal : ''})`;
+                    }
+                    document.getElementById('val-location').textContent = locText;
+                }
+                if (data.type === 'SHIP_ENTER') {
+                    document.getElementById('val-ship').textContent = data.value;
+                }
+                if (data.type === 'SHIP_EXIT') {
+                    document.getElementById('val-ship').textContent = 'EVA / FPS';
+                }
+            }
+        }
+
+        function updateTelemetryUI(state) {
+            if (state.location) {
+                let locText = state.location;
+                const planetVal = state.planet || 'Unknown';
+                const systemVal = state.system || 'Unknown';
+                if (planetVal !== 'Unknown' || systemVal !== 'Unknown') {
+                    locText += ` (${planetVal !== 'Unknown' ? planetVal : ''}${planetVal !== 'Unknown' && systemVal !== 'Unknown' ? ', ' : ''}${systemVal !== 'Unknown' ? systemVal : ''})`;
+                }
+                document.getElementById('val-location').textContent = locText;
+            }
+            if (state.ship) document.getElementById('val-ship').textContent = state.ship;
+        }
+
+        // Live Feed Item Adding
+        function addFeedItem(title, msg, type) {
+            const list = document.getElementById('feed-list');
+            if (list.innerHTML.includes('No alerts streamed yet')) {
+                list.innerHTML = '';
+            }
+
+            const item = document.createElement('div');
+            item.className = `feed-item ${type || 'info'}`;
+            
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            let icon = 'ℹ️';
+            if (type === 'danger') icon = '🔴';
+            else if (type === 'warning') icon = '⚠️';
+
+            item.innerHTML = `
+                <div class="feed-time">${timeStr}</div>
+                <div class="feed-text"><span style="color:var(--accent); font-weight:bold; margin-right:4px;">[${title}]</span> ${msg}</div>
+            `;
+
+            list.insertBefore(item, list.firstChild);
+
+            // Limit to 20 items
+            while (list.children.length > 20) {
+                list.removeChild(list.lastChild);
+            }
+        }
+
+        // Render checklist UI
+        function updateChecklistUI() {
+            const list = document.getElementById('checklist-list');
+            if (!activeRun || activeRun.length === 0) {
+                list.innerHTML = '<div style="opacity: 0.5; font-style: italic; text-align: center; margin-top: 40px;">No active missions tracked. Check Blueprints.</div>';
+                return;
+            }
+
+            list.innerHTML = '';
+            activeRun.forEach(item => {
+                const div = document.createElement('div');
+                const isComplete = item.collected >= item.needed;
+                div.className = `checklist-item ${isComplete ? 'complete' : ''}`;
+                
+                div.innerHTML = `
+                    <div class="checklist-item-details">
+                        <div class="checklist-item-name">${item.name}</div>
+                        <div class="checklist-item-source">${item.source || 'Mission Target'}</div>
+                    </div>
+                    <div class="checklist-item-progress">${item.collected} / ${item.needed}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function updateShardUI(shardInfo) {
+            if (!shardInfo) return;
+            const shardVal = typeof shardInfo === 'object' ? shardInfo.shard : shardInfo;
+            const addressVal = typeof shardInfo === 'object' ? shardInfo.address : '';
+            
+            let shardDisplay = shardVal;
+            if (shardVal) {
+                const parts = shardVal.split('_');
+                if (parts.length >= 4) {
+                    shardDisplay = `${parts[1].toUpperCase()}-${parts[3]}`;
+                } else if (parts.length >= 2) {
+                    shardDisplay = parts[1].toUpperCase();
+                }
+            }
+            
+            const shardEl = document.getElementById('val-shard');
+            if (shardEl) shardEl.textContent = shardDisplay || '--';
+            
+            const ipEl = document.getElementById('val-net-ip');
+            if (ipEl && addressVal) ipEl.textContent = addressVal;
+        }
+
+        function addTacticalFeedEntry(icon, text) {
+            const list = document.getElementById('tactical-feed-list');
+            if (!list) return;
+
+            if (list.innerHTML.includes('Scanning airspace...')) {
+                list.innerHTML = '';
+            }
+
+            const div = document.createElement('div');
+            div.style.padding = '6px 8px';
+            div.style.background = 'rgba(255, 255, 255, 0.03)';
+            div.style.borderLeft = '3px solid var(--accent)';
+            div.style.borderRadius = '0 6px 6px 0';
+            div.style.marginBottom = '4px';
+            div.style.fontSize = '0.85rem';
+            
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            div.innerHTML = `<span style="color:var(--text-dim); font-size:0.75rem; margin-right:8px;">${timeStr}</span> ${icon} <span style="font-weight:600; color:var(--accent);">${text}</span>`;
+
+            list.insertBefore(div, list.firstChild);
+
+            // Limit list to 10 entries
+            while (list.children.length > 10) {
+                list.removeChild(list.lastChild);
+            }
+            
+            // Update proximity count based on nearby list size or radar contacts
+            const countEl = document.getElementById('prox-count');
+            if (countEl) {
+                let matches = list.innerHTML.match(/Radar Target/g);
+                let count = matches ? matches.length : 0;
+                countEl.textContent = `[${count}]`;
+            }
+        }
+
+        connect();
+    </script>
+</body>
+
+</html>

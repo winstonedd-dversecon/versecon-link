@@ -72,6 +72,9 @@ class LogWatcher extends EventEmitter {
             startTime: null,
             build: null,
             location: null,
+            location_raw: null,
+            planet: null,
+            system: null,
             jurisdiction: null,
             zone: null,
             shard: null
@@ -98,7 +101,12 @@ class LogWatcher extends EventEmitter {
             }
             if (data.type === 'SESSION_START') this.cachedState.startTime = data.value;
             if (data.type === 'BUILD_INFO') this.cachedState.build = data.value;
-            if (data.type === 'LOCATION') this.cachedState.location = data.value;
+            if (data.type === 'LOCATION') {
+                this.cachedState.location = data.value;
+                this.cachedState.location_raw = data.raw;
+                this.cachedState.planet = data.planet || 'Unknown';
+                this.cachedState.system = data.system || 'Unknown';
+            }
             // Attachment events (from inventory parser)
             if (data.type === 'ATTACHMENT_RECEIVED' && data.value) {
                 try {
@@ -129,7 +137,13 @@ class LogWatcher extends EventEmitter {
         if (this.cachedState.session) this.emit('gamestate', { type: 'SESSION_ID', value: this.cachedState.session });
         if (this.cachedState.startTime) this.emit('gamestate', { type: 'SESSION_START', value: this.cachedState.startTime });
         if (this.cachedState.build) this.emit('gamestate', { type: 'BUILD_INFO', value: this.cachedState.build });
-        if (this.cachedState.location) this.emit('gamestate', { type: 'LOCATION', value: this.cachedState.location });
+        if (this.cachedState.location) this.emit('gamestate', { 
+            type: 'LOCATION', 
+            value: this.cachedState.location, 
+            raw: this.cachedState.location_raw,
+            planet: this.cachedState.planet,
+            system: this.cachedState.system
+        });
     }
 
     // --- Configuration Methods (called by main.js) ---
@@ -141,6 +155,11 @@ class LogWatcher extends EventEmitter {
 
     setShipMap(map) {
         vehicleParser.setShipMap(map);
+    }
+
+    setCustomShipNames(map) {
+        vehicleParser.setCustomShipNames(map);
+        LogEngine.setCustomShipNames(map);
     }
 
     setCustomPatterns(patterns) {

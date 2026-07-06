@@ -59,7 +59,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 800px;
+            width: 1150px;
             z-index: 1000;
         }
 
@@ -604,11 +604,24 @@
 
         <!-- Main Flight Deck -->
         <div class="flight-deck interactive">
-            <!-- Location & Zone -->
-            <div class="fd-col" id="col-location">
+            <!-- Location, Planet/Moon, System, Zone -->
+            <div class="fd-col" id="col-specific-location">
                 <div class="fd-label">Location</div>
                 <div class="fd-value large" id="val-location">Unknown</div>
-                <div class="fd-label" style="margin-top:2px;">Zone</div>
+            </div>
+            
+            <div class="fd-col" id="col-planet-moon">
+                <div class="fd-label">Planet / Moon</div>
+                <div class="fd-value large" id="val-planet">Unknown</div>
+            </div>
+
+            <div class="fd-col" id="col-system-name">
+                <div class="fd-label">System</div>
+                <div class="fd-value large" id="val-system">Unknown</div>
+            </div>
+
+            <div class="fd-col" id="col-zone">
+                <div class="fd-label">Zone</div>
                 <div class="fd-value" id="val-zone">---</div>
             </div>
 
@@ -625,22 +638,6 @@
                 <div class="health-bar-container" style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 4px; border-radius: 2px; overflow: hidden;">
                     <div id="bar-health" style="width: 100%; height: 100%; background: var(--success); transition: width 0.3s ease;"></div>
                 </div>
-            </div>
-
-
-            <!-- DEAD Indicator -->
-            <div class="fd-col hidden" id="col-dead" style="padding:0 10px;">
-                <div class="dead-indicator visible" id="val-dead">&#9760; DEAD</div>
-            </div>
-
-            <!-- Helmet Warning -->
-            <div class="fd-col hidden" id="col-helmet" style="padding:0 10px;">
-                <div class="helmet-warning visible" id="val-helmet">⚠️ NO HELMET</div>
-            </div>
-
-            <!-- Suffocation Warning -->
-            <div class="fd-col hidden" id="col-suffocation" style="padding:0 10px;">
-                <div class="helmet-warning visible" id="val-suffocation">⚠️ OXYGEN LOW</div>
             </div>
 
 
@@ -689,6 +686,64 @@
             <div class="fd-col" id="col-team">
                 <div class="fd-label">Assigned Team</div>
                 <div class="fd-value" id="val-team" style="color:var(--accent);">ALPHA</div>
+            </div>
+        </div>
+
+        <!-- Attached Warnings Sub-row -->
+        <div class="flight-deck-warnings interactive" id="hud-warnings-row" style="display:none; width:fit-content; background:var(--bg-glass); backdrop-filter:blur(8px); border:var(--hud-border); border-top:none; border-bottom-left-radius:8px; border-bottom-right-radius:8px; padding:6px 20px; box-shadow:0 4px 10px rgba(0,0,0,0.5); justify-content:center; align-items:center; gap:15px; margin-top:-1px;">
+            <!-- DEAD Indicator -->
+            <div class="fd-col hidden" id="col-dead" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-dead">&#9760; DEAD</div>
+            </div>
+
+            <!-- Helmet Warning -->
+            <div class="fd-col hidden" id="col-helmet" style="padding:0 10px;">
+                <div class="helmet-warning visible" id="val-helmet">⚠️ NO HELMET</div>
+            </div>
+
+            <!-- Suffocation Warning -->
+            <div class="fd-col hidden" id="col-suffocation" style="padding:0 10px;">
+                <div class="helmet-warning visible" id="val-suffocation">⚠️ OXYGEN LOW</div>
+            </div>
+
+            <!-- Fire Warning -->
+            <div class="fd-col hidden" id="col-fire" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-fire" style="color: #ff3300; animation: blink 0.8s infinite; font-weight: bold;">🔥 FIRE</div>
+            </div>
+
+            <!-- Interdiction Warning -->
+            <div class="fd-col hidden" id="col-interdiction" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-interdiction" style="color: #ffaa00; animation: blink 1s infinite; font-weight: bold;">🚨 INTERDICTION</div>
+            </div>
+
+            <!-- Soft Death Warning -->
+            <div class="fd-col hidden" id="col-softdeath" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-softdeath" style="color: #ff3300; animation: blink 1.2s infinite; font-weight: bold;">⚠️ SOFT DEATH</div>
+            </div>
+
+            <!-- CrimeStat Warning -->
+            <div class="fd-col hidden" id="col-crimestat" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-crimestat" style="color: #ff3300; animation: blink 1.5s infinite; font-weight: bold;">🚨 CRIMESTAT</div>
+            </div>
+
+            <!-- Hostile Proximity Warning -->
+            <div class="fd-col hidden" id="col-proximity" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-proximity" style="color: #ffaa00; animation: blink 1.2s infinite; font-weight: bold;">⚠️ HOSTILE PROXIMITY</div>
+            </div>
+
+            <!-- Radar Contact Warning -->
+            <div class="fd-col hidden" id="col-radar" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-radar" style="color: #ffaa00; animation: blink 1.5s infinite; font-weight: bold;">🛰️ RADAR CONTACT</div>
+            </div>
+
+            <!-- Quantum Arrival Warning -->
+            <div class="fd-col hidden" id="col-quantum-arrival" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-quantum-arrival" style="color: #00ffaa; animation: blink 1s infinite; font-weight: bold;">🌌 SHIP ARRIVING</div>
+            </div>
+
+            <!-- KOS Target Detected Warning -->
+            <div class="fd-col hidden" id="col-kos" style="padding:0 10px;">
+                <div class="dead-indicator visible" id="val-kos" style="color: #ff0055; animation: blink 0.6s infinite; font-weight: bold;">🎯 TARGET: <span id="val-kos-label">ACQUIRED</span></div>
             </div>
         </div>
 
@@ -854,6 +909,7 @@
         // ═══ CUSTOM LOCATION SYNC ═══
         // When custom locations are saved in dashboard, update overlay display instantly
         let customLocations = {};
+        let locationNameHints = {}; // Accumulates LOCATION_NAME_HINT events
 
         function getCustomLocationMatch(rawName, cleanedName, customLocs) {
             if (!customLocs) return null;
@@ -882,6 +938,30 @@
                 }
             }
             return bestVal;
+        }
+
+        function getFriendlyLocationName(raw) {
+            if (!raw) return 'Unknown';
+            // 1. Custom Location mapping (Priority 1)
+            const matched = getCustomLocationMatch(raw, raw, customLocations);
+            if (matched) return typeof matched === 'object' ? matched.name : matched;
+
+            // 2. Dynamic Hints (Priority 2)
+            const normRaw = raw.replace(/asteriod/gi, 'Asteroid');
+            if (locationNameHints[raw]) return locationNameHints[raw];
+            if (locationNameHints[normRaw]) return locationNameHints[normRaw];
+
+            // 3. Regex suggestion (Priority 3)
+            let cleaned = raw
+                .replace(/^Stanton\d*_/i, '')
+                .replace(/^Outpost_PAF_/i, '')
+                .replace(/^Outpost_OLP_/i, '')
+                .replace(/^Outpost_/i, '')
+                .replace(/^PrisonMine_/i, 'Prison Mine ')
+                .replace(/_/g, ' ')
+                .trim();
+            cleaned = cleaned.replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim();
+            return cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
 
         ipcRenderer.on('settings:custom-locations-updated', (e, locations) => {
@@ -1338,6 +1418,8 @@
         let currentZone = 'Open Space';
         let currentTelemetryLocation = 'Unknown Orbit';
         let currentTelemetryLocationRaw = '';
+        let currentTelemetryPlanet = 'Unknown';
+        let currentTelemetrySystem = 'Unknown';
         let isPlayerDead = false;
 
         // Game Events
@@ -1351,17 +1433,29 @@
                     }
                     break;
 
+                case 'LOCATION_NAME_HINT':
+                    locationNameHints = { ...locationNameHints, ...data.value };
+                    break;
+
                 case 'LOCATION':
                 case 'LOCATION_HINT':
                     currentTelemetryLocation = data.value;
                     currentTelemetryLocationRaw = data.raw || '';
+                    currentTelemetryPlanet = data.planet || 'Unknown';
+                    currentTelemetrySystem = data.system || 'Unknown';
                     const locDisplay = document.getElementById('val-location');
+                    const planetDisplay = document.getElementById('val-planet');
+                    const systemDisplay = document.getElementById('val-system');
+                    
                     // Store raw code for custom location sync
                     if (data.raw) locDisplay.dataset.raw = data.raw;
                     // Check if we have a custom name for this raw code
                     const matched = getCustomLocationMatch(data.raw, data.value, customLocations);
                     const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
+                    
                     locDisplay.textContent = customName || data.value;
+                    if (planetDisplay) planetDisplay.textContent = currentTelemetryPlanet;
+                    if (systemDisplay) systemDisplay.textContent = currentTelemetrySystem;
                     break;
 
 
@@ -1449,13 +1543,37 @@
                 // Alerts
                 case 'STATUS': {
                     const v = (data.value || '').toLowerCase();
-                    if (['death', 'suffocating', 'depressurizing'].includes(v)) {
-                        showAlert(data.value.toUpperCase(), 'CRITICAL STATUS ALERT');
-                    } else if (data.level === 'WARNING') {
-                        showAlert('⚠️ ' + data.value, 'WARNING');
+                    if (v === 'suffocating' || v === 'depressurizing') {
+                        const suffCol = document.getElementById('col-suffocation');
+                        if (suffCol && currentConfig.enableStaminaOxygenAlerts !== false) {
+                            suffCol.classList.remove('hidden');
+                        }
+                    } else if (v === 'interdiction') {
+                        const intCol = document.getElementById('col-interdiction');
+                        if (intCol) {
+                            intCol.classList.remove('hidden');
+                            if (window.intColTimeout) clearTimeout(window.intColTimeout);
+                            window.intColTimeout = setTimeout(() => intCol.classList.add('hidden'), 8000);
+                        }
+                    } else if (v === 'tactical_proximity') {
+                        const proxCol = document.getElementById('col-proximity');
+                        if (proxCol) {
+                            proxCol.classList.remove('hidden');
+                            if (window.proxColTimeout) clearTimeout(window.proxColTimeout);
+                            window.proxColTimeout = setTimeout(() => proxCol.classList.add('hidden'), 8000);
+                        }
+                    } else if (v === 'soft_death') {
+                        const sdCol = document.getElementById('col-softdeath');
+                        if (sdCol) {
+                            sdCol.classList.remove('hidden');
+                            if (window.sdColTimeout) clearTimeout(window.sdColTimeout);
+                            window.sdColTimeout = setTimeout(() => sdCol.classList.add('hidden'), 8000);
+                        }
+                    }
+                    
+                    if (data.level === 'WARNING') {
                         addFeedEntry('⚠️', data.value);
                     } else {
-                        // INFO-level status events (insurance, shop, ASOP, server, etc.)
                         addFeedEntry('ℹ️', data.value);
                     }
                     break;
@@ -1473,6 +1591,12 @@
                         if (zoneEl) {
                             zoneEl.textContent = 'ARMISTICE';
                             zoneEl.style.color = 'var(--success)';
+                        }
+                    } else if (data.value === 'Contested Zone') {
+                        addFeedEntry('☠️', 'Entered Contested Zone');
+                        if (zoneEl) {
+                            zoneEl.textContent = 'CONTESTED ZONE';
+                            zoneEl.style.color = 'var(--danger)';
                         }
                     } else if (data.value === 'Open Space') {
                         addFeedEntry('⚠️', 'Left Armistice');
@@ -1557,7 +1681,7 @@
                         if (suffocationCol) {
                             if (status === 'started') {
                                 suffocationCol.classList.remove('hidden');
-                                showAlert('⚠️ OXYGEN WARNING', 'Suffocation started!');
+                                // showAlert('⚠️ OXYGEN WARNING', 'Suffocation started!');
                             } else {
                                 suffocationCol.classList.add('hidden');
                             }
@@ -1657,11 +1781,15 @@
                     } else if (data.value === 'exited' || data.value === 'arrived') {
                         // Restore HUD Location info
                         const locEl = document.getElementById('val-location');
+                        const planetEl = document.getElementById('val-planet');
+                        const systemEl = document.getElementById('val-system');
                         if (locEl) {
                             const matched = getCustomLocationMatch(currentTelemetryLocationRaw, currentTelemetryLocation, customLocations);
                             const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
                             locEl.textContent = customName || currentTelemetryLocation;
                         }
+                        if (planetEl) planetEl.textContent = currentTelemetryPlanet;
+                        if (systemEl) systemEl.textContent = currentTelemetrySystem;
                         // Restore Zone info
                         const zoneEl = document.getElementById('val-zone');
                         if (zoneEl) {
@@ -1681,8 +1809,13 @@
 
                 case 'HAZARD_FIRE':
                     if (currentConfig.enableFireAlerts !== false) {
-                        showAlert('🔥 FIRE', data.value || 'Fire detected on ship');
                         addFeedEntry('🔥', `Fire: ${data.value || 'Detected'}`);
+                        const fireCol = document.getElementById('col-fire');
+                        if (fireCol) {
+                            fireCol.classList.remove('hidden');
+                            if (window.fireColTimeout) clearTimeout(window.fireColTimeout);
+                            window.fireColTimeout = setTimeout(() => fireCol.classList.add('hidden'), 8000);
+                        }
                     }
                     break;
 
@@ -1697,12 +1830,22 @@
                 // ── Combat Events ──
                 case 'RADAR_SINGLE':
                     if (data.details) {
-                        addTacticalFeedEntry('🛰️', `Radar Target: ${data.details.chassis}`);
-                        addFeedEntry('🛰️', `Radar Target: ${data.details.chassis}`);
-                        // showAlert('🛰️ SENSOR CONTACT', `${data.details.chassis.toUpperCase()} detected in area`);
+                        if (currentConfig.showShipsProximityFeed !== false) {
+                            addTacticalFeedEntry('🛰️', `Radar Target: ${data.details.chassis}`);
+                        }
+                        if (currentConfig.showShipsTacticalFeed !== false) {
+                            addFeedEntry('🛰️', `Radar Target: ${data.details.chassis}`);
+                        }
+                        
+                        const radarCol = document.getElementById('col-radar');
+                        if (radarCol && currentConfig.showShipsOverlayHud !== false) {
+                            radarCol.classList.remove('hidden');
+                            if (window.radarColTimeout) clearTimeout(window.radarColTimeout);
+                            window.radarColTimeout = setTimeout(() => radarCol.classList.add('hidden'), 8000);
+                        }
                         
                         // Fullscreen flash effect
-                        if (currentConfig.hudFlashEnabled !== false) {
+                        if (currentConfig.showShipsOverlayHud !== false && currentConfig.hudFlashEnabled !== false) {
                             const flashDiv = document.createElement('div');
                             flashDiv.className = 'flash-effect';
                             document.body.appendChild(flashDiv);
@@ -1713,8 +1856,18 @@
 
                 case 'RADAR_GROUP':
                     if (data.details) {
-                        addTacticalFeedEntry('🚨', `Radar: ${data.details.count} Ships Loaded (${data.details.ships.join(', ')})`);
-                        addFeedEntry('🚨', `${data.details.count} Ships Loaded`);
+                        if (currentConfig.showShipsProximityFeed !== false) {
+                            addTacticalFeedEntry('🚨', `Radar: ${data.details.count} Ships Loaded (${data.details.ships.join(', ')})`);
+                        }
+                        if (currentConfig.showShipsTacticalFeed !== false) {
+                            addFeedEntry('🚨', `${data.details.count} Ships Loaded`);
+                        }
+                        const radarCol = document.getElementById('col-radar');
+                        if (radarCol && currentConfig.showShipsOverlayHud !== false) {
+                            radarCol.classList.remove('hidden');
+                            if (window.radarColTimeout) clearTimeout(window.radarColTimeout);
+                            window.radarColTimeout = setTimeout(() => radarCol.classList.add('hidden'), 8000);
+                        }
                     }
                     break;
 
@@ -1722,6 +1875,13 @@
                     if (data.direction === 'arrival') {
                         addTacticalFeedEntry('🌌', `↓ QUANTUM ARRIVAL: ${data.ship || data.value}`);
                         addFeedEntry('🌌', `↓ ${data.value}`);
+                        
+                        const qaCol = document.getElementById('col-quantum-arrival');
+                        if (qaCol && currentConfig.showShipsOverlayHud !== false) {
+                            qaCol.classList.remove('hidden');
+                            if (window.qaColTimeout) clearTimeout(window.qaColTimeout);
+                            window.qaColTimeout = setTimeout(() => qaCol.classList.add('hidden'), 8000);
+                        }
                     } else {
                         addTacticalFeedEntry('🌌', data.value);
                         addFeedEntry('🌌', data.value);
@@ -1764,11 +1924,11 @@
                     
                     if (currentConfig.enableDeathAlerts !== false) {
                         if (data.details && data.details.killer) {
-                            showAlert('☠️ KILLED', `${data.details.victim} killed by ${data.details.killer}`);
+                            // showAlert('☠️ KILLED', `${data.details.victim} killed by ${data.details.killer}`);
                             addFeedEntry('☠️', `${data.details.victim} → ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
                             addTacticalFeedEntry('💀', `${data.details.victim} killed by ${data.details.killer} (${data.details.weapon || 'Unknown'})`);
                         } else {
-                            showAlert('💀 DEATH', 'You died');
+                            // showAlert('💀 DEATH', 'You died');
                             addFeedEntry('💀', 'Death detected');
                             addTacticalFeedEntry('💀', `${data.details && data.details.victim ? data.details.victim : 'Player'} died`);
                         }
@@ -1784,7 +1944,8 @@
                     
                     if (isPlayerDead) {
                         addFeedEntry('❤️', 'Respawned / Alive');
-                        addTacticalFeedEntry('❤️', `${data.value.player} respawned at ${data.value.location}`);
+                        const friendlyLoc = getFriendlyLocationName(data.value.location);
+                        addTacticalFeedEntry('❤️', `${data.value.player} respawned at ${friendlyLoc}`);
                         isPlayerDead = false;
                     }
                     break;
@@ -1810,11 +1971,11 @@
                             const msg = data.details.isTotalLoss
                                 ? `${shipName} DESTROYED by ${data.details.attacker || 'Unknown'}`
                                 : `${shipName} CRIPPLED by ${data.details.attacker || 'Unknown'}`;
-                            showAlert(data.details.isTotalLoss ? '💥 DESTROYED' : '⚠️ CRIPPLED', msg);
+                            // showAlert(data.details.isTotalLoss ? '💥 DESTROYED' : '⚠️ CRIPPLED', msg);
                             addFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', msg);
                             addTacticalFeedEntry(data.details.isTotalLoss ? '💥' : '⚠️', `${data.details.driver || 'Pilot'}'s ${shipName} destroyed/crippled by ${data.details.attacker || 'Unknown'}`);
                         } else {
-                            showAlert('💥 DESTROYED', data.value || 'Vehicle Destroyed');
+                            // showAlert('💥 DESTROYED', data.value || 'Vehicle Destroyed');
                             addFeedEntry('💥', data.value || 'Vehicle Destroyed');
                             addTacticalFeedEntry('💥', data.value || 'Vehicle Destroyed');
                         }
@@ -1859,13 +2020,28 @@
                     // Silent for success to avoid spam (48+ events per session)
                     break;
 
+                case 'SERVER_REROUTED':
+                    addFeedEntry('🌐', 'Server Rerouted');
+                    addTacticalFeedEntry('🌐', data.value);
+                    break;
+
                 case 'VOIP':
                     addFeedEntry('📡', data.value);
                     break;
 
                 case 'CRIME_UPDATE':
                     if (currentConfig.enableCrimestatAlerts !== false) {
-                        showAlert('🚨 CRIMESTAT', data.value);
+                        const crimestatCol = document.getElementById('col-crimestat');
+                        if (crimestatCol) {
+                            const val = (data.value || '').toLowerCase();
+                            if (val.includes('crimestat: 0') || val.includes('cleared')) {
+                                crimestatCol.classList.add('hidden');
+                            } else {
+                                crimestatCol.classList.remove('hidden');
+                                if (window.crimeColTimeout) clearTimeout(window.crimeColTimeout);
+                                window.crimeColTimeout = setTimeout(() => crimestatCol.classList.add('hidden'), 8000);
+                            }
+                        }
                     }
                     addFeedEntry('🚨', data.value);
                     break;
@@ -1874,6 +2050,33 @@
                     showAlert('⚠️', data.value || 'Warning');
                     addFeedEntry('⚠️', data.value);
                     break;
+
+                case 'KOS_TARGET_FOUND': {
+                    const label = data.label || 'KOS Target';
+                    const targetId = data.value;
+                    
+                    addFeedEntry('🎯', `KOS TARGET DETECTED: ${label} (${targetId})`);
+                    addTacticalFeedEntry('🎯', `KOS Target Identified: ${label} (ID: ${targetId})`);
+                    
+                    const labelEl = document.getElementById('val-kos-label');
+                    if (labelEl) labelEl.textContent = label.toUpperCase();
+                    
+                    const kosCol = document.getElementById('col-kos');
+                    if (kosCol) {
+                        kosCol.classList.remove('hidden');
+                        if (window.kosColTimeout) clearTimeout(window.kosColTimeout);
+                        window.kosColTimeout = setTimeout(() => kosCol.classList.add('hidden'), 10000);
+                    }
+                    
+                    if (currentConfig.hudFlashEnabled !== false) {
+                        const flash = document.createElement('div');
+                        flash.className = 'flash-effect';
+                        flash.style.background = 'rgba(255, 0, 85, 0.25)';
+                        document.body.appendChild(flash);
+                        setTimeout(() => flash.remove(), 2000);
+                    }
+                    break;
+                }
 
                 // ── Custom Pattern Matches (weapons, user-defined regexes) ──
                 case 'CUSTOM':
@@ -1985,14 +2188,9 @@
             addFeedEntry('✅', 'Order Acknowledged');
         });
 
-        // Helper: Show Alert
+        // Helper: Show Alert (Disabled per user request; only fullscreen alertWindow is used)
         function showAlert(title, msg) {
-            if (currentConfig.hudWarningsEnabled === false) return;
-            const el = document.getElementById('mod-alert');
-            document.getElementById('val-alert-title').textContent = title;
-            document.getElementById('val-alert-msg').textContent = msg;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
+            // No-op to disable duplicate small warning popups
         }
 
         let lastDeathTime = 0;
@@ -2030,8 +2228,73 @@
                 else barEl.style.background = 'var(--success)';
             }
         });
+        function updateHUDWarningsRow() {
+            const warningsRow = document.getElementById('hud-warnings-row');
+            if (!warningsRow) return;
+            
+            const ids = [
+                'col-dead', 'col-helmet', 'col-suffocation', 'col-fire', 
+                'col-interdiction', 'col-softdeath', 'col-crimestat', 
+                'col-proximity', 'col-radar', 'col-quantum-arrival'
+            ];
+            
+            let anyVisible = false;
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (el && !el.classList.contains('hidden')) {
+                    anyVisible = true;
+                    break;
+                }
+            }
+            
+            if (anyVisible) {
+                warningsRow.style.display = 'flex';
+            } else {
+                warningsRow.style.display = 'none';
+            }
+        }
 
+        const warningObserver = new MutationObserver(() => {
+            updateHUDWarningsRow();
+        });
+        const warningIds = [
+            'col-dead', 'col-helmet', 'col-suffocation', 'col-fire', 
+            'col-interdiction', 'col-softdeath', 'col-crimestat', 
+            'col-proximity', 'col-radar', 'col-quantum-arrival'
+        ];
+        warningIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                warningObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+            }
+        });
+        updateHUDWarningsRow();
+
+        let recTimeout = null;
+        ipcRenderer.on('video:clip-triggered', (event, data) => {
+            const recEl = document.getElementById('record-indicator');
+            if (recEl) {
+                recEl.style.display = 'flex';
+                if (recTimeout) clearTimeout(recTimeout);
+                recTimeout = setTimeout(() => {
+                    recEl.style.display = 'none';
+                }, 4000);
+            }
+        });
     </script>
+
+    <style>
+        @keyframes recPulse {
+            from { opacity: 0.4; }
+            to { opacity: 1; }
+        }
+    </style>
+
+    <!-- Record Indicator -->
+    <div id="record-indicator" style="position: absolute; top: 15px; right: 15px; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,0.85); border: 2px solid #ff3333; padding: 6px 12px; border-radius: 4px; z-index: 11000; box-shadow: 0 0 15px rgba(255, 51, 51, 0.6); animation: recPulse 0.8s infinite alternate; pointer-events: none;">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #ff3333; display: inline-block; box-shadow: 0 0 8px #ff3333;"></span>
+        <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; color: #fff; font-size: 0.95rem; letter-spacing: 2px; text-transform: uppercase;">REC</span>
+    </div>
 </body>
 
 </html>

@@ -16,7 +16,40 @@ class HangarParser extends BaseParser {
             // ATC request complete / hangar request completed
             hangar_request: /(?:Added notification "Hangar Request Completed:\s*|Notification "Hangar Request Completed:\s*|(?:\s*|^)"Hangar Request Completed:\s*)([^"]*)"/i
         };
-        this.currentState = null;
+        this.lastTacticalHangar = null;
+        this.lastTacticalHangarTime = 0;
+        this.lastHangarState = null;
+        this.lastHangarStateTime = 0;
+    }
+
+    emitTacticalHangar(value, manager, rawState) {
+        const now = Date.now();
+        if (value === this.lastTacticalHangar && (now - this.lastTacticalHangarTime) < 3000) {
+            return;
+        }
+        this.lastTacticalHangar = value;
+        this.lastTacticalHangarTime = now;
+        this.emit('gamestate', {
+            type: 'TACTICAL_HANGAR',
+            value,
+            manager,
+            rawState
+        });
+    }
+
+    emitHangarState(value, manager, rawState) {
+        const now = Date.now();
+        if (value === this.lastHangarState && (now - this.lastHangarStateTime) < 3000) {
+            return;
+        }
+        this.lastHangarState = value;
+        this.lastHangarStateTime = now;
+        this.emit('gamestate', {
+            type: 'HANGAR_STATE',
+            value,
+            manager,
+            rawState
+        });
     }
 
     parse(line) {
@@ -33,21 +66,11 @@ class HangarParser extends BaseParser {
                 cleanHangar = cleanHangar.replace(/([A-Z])/g, ' $1').trim();
                 cleanState = cleanState.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
 
-                this.emit('gamestate', {
-                    type: 'TACTICAL_HANGAR',
-                    value: `${cleanHangar}: ${cleanState}`,
-                    manager: manager,
-                    rawState: state
-                });
+                this.emitTacticalHangar(`${cleanHangar}: ${cleanState}`, manager, state);
                 
                 // Keep the legacy HANGAR_STATE for timers
                 const type = state.startsWith('Raising') || state.startsWith('Moving') || state === 'LoweringPlatform' ? 'TRANSIT' : (state === 'OpenIdle' || state === 'Open' ? 'READY' : 'CLOSED');
-                this.emit('gamestate', {
-                    type: 'HANGAR_STATE',
-                    value: type,
-                    manager: manager,
-                    rawState: state
-                });
+                this.emitHangarState(type, manager, state);
                 handled = true;
             }
         }
@@ -60,13 +83,7 @@ class HangarParser extends BaseParser {
 
                 if (manager.includes('ShipElevator')) {
                     const type = state.startsWith('Moving') ? 'TRANSIT' : (state === 'OpenIdle' ? 'READY' : 'CLOSED');
-
-                    this.emit('gamestate', {
-                        type: 'HANGAR_STATE',
-                        value: type,
-                        manager: manager,
-                        rawState: state
-                    });
+                    this.emitHangarState(type, manager, state);
                     handled = true;
                 }
             }
@@ -83,18 +100,8 @@ class HangarParser extends BaseParser {
 
         const hangarReqMatch = line.match(this.patterns.hangar_request);
         if (hangarReqMatch) {
-            this.emit('gamestate', {
-                type: 'HANGAR_STATE',
-                value: 'READY',
-                manager: 'ATC',
-                rawState: 'Hangar Request Completed'
-            });
-            this.emit('gamestate', {
-                type: 'TACTICAL_HANGAR',
-                value: 'Hangar: Opening Doors',
-                manager: 'ATC',
-                rawState: 'Hangar Request Completed'
-            });
+            this.emitHangarState('READY', 'ATC', 'Hangar Request Completed');
+            this.emitTacticalHangar('Hangar: Opening Doors', 'ATC', 'Hangar Request Completed');
             handled = true;
         }
 

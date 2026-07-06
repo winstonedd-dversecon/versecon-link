@@ -406,6 +406,14 @@
             }
         });
 
+        let currentConfig = {};
+        ipcRenderer.on('settings:updated', (e, config) => {
+            currentConfig = config;
+        });
+        ipcRenderer.invoke('settings:get').then(config => {
+            currentConfig = config;
+        });
+
         // Handle game/combat events
         ipcRenderer.on('log:update', (e, data) => {
             if (data.type === 'SERVER_CONNECTED' && data.value) {
@@ -422,17 +430,23 @@
 
             // Radar single spawn
             if (data.type === 'RADAR_SINGLE' && data.details) {
-                addFeedItem('radar-single', '🛰️', `Radar Target: ${data.details.chassis}`, `NetID: ${data.details.hostId}`);
+                if (currentConfig.showShipsProximityFeed !== false) {
+                    addFeedItem('radar-single', '🛰️', `Radar Target: ${data.details.chassis}`, `NetID: ${data.details.hostId}`);
+                }
             }
 
             // Radar group spawn (Suppressed mass loads)
             if (data.type === 'RADAR_GROUP' && data.details) {
-                addFeedItem('radar-group', '🚨', `${data.details.count} Ships Loaded`, `List: ${data.details.ships.join(', ')}`);
+                if (currentConfig.showShipsProximityFeed !== false) {
+                    addFeedItem('radar-group', '🚨', `${data.details.count} Ships Loaded`, `List: ${data.details.ships.join(', ')}`);
+                }
             }
 
             // Custom Proximity Alert (Interdictor ships)
             if (data.type === 'TACTICAL_PROXIMITY') {
-                addFeedItem('radar-group', '⚠️', `Proximity Alert: ${data.value}`, 'Interdiction vessel detected');
+                if (currentConfig.showShipsProximityFeed !== false) {
+                    addFeedItem('radar-group', '⚠️', `Proximity Alert: ${data.value}`, 'Interdiction vessel detected');
+                }
             }
 
             // Corpse stream detected
@@ -470,8 +484,10 @@
 
             // Quantum ship arrival (FinalStop=0 — ship exited quantum into area)
             if (data.type === 'TACTICAL_QUANTUM' && data.direction === 'arrival') {
-                const shipLabel = data.ship || data.value || 'Unknown Ship';
-                addFeedItem('radar-single', '🌌', `Quantum Arrival: ${shipLabel}`, 'Ship dropped out of quantum nearby');
+                if (currentConfig.showShipsProximityFeed !== false) {
+                    const shipLabel = data.ship || data.value || 'Unknown Ship';
+                    addFeedItem('radar-single', '🌌', `Quantum Arrival: ${shipLabel}`, 'Ship dropped out of quantum nearby');
+                }
             }
         });
     </script>

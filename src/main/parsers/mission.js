@@ -58,6 +58,7 @@ class MissionParser extends BaseParser {
             // Engine-level mission lifecycle (verified in Game.log)
             mission_engine_create: /<CSubsumptionMissionComponent::CreateMissionInstance>.*?\[MISSION\].*?Creating.*?Missions\/([^\/]+\/[^\.]+)/i,
             mission_engine_stop: /<CSubsumptionMissionComponent::StopMissionLogic>/i,
+            objective_marker_contract: /<CLocalMissionPhaseMarker::CreateMarker>.*?missionId\s+\[([^\]]+)\].*?contract\s+\[([^\]]+)\]/i,
         };
         this.missionMap = new Map(); // UUID -> Title
         this.lastSeenId = null;
@@ -227,6 +228,31 @@ class MissionParser extends BaseParser {
                 level: 'INFO'
             });
             handled = true;
+        }
+
+        // ── 9b. Engine-level Mission Phase Marker (Fallback for failed tags) ──
+        const markerMatch = line.match(this.patterns.objective_marker_contract);
+        if (markerMatch) {
+            const mId = markerMatch[1];
+            const contractStr = markerMatch[2];
+            if (contractStr.includes('HaulCargo_')) {
+                // Extract commodity name (e.g. HaulCargo_..._Carbon_Stanton...)
+                const commodityMatch = contractStr.match(/HaulCargo_(?:[^\_]+\_)+?([^\_]+)\_Stanton/i);
+                if (commodityMatch) {
+                    let commodity = commodityMatch[1];
+                    // Clean names
+                    if (commodity.toLowerCase() === 'quantumfuel') commodity = 'Quantum Fuel';
+                    
+                    // Format into standard deliver text so handleGatherObjective parses it cleanly
+                    const mockObjective = `Deliver 0/6 SCU of ${commodity}`;
+                    this.emit('gamestate', {
+                        type: 'MISSION_OBJECTIVE',
+                        value: mockObjective,
+                        id: mId
+                    });
+                    handled = true;
+                }
+            }
         }
 
         return handled;

@@ -50,6 +50,14 @@ class LogEngine extends EventEmitter {
         }
     }
 
+    setCustomShipNames(map) {
+        for (const parser of this.parsers) {
+            if (typeof parser.setCustomShipNames === 'function') {
+                parser.setCustomShipNames(map);
+            }
+        }
+    }
+
     /**
      * Set whether proximity alerts should only fire during quantum travel.
      * @param {boolean} quantumOnly

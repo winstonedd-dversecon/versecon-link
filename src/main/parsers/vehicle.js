@@ -121,8 +121,8 @@ class VehicleParser extends BaseParser {
             if (voipMatch) {
                 const shipName = voipMatch[1].trim();
 
-                // Dedup: ignore if same ship within 5 seconds
-                if (shipName === this.currentShip && (now - this.lastEnterTime) < 5000) {
+                // Dedup: ignore if already in this ship
+                if (shipName === this.currentShip) {
                     return true; // Absorbed, no duplicate
                 }
 
@@ -143,7 +143,8 @@ class VehicleParser extends BaseParser {
                 const rawShipCode = starmapMatch[1];
                 const cleanShipName = this.getCleanShipName(rawShipCode);
 
-                if (cleanShipName !== this.currentShip || (now - this.lastEnterTime) > 5000) {
+                // Dedup: ignore if already in this ship
+                if (cleanShipName !== this.currentShip) {
                     this.currentShip = cleanShipName;
                     this.lastEnterTime = now;
                     const payload = { type: 'SHIP_ENTER', value: cleanShipName };
