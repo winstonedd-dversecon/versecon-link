@@ -3497,7 +3497,7 @@ ipcMain.handle('data:check-updates', async () => {
                 missions: bp.missions ? bp.missions.length : 0
             })),
             totalRemote: remoteItems.length,
-            totalLocal: localItems.length,
+            totalLocal: localNames.size,
             version: VERSION
         };
     } catch (e) {

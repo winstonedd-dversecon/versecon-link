@@ -6004,7 +6004,7 @@
             renderLocationSearchResults(); // Re-render to show selection highlighting
         }
 
-        function saveLocationEdit() {
+        async function saveLocationEdit() {
             const newVal = document.getElementById('location-edit-val').value.trim();
             const newType = document.getElementById('location-edit-type')?.value || 'station';
             const newParent = document.getElementById('location-edit-parent')?.value.trim() || '';
@@ -6024,7 +6024,7 @@
             // Update with new value
             const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '', parentBody: newParent };
             customLocations[selectedLocationKey] = finalObj;
-            ipcRenderer.invoke('settings:save-custom-locations', customLocations);
+            await ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
             // Update both modal and main location list
             addDashItem('✅', `Updated: ${selectedLocationKey} → ${escapeHtml(newVal)}`);
