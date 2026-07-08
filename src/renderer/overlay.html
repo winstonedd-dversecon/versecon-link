@@ -620,6 +620,11 @@
                 <div class="fd-value large" id="val-system">Unknown</div>
             </div>
 
+            <div class="fd-col" id="col-zone-name">
+                <div class="fd-label">Zone</div>
+                <div class="fd-value" id="val-zone" style="font-size:0.85rem;">Unknown</div>
+            </div>
+
             <!-- Nearby -->
             <div class="fd-col" id="col-nearby">
                 <div class="fd-label">Nearby</div>
@@ -739,6 +744,11 @@
             <!-- KOS Target Detected Warning -->
             <div class="fd-col hidden" id="col-kos" style="padding:0 10px;">
                 <div class="dead-indicator visible" id="val-kos" style="color: #ff0055; animation: blink 0.6s infinite; font-weight: bold;">🎯 TARGET: <span id="val-kos-label">ACQUIRED</span></div>
+            </div>
+
+            <!-- Armistice Zone Badge -->
+            <div class="fd-col hidden" id="col-armistice" style="padding:0 10px;">
+                <div class="helmet-warning visible" id="val-armistice" style="color: var(--success);">🛡️ ARMISTICE</div>
             </div>
         </div>
 
@@ -1588,6 +1598,7 @@
                     }
                     currentZone = data.value;
                     const zoneEl = document.getElementById('val-zone');
+                    const armisticeCol = document.getElementById('col-armistice');
 
                     if (data.value === 'Armistice Zone') {
                         addFeedEntry('🛡️', 'Entered Armistice');
@@ -1595,21 +1606,25 @@
                             zoneEl.textContent = 'ARMISTICE';
                             zoneEl.style.color = 'var(--success)';
                         }
+                        if (armisticeCol) armisticeCol.classList.remove('hidden');
                     } else if (data.value === 'Contested Zone') {
                         addFeedEntry('☠️', 'Entered Contested Zone');
                         if (zoneEl) {
                             zoneEl.textContent = 'CONTESTED ZONE';
                             zoneEl.style.color = 'var(--danger)';
                         }
+                        if (armisticeCol) armisticeCol.classList.add('hidden');
                     } else if (data.value === 'Open Space') {
                         addFeedEntry('⚠️', 'Left Armistice');
                         if (zoneEl) {
                             zoneEl.textContent = currentSystem !== 'Unknown' ? `${currentSystem.toUpperCase()} SYSTEM` : 'OPEN SPACE';
                             zoneEl.style.color = 'var(--accent)';
                         }
+                        if (armisticeCol) armisticeCol.classList.add('hidden');
                     } else {
                         if (zoneEl) zoneEl.textContent = data.value.toUpperCase();
                         addFeedEntry('🗺️', `Zone: ${data.value}`);
+                        if (armisticeCol) armisticeCol.classList.add('hidden');
                     }
                     break;
                 }
@@ -1805,16 +1820,21 @@
                         }
                         // Restore Zone info
                         const zoneEl = document.getElementById('val-zone');
+                        const armisticeCol = document.getElementById('col-armistice');
                         if (zoneEl) {
                             if (currentZone === 'Armistice Zone') {
                                 zoneEl.textContent = 'ARMISTICE';
                                 zoneEl.style.color = 'var(--success)';
-                            } else if (currentZone === 'Open Space') {
-                                zoneEl.textContent = currentSystem !== 'Unknown' ? `${currentSystem.toUpperCase()} SYSTEM` : 'OPEN SPACE';
-                                zoneEl.style.color = 'var(--accent)';
+                                if (armisticeCol) armisticeCol.classList.remove('hidden');
                             } else {
-                                zoneEl.textContent = currentZone.toUpperCase();
-                                zoneEl.style.color = 'var(--accent)';
+                                if (armisticeCol) armisticeCol.classList.add('hidden');
+                                if (currentZone === 'Open Space') {
+                                    zoneEl.textContent = currentSystem !== 'Unknown' ? `${currentSystem.toUpperCase()} SYSTEM` : 'OPEN SPACE';
+                                    zoneEl.style.color = 'var(--accent)';
+                                } else {
+                                    zoneEl.textContent = currentZone.toUpperCase();
+                                    zoneEl.style.color = 'var(--accent)';
+                                }
                             }
                         }
                     }
@@ -2248,7 +2268,8 @@
             const ids = [
                 'col-dead', 'col-helmet', 'col-suffocation', 'col-fire', 
                 'col-interdiction', 'col-softdeath', 'col-crimestat', 
-                'col-proximity', 'col-radar', 'col-quantum-arrival'
+                'col-proximity', 'col-radar', 'col-quantum-arrival',
+                'col-armistice'
             ];
             
             let anyVisible = false;
@@ -2273,7 +2294,8 @@
         const warningIds = [
             'col-dead', 'col-helmet', 'col-suffocation', 'col-fire', 
             'col-interdiction', 'col-softdeath', 'col-crimestat', 
-            'col-proximity', 'col-radar', 'col-quantum-arrival'
+            'col-proximity', 'col-radar', 'col-quantum-arrival',
+            'col-armistice'
         ];
         warningIds.forEach(id => {
             const el = document.getElementById(id);
