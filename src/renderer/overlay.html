@@ -1003,7 +1003,7 @@
                     }
                     // parentBody → Planet/Moon field (e.g. "Everus Harbor" is on/around "Hurston")
                     if (parentBody && planetEl && (planetEl.textContent === 'Unknown' || name === locEl?.textContent)) {
-                        planetEl.textContent = parentBody;
+                        planetEl.textContent = parentBody.replace(/\s*\([^)]*\)\s*$/, '').trim();
                     }
                     if (systemEl && system) systemEl.textContent = system;
                 }
@@ -1534,11 +1534,13 @@
                         } else if (locDisplay) {
                             locDisplay.textContent = customName;
                         }
+                    } else if (customName && customType === 'hangar') {
+                        // Hangar requests: don't overwrite current location
                     } else {
                         // Station/outpost/etc.: show in Location
                         locDisplay.textContent = customName || data.value;
                         // parentBody → Planet/Moon
-                        const customParentBody = matched && typeof matched === 'object' ? matched.parentBody || '' : '';
+                        const customParentBody = matched && typeof matched === 'object' ? (matched.parentBody || '').replace(/\s*\([^)]*\)\s*$/, '').trim() : '';
                         if (customParentBody && planetDisplay && (planetDisplay.textContent === 'Unknown' || planetDisplay.textContent === currentTelemetryPlanet)) {
                             planetDisplay.textContent = customParentBody;
                         } else if (planetDisplay) {

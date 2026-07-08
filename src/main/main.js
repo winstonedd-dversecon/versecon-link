@@ -649,6 +649,7 @@ function createWindows() {
 
         // Sync Settings so dashboard UI inputs aren't blank (Fixes Hue getting wiped on first save)
         dashboardWindow.webContents.send('settings:updated', config);
+        dashboardWindow.webContents.send('settings:custom-locations-updated', config.customLocations || {});
 
         // Sync Friend Code
         dashboardWindow.webContents.send('settings:friend-code', config.friendCode);
@@ -742,6 +743,7 @@ function createWindows() {
         LogWatcher.emitCurrentState();
         overlayWindow.webContents.send('log:status', { connected: LogWatcher.isWatching, path: LogWatcher.filePath });
         overlayWindow.webContents.send('settings:updated', config);
+        overlayWindow.webContents.send('settings:custom-locations-updated', config.customLocations || {});
     });
 
     // 3. Alert Window (Full-screen transparent for HUD warnings)
@@ -2305,6 +2307,11 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     const locCount = Object.keys(locations).length;
     const sample = Object.entries(locations).slice(0, 2).map(([k,v]) => `${k}=${typeof v === 'object' ? v.name : v}`);
     console.log(`[Main] Saving ${locCount} custom locations, sample:`, sample);
+    
+    // Detect deletions so we can re-alert removed locations
+    const oldCustom = config.customLocations || {};
+    const deletedKeys = Object.keys(oldCustom).filter(k => !(k in locations));
+    
     config.customLocations = locations;
     saveConfig();
     // Verify save
@@ -2326,6 +2333,17 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     } catch (e) {}
     merged = { ...merged, ...locations };
     NavigationParser.setCustomLocations(merged);
+    
+    // Re-emit NEW_LOCATION for any deleted location the user is currently at
+    if (deletedKeys.length > 0) {
+        const currentRaw = NavigationParser.lastLocationRaw;
+        const currentDisplay = NavigationParser.lastLocation;
+        for (const key of deletedKeys) {
+            if (key === currentRaw || key === currentDisplay) {
+                NavigationParser.emit('gamestate', { type: 'NEW_LOCATION', value: currentDisplay || key, raw: currentRaw || key });
+            }
+        }
+    }
     
     broadcast('settings:custom-locations-updated', locations);
     return true;
@@ -2350,9 +2368,27 @@ ipcMain.handle('settings:get-custom-shipnames', async () => {
 
 ipcMain.handle('settings:save-custom-shipnames', async (event, shipnames) => {
     console.log('[Main] Saving custom shipnames:', shipnames);
+    
+    // Detect deletions so we can re-alert removed ships
+    const oldShipNames = config.customShipNames || {};
+    const deletedShips = Object.keys(oldShipNames).filter(k => !(k in shipnames));
+    
     config.customShipNames = shipnames;
     saveConfig();
     LogWatcher.setCustomShipNames(shipnames);
+    
+    // Re-emit NEW_SHIP for any deleted ship the user is currently in
+    if (deletedShips.length > 0) {
+        const vehicle = require('./parsers/vehicle');
+        const currentShip = vehicle.currentShip;
+        for (const key of deletedShips) {
+            if (key === currentShip) {
+                vehicle.emit('gamestate', { type: 'NEW_SHIP', value: currentShip });
+                break;
+            }
+        }
+    }
+    
     broadcast('settings:custom-shipnames-updated', shipnames);
     return true;
 });

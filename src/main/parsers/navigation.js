@@ -106,6 +106,7 @@ class NavigationParser extends BaseParser {
         this.detectedBody = null;
         this.quantumDest = null;
         this.lastInventoryLoc = null;
+        this.quantumDestCustom = null; // Resolved from customLocations via numeric IDs
         this.currentDisplayLocation = '';
         this.currentLocationSource = '';
     }
@@ -238,6 +239,15 @@ class NavigationParser extends BaseParser {
                     this.emit('gamestate', { type: 'NEW_LOCATION', value: `Location ID ${id}`, raw: key });
                 }
                 this.emit('gamestate', { type: 'LOCATION_RAW', value: key });
+            }
+
+            // Check if destination numeric ID has a custom location mapping
+            this.quantumDestCustom = null;
+            if (this.customLocations && locTo && locTo !== '0') {
+                const destKey = `LOCATION_${locTo}`;
+                if (this.customLocations[destKey]) {
+                    this.quantumDestCustom = this.customLocations[destKey];
+                }
             }
 
             this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
@@ -523,6 +533,7 @@ class NavigationParser extends BaseParser {
     emitLocation(cleanedName, rawName) {
         if (!cleanedName && !rawName) return;
 
+        this.lastLocationRaw = rawName || cleanedName || this.lastLocationRaw;
         let finalName = cleanedName || rawName;
         let isCustomMapped = false;
         let matchedObj = null;
@@ -569,6 +580,9 @@ class NavigationParser extends BaseParser {
             }
 
             if (matchedObj) {
+                const matchType = typeof matchedObj === 'object' ? matchedObj.type : null;
+                if (matchType === 'hangar') return; // Suppress HUD updates for hangar codes
+
                 finalName = typeof matchedObj === 'object' ? matchedObj.name : matchedObj;
                 const zone = typeof matchedObj === 'object' ? matchedObj.zone : 'Auto';
                 const system = typeof matchedObj === 'object' ? matchedObj.system : 'Auto';
@@ -844,7 +858,10 @@ class NavigationParser extends BaseParser {
         // 1. If it's in customLocations and has system/planet set
         if (customLocObj && typeof customLocObj === 'object') {
             if (customLocObj.system && customLocObj.system !== 'Auto') system = customLocObj.system;
-            if (customLocObj.planet && customLocObj.planet !== 'Auto') planet = customLocObj.planet;
+            if (customLocObj.parentBody && customLocObj.parentBody !== 'Auto') {
+                const parenMatch = customLocObj.parentBody.match(/^(.+?)\s*\([^)]*\)\s*$/);
+                planet = parenMatch ? parenMatch[1].trim() : customLocObj.parentBody.trim();
+            }
         }
 
         const rawLower = (rawName || '').toLowerCase();
@@ -917,6 +934,11 @@ class NavigationParser extends BaseParser {
             const mappedName = this.bodyMap[this.detectedBody] || `Unknown body (${this.detectedBody})`;
             chosenLocation = `${mappedName} orbit`;
             chosenSource = 'planet cell streaming';
+        } else if (this.quantumDestCustom) {
+            const destInfo = this.quantumDestCustom;
+            const destName = typeof destInfo === 'object' ? destInfo.name : destInfo;
+            chosenLocation = `${destName} orbit`;
+            chosenSource = 'custom location destination';
         } else if (this.quantumDest) {
             const mappedName = this.bodyMap[this.quantumDest] || `Unknown body (${this.quantumDest})`;
             chosenLocation = `${mappedName} orbit`;
@@ -947,14 +969,24 @@ class NavigationParser extends BaseParser {
                 const lowerRaw = rawBody.toLowerCase();
                 const lowerBody = body.toLowerCase();
 
-                if (lowerRaw.includes('pyro') || lowerBody.includes('pyro') || lowerBody === 'monox' || rawBody === 'pyro2' || rawBody === 'RR_P2_L4') {
+                const customSystem = this.quantumDestCustom && typeof this.quantumDestCustom === 'object' ? this.quantumDestCustom.system : null;
+                this.quantumDestCustom = null;
+
+                if (customSystem && customSystem !== 'Auto') {
+                    systemName = customSystem;
+                } else if (lowerRaw.includes('pyro') || lowerBody.includes('pyro') || lowerBody === 'monox' || rawBody === 'pyro2' || rawBody === 'RR_P2_L4') {
                     systemName = 'Pyro';
                 } else if (lowerRaw.includes('stanton') || lowerBody.includes('stanton') || 
                            ['hurston', 'crusader', 'arccorp', 'microtech', 'ariel', 'aberdeen', 'ita', 'magda', 'cellin', 'daymar', 'yela', 'lyria', 'wala', 'calliope', 'clio', 'euterpe'].includes(lowerBody)) {
                     systemName = 'Stanton';
                 }
             } else {
-                const details = this.getPlanetAndSystem(this.lastLocationRaw || chosenLocation, chosenLocation);
+                const lookupName = this.lastLocationRaw || chosenLocation;
+                let locObj = null;
+                if (this.customLocations) {
+                    locObj = this.customLocations[lookupName] || this.customLocations[chosenLocation] || null;
+                }
+                const details = this.getPlanetAndSystem(lookupName, chosenLocation, locObj);
                 planetName = details.planet || 'Unknown';
                 systemName = details.system || 'Unknown';
             }
@@ -962,6 +994,7 @@ class NavigationParser extends BaseParser {
             this.emit('gamestate', {
                 type: 'LOCATION',
                 value: finalValue,
+                raw: this.lastLocationRaw || '',
                 source: chosenSource,
                 planet: planetName,
                 system: systemName,

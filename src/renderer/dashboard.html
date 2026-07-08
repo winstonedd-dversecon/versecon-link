@@ -1545,6 +1545,7 @@
                             <option value="wreck">Ship Wreck</option>
                             <option value="contested_zone">Contested Zone</option>
                             <option value="poi">Point of Interest</option>
+                            <option value="hangar">Hangar Requests</option>
                             <option value="other">Other</option>
                         </select>
                         <select id="new-loc-parent" class="modern-input" style="width:95px; font-size:0.7rem; margin:0;">
@@ -1586,6 +1587,8 @@
                         </select>
                         <button class="cyber-btn small" onclick="saveNewCustomLocation()"
                             style="margin:0;">Save</button>
+                        <button class="cyber-btn small" onclick="aliasGrabbedToExisting()"
+                            style="margin:0; background:rgba(0,150,255,0.15); border-color:rgba(0,150,255,0.4);" title="Add this code as an alias of an existing location">🔗 Alias</button>
                     </div>
 
                     <!-- List -->
@@ -2521,6 +2524,7 @@
                         <option value="wreck">Ship Wreck</option>
                         <option value="contested_zone">Contested Zone</option>
                         <option value="poi">Point of Interest</option>
+                        <option value="hangar">Hangar Requests</option>
                         <option value="other">Other</option>
                     </select>
                     <select id="location-edit-parent" style="flex:0.8; font-size:0.7rem; margin:0; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 6px; color:#ccc;">
@@ -4891,7 +4895,7 @@
                 const type = typeof val === 'object' ? val.type || '' : '';
                 const system = typeof val === 'object' ? val.system || '' : '';
 
-                const typeColors = { planet: '#00ff88', moon: '#00ccaa', station: '#ffa500', space_station: '#ffa500', gateway: '#a855f7', landing_zone: '#00c8ff', contested_zone: '#ff4444' };
+                const typeColors = { planet: '#00ff88', moon: '#00ccaa', station: '#ffa500', space_station: '#ffa500', gateway: '#a855f7', landing_zone: '#00c8ff', contested_zone: '#ff4444', hangar: '#888' };
                 const typeColor = typeColors[type] || '#888';
                 const typeLabel = type ? type.replace(/_/g, ' ') : '';
                 const typeBadge = typeLabel ? `<span style="background:rgba(0,0,0,0.3); padding:2px 5px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:${typeColor}; border:1px solid ${typeColor}33;">${typeLabel}</span>` : '';
@@ -4903,8 +4907,9 @@
                                 <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
                                 <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${systemBadge}${typeBadge}</div>
                             </div>
-                            <button class="cyber-btn small" onclick="event.stopPropagation(); openLocationSearch(); selectLocationForEdit('${encodeURIComponent(key)}')" style="margin-left:10px; margin:0 0 0 8px;">✏️</button>
-                            <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:5px; margin:0;">×</button>
+                            <button class="cyber-btn small" onclick="event.stopPropagation(); openLocationSearch(); selectLocationForEdit('${encodeURIComponent(key)}')" style="margin-left:auto; margin:0 0 0 8px;">✏️</button>
+                            <button class="cyber-btn small" onclick="event.stopPropagation(); addLocationAlias('${encodeURIComponent(key)}')" style="margin:0 0 0 5px;" title="Add alias ID">🔗</button>
+                            <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin:0 0 0 5px;">×</button>
                         </div>
                     `;
             }).join('');
@@ -5087,14 +5092,14 @@
 
         // Remove from backlog when a location is saved
         const _origSaveLoc = saveNewCustomLocation;
-        saveNewCustomLocation = function() {
+        saveNewCustomLocation = async function() {
             const key = document.getElementById('new-loc-key').value.trim();
             if (key) {
                 const idx = unmappedLocationQueue.findIndex(e => (e.raw || e) === key);
                 if (idx !== -1) unmappedLocationQueue.splice(idx, 1);
                 updateBacklogUI();
             }
-            _origSaveLoc();
+            await _origSaveLoc();
         };
 
         // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
@@ -5483,7 +5488,7 @@
             });
         }
 
-        function saveNewCustomLocation() {
+        async function saveNewCustomLocation() {
             const key = document.getElementById('new-loc-key').value.trim();
             const val = document.getElementById('new-loc-val').value.trim();
             const type = document.getElementById('new-loc-type')?.value || 'station';
@@ -5501,8 +5506,11 @@
             // planet/moon → shows under Planet/Moon on the HUD
             // station/outpost/gateway/etc. → shows under Location, parentBody → Planet/Moon
 
-            customLocations[key] = finalObj;
-            ipcRenderer.invoke('settings:save-custom-locations', customLocations);
+            // Fetch current from main to avoid overwriting other session changes
+            const current = await ipcRenderer.invoke('settings:get-custom-locations');
+            current[key] = finalObj;
+            await ipcRenderer.invoke('settings:save-custom-locations', current);
+            customLocations = current;
 
             // Feedback
             addDashItem('✅', `Mapped <span style="color:#ffaa00; font-family:monospace;">${escapeHtml(key)}</span> → <span style="color:#00ff88;">${escapeHtml(val)}</span>`);
@@ -5521,16 +5529,75 @@
             document.getElementById('new-loc-key').focus();
         }
 
+        async function aliasGrabbedToExisting() {
+            const aliasKey = document.getElementById('new-loc-key').value.trim();
+            if (!aliasKey) {
+                showNotification('No Code', 'Click Grab on a detected location first.');
+                return;
+            }
+
+            const targetKey = await vcModal.prompt('Add as Alias', `Enter the raw code of the existing location to alias "${aliasKey}" to (from the list above):`);
+            if (!targetKey || !targetKey.trim()) return;
+
+            const trimmedTarget = targetKey.trim();
+            const current = await ipcRenderer.invoke('settings:get-custom-locations');
+            const existing = current[trimmedTarget];
+            if (!existing) {
+                showNotification('Not Found', `"${trimmedTarget}" is not mapped yet. Map it first, then alias to it.`);
+                return;
+            }
+
+            if (current[aliasKey]) {
+                showNotification('Already Mapped', `"${aliasKey}" is already mapped.`);
+                return;
+            }
+
+            const existingName = typeof existing === 'object' ? existing.name : existing;
+            current[aliasKey] = Object.assign({}, existing);
+            await ipcRenderer.invoke('settings:save-custom-locations', current);
+            customLocations = current;
+            renderCustomLocationList();
+            addDashItem('🔗', `Aliased <span style="color:#ffaa00; font-family:monospace;">${escapeHtml(aliasKey)}</span> → <span style="color:#00ff88;">${escapeHtml(existingName)}</span>`);
+
+            document.getElementById('new-loc-key').value = '';
+            document.getElementById('new-loc-val').value = '';
+        }
+
         window.deleteCustomLocation = async function (key) {
             if (await vcModal.confirm('Delete Location Mapping', `Remove location mapping for "${key}"?`)) {
-                delete customLocations[key];
-                ipcRenderer.invoke('settings:save-custom-locations', customLocations);
+                const current = await ipcRenderer.invoke('settings:get-custom-locations');
+                delete current[key];
+                await ipcRenderer.invoke('settings:save-custom-locations', current);
+                customLocations = current;
                 renderCustomLocationList();
                 // Close modal if it was the edited one
                 if (document.getElementById('location-edit-original-key').value === key) {
                     closeLocationSearchModal();
                 }
             }
+        };
+
+        window.addLocationAlias = async function(primaryKey) {
+            const decodedKey = decodeURIComponent(primaryKey);
+            const existingEntry = customLocations[decodedKey];
+            if (!existingEntry) return;
+
+            const existingName = typeof existingEntry === 'object' ? existingEntry.name : existingEntry;
+            const aliasKey = await vcModal.prompt('Add Alias ID', `Enter another raw location code that also maps to "${existingName}" (e.g. LOCATION_3944210345):`);
+            if (!aliasKey || !aliasKey.trim()) return;
+
+            const trimmedAlias = aliasKey.trim();
+            if (customLocations[trimmedAlias]) {
+                showNotification('Already Mapped', `"${trimmedAlias}" is already mapped.`);
+                return;
+            }
+
+            const current = await ipcRenderer.invoke('settings:get-custom-locations');
+            current[trimmedAlias] = Object.assign({}, existingEntry);
+            await ipcRenderer.invoke('settings:save-custom-locations', current);
+            customLocations = current;
+            renderCustomLocationList();
+            addDashItem('🔗', `Aliased <span style="color:#ffaa00; font-family:monospace;">${escapeHtml(trimmedAlias)}</span> → <span style="color:#00ff88;">${escapeHtml(existingName)}</span>`);
         };
 
         window.getCleanShipName = function(rawName) {
@@ -5631,17 +5698,17 @@
         }
 
         window.editCustomShip = async function(key) {
-            const currentName = customShipNames[key] || '';
-            const newName = await vcModal.prompt('Edit Ship Name', `Enter new friendly name for "${key}":`, currentName);
+            const newName = await vcModal.prompt('Edit Ship Name', `Enter new friendly name for "${key}":`, customShipNames[key] || '');
             if (newName === null || newName.trim() === '') return;
-            customShipNames[key] = newName.trim();
-            ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
-                loadCustomShipList();
-                addDashItem('✏️', `Updated ship name: <span class="feed-highlight">${escapeHtml(key)}</span> → <span style="color:#00c8ff;">${escapeHtml(newName.trim())}</span>`);
-            });
+            const current = await ipcRenderer.invoke('settings:get-custom-shipnames');
+            current[key] = newName.trim();
+            await ipcRenderer.invoke('settings:save-custom-shipnames', current);
+            customShipNames = current;
+            loadCustomShipList();
+            addDashItem('✏️', `Updated ship name: <span class="feed-highlight">${escapeHtml(key)}</span> → <span style="color:#00c8ff;">${escapeHtml(newName.trim())}</span>`);
         };
 
-        window.saveNewCustomShip = function() {
+        window.saveNewCustomShip = async function() {
             const keyEl = document.getElementById('new-ship-key');
             const valEl = document.getElementById('new-ship-val');
             if (!keyEl || !valEl) return;
@@ -5652,26 +5719,29 @@
                 return;
             }
 
-            customShipNames[key] = val;
+            const current = await ipcRenderer.invoke('settings:get-custom-shipnames');
+            current[key] = val;
+            await ipcRenderer.invoke('settings:save-custom-shipnames', current);
+            customShipNames = current;
+
             // Remove from ship backlog
             const bIdx = unmappedShipQueue.indexOf(key);
             if (bIdx !== -1) unmappedShipQueue.splice(bIdx, 1);
             updateShipBacklogUI();
 
-            ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
-                keyEl.value = '';
-                valEl.value = '';
-                loadCustomShipList();
-                showNotification('🛸 Mapped Ship Name', `Successfully mapped "${key}" to "${val}"`);
-            });
+            keyEl.value = '';
+            valEl.value = '';
+            loadCustomShipList();
+            showNotification('🛸 Mapped Ship Name', `Successfully mapped "${key}" to "${val}"`);
         };
 
         window.removeCustomShip = async function(key) {
             if (await vcModal.confirm('Remove Custom Ship', `Remove custom mapping for "${key}"?`)) {
-                delete customShipNames[key];
-                ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
-                    loadCustomShipList();
-                });
+                const current = await ipcRenderer.invoke('settings:get-custom-shipnames');
+                delete current[key];
+                await ipcRenderer.invoke('settings:save-custom-shipnames', current);
+                customShipNames = current;
+                loadCustomShipList();
             }
         };
 
@@ -5680,11 +5750,12 @@
             if (!key) return;
             const name = await vcModal.prompt("Add Custom Ship Mapping", "Enter Custom Friendly Name (e.g. Hornet F7A Mk II):");
             if (!name) return;
-            
-            customShipNames[key.trim()] = name.trim();
-            ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
-                loadCustomShipList();
-            });
+
+            const current = await ipcRenderer.invoke('settings:get-custom-shipnames');
+            current[key.trim()] = name.trim();
+            await ipcRenderer.invoke('settings:save-custom-shipnames', current);
+            customShipNames = current;
+            loadCustomShipList();
         };
 
         window.grabRawShip = function() {
@@ -6043,6 +6114,7 @@
                         <button class="cyber-btn small" style="margin:0; margin-left:8px;" onclick="event.stopPropagation(); selectLocationForEdit('${encodeURIComponent(key)}')">
                             ✏️
                         </button>
+                        <button class="cyber-btn small" style="margin:0; margin-left:5px;" onclick="event.stopPropagation(); addLocationAlias('${encodeURIComponent(key)}')" title="Add alias ID">🔗</button>
                     </div>
                 </div>
             `;
@@ -6089,15 +6161,19 @@
                 return;
             }
 
+            // Fetch current from main to avoid overwriting other session changes
+            const current = await ipcRenderer.invoke('settings:get-custom-locations');
+
             // Delete old key if it was renamed
             if (selectedLocationKey !== originalKey) {
-                delete customLocations[originalKey];
+                delete current[originalKey];
             }
 
             // Update with new value
             const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '', parentBody: parentDisplay };
-            customLocations[selectedLocationKey] = finalObj;
-            await ipcRenderer.invoke('settings:save-custom-locations', customLocations);
+            current[selectedLocationKey] = finalObj;
+            await ipcRenderer.invoke('settings:save-custom-locations', current);
+            customLocations = current;
 
             // Update both modal and main location list
             addDashItem('✅', `Updated: ${selectedLocationKey} → ${escapeHtml(newVal)}`);
@@ -6107,9 +6183,7 @@
 
         function deleteSelectedLocation() {
             const key = document.getElementById('location-edit-original-key').value;
-            if (confirm(`Delete location mapping "${key}"?`)) {
-                window.deleteCustomLocation(key);
-            }
+            window.deleteCustomLocation(key);
         }
 
         function cancelLocationEdit() {
@@ -8180,6 +8254,7 @@
                         okBtn.onclick = null;
                         cancelBtn.onclick = null;
                         inputEl.onkeydown = null;
+                        document.body.focus();
                     };
                     
                     okBtn.onclick = () => {
@@ -8220,6 +8295,7 @@
                         modal.style.display = 'none';
                         okBtn.onclick = null;
                         cancelBtn.onclick = null;
+                        document.body.focus();
                     };
                     
                     okBtn.onclick = () => {
