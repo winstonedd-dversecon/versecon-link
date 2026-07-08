@@ -970,26 +970,37 @@
             const planetEl = document.getElementById('val-planet');
             const systemEl = document.getElementById('val-system');
 
-            // Check if current raw location matches a newly-mapped code
-            if (locEl && locEl.dataset.raw) {
-                const matched = getCustomLocationMatch(locEl.dataset.raw, locEl.textContent, customLocations);
-                if (matched) {
-                    const name = typeof matched === 'object' ? matched.name : matched;
-                    locEl.textContent = name;
-                    // For LOCATION_* numeric IDs, also update planet/moon from the mapping
-                    if (locEl.dataset.raw.startsWith('LOCATION_')) {
-                        if (typeof matched === 'object') {
-                            if (matched.planet && matched.planet !== 'Auto' && planetEl) planetEl.textContent = matched.planet;
-                            if (matched.system && matched.system !== 'Auto' && systemEl) systemEl.textContent = matched.system;
-                        } else if (planetEl) {
-                            planetEl.textContent = name;
-                        }
+            // Helper: apply a custom location mapping to the right HUD field based on type
+            function applyMapping(raw, valObj) {
+                const name = typeof valObj === 'object' ? valObj.name : valObj;
+                const type = typeof valObj === 'object' ? valObj.type || 'station' : 'station';
+                const system = typeof valObj === 'object' ? valObj.system || '' : '';
+                const isPlanetary = type === 'planet' || type === 'moon';
+
+                if (isPlanetary) {
+                    // Planet/moon names go to Planet/Moon field
+                    if (planetEl) planetEl.textContent = name;
+                    if (systemEl && system) systemEl.textContent = system;
+                    // Don't overwrite location — location should stay as the station/outpost
+                } else {
+                    // Station/outpost/gateway/etc. go to Location field
+                    if (locEl) {
+                        locEl.textContent = name;
+                        if (raw) locEl.dataset.raw = raw;
                     }
+                    if (systemEl && system) systemEl.textContent = system;
                 }
             }
 
-            // For any LOCATION_* that hasn't been applied as a location event yet,
-            // update the HUD if the current location is still generic (e.g. "In Transit" or "Unknown")
+            // Check if current raw location has a mapping
+            if (locEl && locEl.dataset.raw) {
+                const matched = getCustomLocationMatch(locEl.dataset.raw, locEl.textContent, customLocations);
+                if (matched) {
+                    applyMapping(locEl.dataset.raw, matched);
+                }
+            }
+
+            // If current HUD state is generic, look for any LOCATION_* mapping to fill in
             if (locEl && planetEl) {
                 const currentLoc = locEl.textContent;
                 const currentPlanet = planetEl.textContent;
@@ -997,14 +1008,7 @@
                 if (isGeneric) {
                     for (const [raw, val] of Object.entries(customLocations)) {
                         if (raw.startsWith('LOCATION_')) {
-                            const name = typeof val === 'object' ? val.name : val;
-                            locEl.textContent = name;
-                            if (typeof val === 'object') {
-                                if (val.planet && val.planet !== 'Auto' && planetEl) planetEl.textContent = val.planet;
-                                if (val.system && val.system !== 'Auto' && systemEl) systemEl.textContent = val.system;
-                            } else if (planetEl) {
-                                planetEl.textContent = name;
-                            }
+                            applyMapping(raw, val);
                             break;
                         }
                     }
@@ -1488,17 +1492,26 @@
                     // Check if we have a custom name for this raw code
                     const matched = getCustomLocationMatch(data.raw, data.value, customLocations);
                     const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
+                    const customType = matched && typeof matched === 'object' ? matched.type || 'station' : 'station';
+                    const isPlanetary = customType === 'planet' || customType === 'moon';
                     
                     let customPlanet = null;
                     let customSystem = null;
                     if (matched && typeof matched === 'object') {
-                        if (matched.planet && matched.planet !== 'Auto') customPlanet = matched.planet;
-                        else if (matched.zone && matched.zone !== 'Auto') customPlanet = matched.zone; // backward compatibility
-                        if (matched.system && matched.system !== 'Auto') customSystem = matched.system;
+                        if (matched.system) customSystem = matched.system;
                     }
                     
-                    locDisplay.textContent = customName || data.value;
-                    if (planetDisplay) planetDisplay.textContent = customPlanet || currentTelemetryPlanet;
+                    if (customName && isPlanetary) {
+                        // Planet/moon: show in Planet/Moon field, don't overwrite Location
+                        if (planetDisplay) planetDisplay.textContent = customName;
+                        if (locDisplay && locDisplay.textContent === 'Unknown' || locDisplay.textContent === 'In Transit') {
+                            locDisplay.textContent = data.value;
+                        }
+                    } else {
+                        // Station/outpost/etc.: show in Location
+                        locDisplay.textContent = customName || data.value;
+                        if (planetDisplay) planetDisplay.textContent = currentTelemetryPlanet;
+                    }
                     if (systemDisplay) systemDisplay.textContent = customSystem || currentTelemetrySystem;
                     break;
 
@@ -1835,15 +1848,19 @@
                         if (locEl) {
                             const matched = getCustomLocationMatch(currentTelemetryLocationRaw, currentTelemetryLocation, customLocations);
                             const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
-                            let customPlanet = null;
+                            const customType = matched && typeof matched === 'object' ? matched.type || 'station' : 'station';
+                            const isPlanetary = customType === 'planet' || customType === 'moon';
                             let customSystem = null;
                             if (matched && typeof matched === 'object') {
-                                if (matched.planet && matched.planet !== 'Auto') customPlanet = matched.planet;
-                                else if (matched.zone && matched.zone !== 'Auto') customPlanet = matched.zone;
-                                if (matched.system && matched.system !== 'Auto') customSystem = matched.system;
+                                if (matched.system) customSystem = matched.system;
                             }
-                            locEl.textContent = customName || currentTelemetryLocation;
-                            if (planetEl) planetEl.textContent = customPlanet || currentTelemetryPlanet;
+                            if (customName && isPlanetary) {
+                                if (planetEl) planetEl.textContent = customName;
+                                locEl.textContent = currentTelemetryLocation;
+                            } else {
+                                locEl.textContent = customName || currentTelemetryLocation;
+                                if (planetEl) planetEl.textContent = currentTelemetryPlanet;
+                            }
                             if (systemEl) systemEl.textContent = customSystem || currentTelemetrySystem;
                         } else {
                             if (planetEl) planetEl.textContent = currentTelemetryPlanet;

@@ -1522,43 +1522,28 @@
                 <div
                     style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 10px; margin-top: 10px;">
                     <!-- Add New Inline Form -->
-                    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+                    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center; flex-wrap:wrap;">
                         <input type="text" id="new-loc-key" placeholder="Raw Code (e.g. OOC_Stanton_...)"
-                            class="modern-input" style="flex:1;">
+                            class="modern-input" style="flex:1; min-width:120px;">
                         <span style="color:#666;">➔</span>
                         <input type="text" id="new-loc-val" placeholder="Friendly Name" class="modern-input"
-                            style="flex:1;">
-                        <select id="new-loc-system" class="modern-input" style="width:100px; font-size:0.75rem;">
-                            <option value="Auto">Auto System</option>
+                            style="flex:1; min-width:120px;">
+                        <select id="new-loc-type" class="modern-input" style="width:110px; font-size:0.75rem;">
+                            <option value="station">Station / Outpost</option>
+                            <option value="planet">Planet</option>
+                            <option value="moon">Moon</option>
+                            <option value="space_station">Space Station</option>
+                            <option value="gateway">Gateway / Jump Point</option>
+                            <option value="landing_zone">Landing Zone (City)</option>
+                            <option value="contested_zone">Contested Zone</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select id="new-loc-system" class="modern-input" style="width:90px; font-size:0.75rem;">
+                            <option value="Auto">System</option>
                             <option value="Stanton">Stanton</option>
                             <option value="Pyro">Pyro</option>
                             <option value="Nyx">Nyx</option>
                             <option value="Magnus">Magnus</option>
-                        </select>
-                        <select id="new-loc-planet" class="modern-input" style="width:130px; font-size:0.75rem;">
-                            <option value="Auto">Auto Planet/Moon</option>
-                            <option value="Hurston">Hurston</option>
-                            <option value="Crusader">Crusader</option>
-                            <option value="ArcCorp">ArcCorp</option>
-                            <option value="microTech">microTech</option>
-                            <option value="Ariel">Ariel</option>
-                            <option value="Aberdeen">Aberdeen</option>
-                            <option value="Ita">Ita</option>
-                            <option value="Magda">Magda</option>
-                            <option value="Cellin">Cellin</option>
-                            <option value="Daymar">Daymar</option>
-                            <option value="Yela">Yela</option>
-                            <option value="Lyria">Lyria</option>
-                            <option value="Wala">Wala</option>
-                            <option value="Calliope">Calliope</option>
-                            <option value="Clio">Clio</option>
-                            <option value="Euterpe">Euterpe</option>
-                            <option value="Pyro I">Pyro I</option>
-                            <option value="Pyro II">Pyro II</option>
-                            <option value="Pyro III">Pyro III</option>
-                            <option value="Pyro IV">Pyro IV</option>
-                            <option value="Pyro V">Pyro V</option>
-                            <option value="Pyro VI">Pyro VI</option>
                         </select>
                         <button class="cyber-btn small" onclick="saveNewCustomLocation()"
                             style="margin:0;">Save</button>
@@ -2457,39 +2442,24 @@
                         style="flex:1; margin:0;">
                 </div>
                 <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                    <select id="location-edit-type" class="modern-input" style="flex:1; font-size:0.75rem; margin:0;">
+                        <option value="station">Station / Outpost</option>
+                        <option value="planet">Planet</option>
+                        <option value="moon">Moon</option>
+                        <option value="space_station">Space Station</option>
+                        <option value="gateway">Gateway / Jump Point</option>
+                        <option value="landing_zone">Landing Zone (City)</option>
+                        <option value="contested_zone">Contested Zone</option>
+                        <option value="other">Other</option>
+                    </select>
                     <select id="location-edit-system" class="modern-input" style="flex:1; font-size:0.75rem; margin:0;">
-                        <option value="Auto">Auto System</option>
+                        <option value="Auto">System</option>
                         <option value="Stanton">Stanton</option>
                         <option value="Pyro">Pyro</option>
                         <option value="Nyx">Nyx</option>
                         <option value="Magnus">Magnus</option>
                         <option value="Terra">Terra</option>
                         <option value="Sol">Sol</option>
-                    </select>
-                    <select id="location-edit-planet" class="modern-input" style="flex:1.5; font-size:0.75rem; margin:0;">
-                        <option value="Auto">Auto Planet/Moon</option>
-                        <option value="Hurston">Hurston</option>
-                        <option value="Crusader">Crusader</option>
-                        <option value="ArcCorp">ArcCorp</option>
-                        <option value="microTech">microTech</option>
-                        <option value="Ariel">Ariel</option>
-                        <option value="Aberdeen">Aberdeen</option>
-                        <option value="Ita">Ita</option>
-                        <option value="Magda">Magda</option>
-                        <option value="Cellin">Cellin</option>
-                        <option value="Daymar">Daymar</option>
-                        <option value="Yela">Yela</option>
-                        <option value="Lyria">Lyria</option>
-                        <option value="Wala">Wala</option>
-                        <option value="Calliope">Calliope</option>
-                        <option value="Clio">Clio</option>
-                        <option value="Euterpe">Euterpe</option>
-                        <option value="Pyro I">Pyro I</option>
-                        <option value="Pyro II">Pyro II</option>
-                        <option value="Pyro III">Pyro III</option>
-                        <option value="Pyro IV">Pyro IV</option>
-                        <option value="Pyro V">Pyro V</option>
-                        <option value="Pyro VI">Pyro VI</option>
                     </select>
                 </div>
                 <div style="display:flex; gap:8px;">
@@ -4815,17 +4785,20 @@
 
             list.innerHTML = Object.entries(customLocations).map(([key, val]) => {
                 const name = typeof val === 'object' ? val.name : val;
-                const zone = typeof val === 'object' ? val.zone : 'Auto';
-                const system = typeof val === 'object' ? val.system : 'Auto';
+                const type = typeof val === 'object' ? val.type || '' : '';
+                const system = typeof val === 'object' ? val.system || '' : '';
 
-                const zoneBadge = zone !== 'Auto' ? `<span style="background:rgba(255,165,0,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:var(--accent); border:1px solid rgba(255,165,0,0.2);">${zone}</span>` : '';
-                const systemBadge = system !== 'Auto' ? `<span style="background:rgba(0,255,136,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:var(--success); border:1px solid rgba(0,255,136,0.2);">${system}</span>` : '';
+                const typeColors = { planet: '#00ff88', moon: '#00ccaa', station: '#ffa500', space_station: '#ffa500', gateway: '#a855f7', landing_zone: '#00c8ff', contested_zone: '#ff4444' };
+                const typeColor = typeColors[type] || '#888';
+                const typeLabel = type ? type.replace(/_/g, ' ') : '';
+                const typeBadge = typeLabel ? `<span style="background:rgba(0,0,0,0.3); padding:2px 5px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:${typeColor}; border:1px solid ${typeColor}33;">${typeLabel}</span>` : '';
+                const systemBadge = system ? `<span style="background:rgba(0,255,136,0.1); padding:2px 4px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:var(--success); border:1px solid rgba(0,255,136,0.2);">${system}</span>` : '';
 
                 return `
                         <div class="map-item" style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; border-radius:4px; transition:background 0.2s; background:rgba(0,0,0,0.1);" onmouseenter="this.style.background='rgba(255,165,0,0.1)'" onmouseleave="this.style.background='rgba(0,0,0,0.1)'">
                             <div style="overflow:hidden; flex:1;">
                                 <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
-                                <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${systemBadge}${zoneBadge}</div>
+                                <div style="color:#00ff88; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}${systemBadge}${typeBadge}</div>
                             </div>
                             <button class="cyber-btn small" onclick="event.stopPropagation(); openLocationSearch(); selectLocationForEdit('${encodeURIComponent(key)}')" style="margin-left:10px; margin:0 0 0 8px;">✏️</button>
                             <button class="cyber-btn small danger" onclick="deleteCustomLocation('${key}')" style="margin-left:5px; margin:0;">×</button>
@@ -5400,18 +5373,17 @@
         function saveNewCustomLocation() {
             const key = document.getElementById('new-loc-key').value.trim();
             const val = document.getElementById('new-loc-val').value.trim();
+            const type = document.getElementById('new-loc-type')?.value || 'station';
             const system = document.getElementById('new-loc-system').value;
-            const planet = document.getElementById('new-loc-planet').value;
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
-            // Build object if any field is not Auto
-            let finalObj = val;
-            if (system !== 'Auto' || planet !== 'Auto') {
-                finalObj = { name: val, system: system, planet: planet };
-            } else if (key.startsWith('LOCATION_')) {
-                // For numeric location IDs, store the friendly name as the planet name
-                finalObj = { name: val, planet: val, system: 'Auto' };
-            }
+            // Build object with type info
+            // Auto-detect type for numeric location IDs: they're likely planets/moons
+            const selectedType = document.getElementById('new-loc-type')?.value || 'station';
+            const finalType = key.startsWith('LOCATION_') && selectedType === 'station' ? 'moon' : selectedType;
+            let finalObj = { name: val, type: finalType, system: system !== 'Auto' ? system : '' };
+            // planet/moon → shows under Planet/Moon on the HUD
+            // station/outpost/gateway/etc. → shows under Location
 
             customLocations[key] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
@@ -5423,7 +5395,7 @@
             document.getElementById('new-loc-key').value = '';
             document.getElementById('new-loc-val').value = '';
             document.getElementById('new-loc-system').value = 'Auto';
-            document.getElementById('new-loc-planet').value = 'Auto';
+            if (document.getElementById('new-loc-type')) document.getElementById('new-loc-type').value = 'station';
             renderCustomLocationList();
         }
 
@@ -5887,7 +5859,8 @@
             document.getElementById('location-edit-original-key').value = key;
             document.getElementById('location-edit-key').value = key;
             document.getElementById('location-edit-val').value = val;
-            document.getElementById('location-edit-planet').value = planet;
+            const editTypeEl = document.getElementById('location-edit-type');
+            if (editTypeEl) editTypeEl.value = typeof valObj === 'object' ? valObj.type || 'station' : 'station';
             document.getElementById('location-edit-system').value = typeof valObj === 'object' ? valObj.system || 'Auto' : 'Auto';
             document.getElementById('location-edit-panel').style.display = 'block';
             renderLocationSearchResults(); // Re-render to show selection highlighting
@@ -5895,7 +5868,7 @@
 
         function saveLocationEdit() {
             const newVal = document.getElementById('location-edit-val').value.trim();
-            const newPlanet = document.getElementById('location-edit-planet').value;
+            const newType = document.getElementById('location-edit-type')?.value || 'station';
             const newSystem = document.getElementById('location-edit-system').value;
             const originalKey = document.getElementById('location-edit-original-key').value;
 
@@ -5910,7 +5883,7 @@
             }
 
             // Update with new value
-            const finalObj = (newPlanet === 'Auto' && newSystem === 'Auto') ? newVal : { name: newVal, planet: newPlanet, system: newSystem };
+            const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '' };
             customLocations[selectedLocationKey] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
