@@ -357,6 +357,8 @@ class NavigationParser extends BaseParser {
                 if (cleanVal && cleanVal !== this.lastLocationHint) {
                     this.lastLocationHint = cleanVal;
                     this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+                    // Also emit as NEW_LOCATION so it appears in backlog for mapping
+                    this.emit('gamestate', { type: 'NEW_LOCATION', value: cleanVal, raw: rawVal });
                 }
             }
         }
@@ -461,6 +463,7 @@ class NavigationParser extends BaseParser {
             if (cleanVal && cleanVal !== this.lastLocationHint) {
                 this.lastLocationHint = cleanVal;
                 this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+                this.emit('gamestate', { type: 'NEW_LOCATION', value: cleanVal, raw: rawVal });
                 handled = true;
             }
         }
@@ -485,6 +488,7 @@ class NavigationParser extends BaseParser {
             if (cleanVal.length > 3 && cleanVal !== this.lastLocationHint) {
                 this.lastLocationHint = cleanVal;
                 this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
+                this.emit('gamestate', { type: 'NEW_LOCATION', value: cleanVal, raw: zoneName });
                 handled = true;
             }
         }
