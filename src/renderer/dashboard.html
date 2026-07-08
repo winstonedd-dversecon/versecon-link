@@ -1661,6 +1661,20 @@
                             <button class="cyber-btn small" onclick="grabRawShip()" style="width: auto; margin: 0;">Grab</button>
                         </div>
                     </div>
+
+                    <!-- Unmapped Ship Backlog -->
+                    <div style="margin-top: 10px; padding: 10px; background: rgba(100,200,255,0.05); border: 1px solid rgba(100,200,255,0.2); border-radius: 4px;">
+                        <div style="font-size: 0.7rem; color: #64c8ff; opacity: 0.8; text-transform: uppercase; margin-bottom: 5px;">
+                            🚢 Unmapped Ship Backlog <span id="ship-backlog-count" style="color:#666; font-size:0.6rem;">(0)</span>
+                        </div>
+                        <div id="ship-backlog-list" style="max-height: 100px; overflow-y: auto; display:flex; flex-direction:column; gap:2px; font-family: monospace; font-size: 0.75rem;">
+                            <div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped ships.</div>
+                        </div>
+                        <div style="display:flex; gap:5px; margin-top:5px;">
+                            <button class="cyber-btn small" onclick="advanceShipBacklog()" style="flex:1; margin:0; font-size:0.65rem;">Next Unmapped</button>
+                            <button class="cyber-btn small" onclick="clearShipBacklog()" style="flex:1; margin:0; font-size:0.65rem; background:rgba(255,100,100,0.15); border-color:#ff4444; color:#ff4444;">Clear</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -4457,13 +4471,21 @@
                     addDashItem('🔴', `<span class="feed-highlight" style="color:var(--danger)">LEFT THE VERSE</span>`);
                     break;
                 // ═══ NEW: Unmapped Location Toast ═══
-                case 'NEW_LOCATION':
-                    addToBacklog(data.raw || data.value);
+                case 'NEW_LOCATION': {
+                    const locRaw = data.raw || data.value;
+                    addToBacklog(locRaw);
                     showNewLocationToast(data.value || data.raw, data.raw);
+                    const dashBtn = `<button class="cyber-btn small" onclick="document.getElementById('new-loc-key').value='${escapeHtml(locRaw)}'; document.getElementById('new-loc-val').focus(); switchTab('config');" style="margin:0; font-size:0.6rem; padding:1px 5px; vertical-align:middle;">📍 Map</button>`;
+                    addDashItem('📍', `New location: <span class="feed-highlight">${escapeHtml(data.value || locRaw)}</span> ${dashBtn}`);
                     break;
-                case 'NEW_SHIP':
+                }
+                case 'NEW_SHIP': {
                     if (window.updateNewShipSniffer) window.updateNewShipSniffer(data.value);
+                    const shipRaw = data.value;
+                    const dashBtn = `<button class="cyber-btn small" onclick="document.getElementById('new-ship-key').value='${escapeHtml(shipRaw)}'; document.getElementById('new-ship-val').focus(); switchTab('config');" style="margin:0; font-size:0.6rem; padding:1px 5px; vertical-align:middle;">🛸 Map</button>`;
+                    addDashItem('🛸', `New ship: <span class="feed-highlight">${escapeHtml(shipRaw)}</span> ${dashBtn}`);
                     break;
+                }
                     addDashItem('🎮', '<span class="feed-highlight" style="color:#00ff88">CONNECTED TO SERVER</span>');
                     playSound('notification');
                     break;
@@ -4914,6 +4936,21 @@
             updateBacklogUI();
         };
 
+        function getSuggestedName(raw) {
+            if (!raw) return '';
+            // Check locationNameHints
+            if (locationNameHints && locationNameHints[raw]) return locationNameHints[raw];
+            // Check custom locations
+            if (customLocations && customLocations[raw]) {
+                const v = customLocations[raw];
+                return typeof v === 'object' ? v.name : v;
+            }
+            // Generate from raw
+            let cleaned = raw.replace(/^LOCATION_/, '').replace(/^Stanton\d*_/i, '').replace(/_/g, ' ');
+            cleaned = cleaned.replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim();
+            return cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
         function updateBacklogUI() {
             const list = document.getElementById('backlog-list');
             const countEl = document.getElementById('backlog-count');
@@ -4923,13 +4960,16 @@
                 list.innerHTML = '<div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped locations — good!</div>';
                 return;
             }
-            // Show first few items
             const shown = unmappedLocationQueue.slice(0, 10);
             list.innerHTML = shown.map((item, i) => {
                 const isActive = i === 0;
+                const suggested = getSuggestedName(item);
                 return `<div style="display:flex; justify-content:space-between; align-items:center; padding:3px 4px; border-bottom:1px solid rgba(255,165,0,0.1); ${isActive ? 'background:rgba(255,165,0,0.15); border-left:2px solid var(--accent);' : ''}">
-                    <span style="${isActive ? 'color:#fff; font-weight:600;' : 'color:#aaa;'}">${escapeHtml(item)}</span>
-                    <button class="cyber-btn small" onclick="grabFromBacklog('${escapeHtml(item)}')" style="margin:0; font-size:0.6rem; padding:1px 4px;">Map</button>
+                    <div style="flex:1; overflow:hidden;">
+                        <div style="${isActive ? 'color:#fff; font-weight:600;' : 'color:#aaa;'}">${escapeHtml(item)}</div>
+                        <div style="font-size:0.65rem; color:#666;">Suggested: ${escapeHtml(suggested)}</div>
+                    </div>
+                    <button class="cyber-btn small" onclick="grabFromBacklog('${escapeHtml(item)}')" style="margin:0; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Map</button>
                 </div>`;
             }).join('');
             if (unmappedLocationQueue.length > 10) {
@@ -5138,14 +5178,13 @@
                 div.style.display = 'none';
             }
 
-            const isAtBottom = rawFeed.scrollHeight - rawFeed.clientHeight <= rawFeed.scrollTop + 50;
-            rawFeed.appendChild(div);
+            // Newest logs at top
+            rawFeed.insertBefore(div, rawFeed.firstChild);
 
             const limit = config.logLimit || 200;
             while (rawFeed.children.length > limit) {
-                rawFeed.firstElementChild.remove();
+                rawFeed.lastElementChild.remove();
             }
-            if (isAtBottom) rawFeed.scrollTop = rawFeed.scrollHeight;
         }
 
         function filterRawLogs() {
@@ -5369,6 +5408,9 @@
             let finalObj = val;
             if (system !== 'Auto' || planet !== 'Auto') {
                 finalObj = { name: val, system: system, planet: planet };
+            } else if (key.startsWith('LOCATION_')) {
+                // For numeric location IDs, store the friendly name as the planet name
+                finalObj = { name: val, planet: val, system: 'Auto' };
             }
 
             customLocations[key] = finalObj;
@@ -5507,6 +5549,11 @@
             }
 
             customShipNames[key] = val;
+            // Remove from ship backlog
+            const bIdx = unmappedShipQueue.indexOf(key);
+            if (bIdx !== -1) unmappedShipQueue.splice(bIdx, 1);
+            updateShipBacklogUI();
+
             ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
                 keyEl.value = '';
                 valEl.value = '';
@@ -5570,6 +5617,66 @@
             lastRawShip = rawName;
             const sniffer = document.getElementById('last-raw-ship');
             if (sniffer) sniffer.textContent = rawName;
+            // Add to ship backlog
+            addToShipBacklog(rawName);
+        };
+
+        // ═══ UNMAPPED SHIP BACKLOG ═══
+        window.addToShipBacklog = function(raw) {
+            if (!raw || unmappedShipQueue.includes(raw)) return;
+            if (customShipNames && customShipNames[raw]) return;
+            unmappedShipQueue.push(raw);
+            if (unmappedShipQueue.length > 50) unmappedShipQueue.shift();
+            updateShipBacklogUI();
+        };
+
+        function updateShipBacklogUI() {
+            const list = document.getElementById('ship-backlog-list');
+            const countEl = document.getElementById('ship-backlog-count');
+            if (!list) return;
+            if (countEl) countEl.textContent = `(${unmappedShipQueue.length})`;
+            if (unmappedShipQueue.length === 0) {
+                list.innerHTML = '<div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped ships.</div>';
+                return;
+            }
+            const shown = unmappedShipQueue.slice(0, 10);
+            list.innerHTML = shown.map((item, i) => {
+                const isActive = i === 0;
+                const suggested = typeof window.getCleanShipName === 'function' ? window.getCleanShipName(item) : item.replace(/_/g, ' ');
+                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:3px 4px; border-bottom:1px solid rgba(100,200,255,0.1); ${isActive ? 'background:rgba(100,200,255,0.15); border-left:2px solid #64c8ff;' : ''}">
+                    <div style="flex:1; overflow:hidden;">
+                        <div style="${isActive ? 'color:#fff; font-weight:600;' : 'color:#aaa;'}">${escapeHtml(item)}</div>
+                        <div style="font-size:0.65rem; color:#666;">Suggested: ${escapeHtml(suggested)}</div>
+                    </div>
+                    <button class="cyber-btn small" onclick="grabShipFromBacklog('${escapeHtml(item)}')" style="margin:0; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Map</button>
+                </div>`;
+            }).join('');
+            if (unmappedShipQueue.length > 10) {
+                list.innerHTML += `<div style="color:#555; font-size:0.6rem; padding:2px; text-align:center;">+ ${unmappedShipQueue.length - 10} more</div>`;
+            }
+        }
+
+        window.grabShipFromBacklog = function(raw) {
+            document.getElementById('new-ship-key').value = raw;
+            if (typeof window.getCleanShipName === 'function') {
+                document.getElementById('new-ship-val').value = window.getCleanShipName(raw);
+            }
+            document.getElementById('new-ship-val').focus();
+            // Remove from backlog
+            const idx = unmappedShipQueue.indexOf(raw);
+            if (idx !== -1) unmappedShipQueue.splice(idx, 1);
+            updateShipBacklogUI();
+        };
+
+        window.advanceShipBacklog = function() {
+            if (unmappedShipQueue.length === 0) return;
+            const current = unmappedShipQueue.shift();
+            grabShipFromBacklog(current);
+        };
+
+        window.clearShipBacklog = function() {
+            unmappedShipQueue = [];
+            updateShipBacklogUI();
         };
 
         window.exportCustomLocationsForPublic = function () {
