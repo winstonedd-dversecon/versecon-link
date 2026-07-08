@@ -1538,8 +1538,9 @@
                             <option value="contested_zone">Contested Zone</option>
                             <option value="other">Other</option>
                         </select>
-                        <select id="new-loc-system" class="modern-input" style="width:90px; font-size:0.75rem;">
-                            <option value="Auto">System</option>
+                        <input type="text" id="new-loc-parent" placeholder="On/around planet/moon" class="modern-input" style="width:100px; font-size:0.7rem; margin:0;">
+                        <select id="new-loc-system" class="modern-input" style="width:70px; font-size:0.7rem;">
+                            <option value="Auto">Sys</option>
                             <option value="Stanton">Stanton</option>
                             <option value="Pyro">Pyro</option>
                             <option value="Nyx">Nyx</option>
@@ -2472,7 +2473,8 @@
                         <option value="contested_zone">Contested Zone</option>
                         <option value="other">Other</option>
                     </select>
-                    <select id="location-edit-system" class="modern-input" style="flex:1; font-size:0.75rem; margin:0;">
+                    <input type="text" id="location-edit-parent" placeholder="On/around planet/moon" class="modern-input" style="flex:0.8; font-size:0.7rem; margin:0;">
+                    <select id="location-edit-system" class="modern-input" style="flex:0.7; font-size:0.75rem; margin:0;">
                         <option value="Auto">System</option>
                         <option value="Stanton">Stanton</option>
                         <option value="Pyro">Pyro</option>
@@ -5405,15 +5407,16 @@
             const val = document.getElementById('new-loc-val').value.trim();
             const type = document.getElementById('new-loc-type')?.value || 'station';
             const system = document.getElementById('new-loc-system').value;
+            const parentBody = document.getElementById('new-loc-parent')?.value.trim() || '';
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
             // Build object with type info
             // Auto-detect type for numeric location IDs: they're likely planets/moons
             const selectedType = document.getElementById('new-loc-type')?.value || 'station';
             const finalType = key.startsWith('LOCATION_') && selectedType === 'station' ? 'moon' : selectedType;
-            let finalObj = { name: val, type: finalType, system: system !== 'Auto' ? system : '' };
+            let finalObj = { name: val, type: finalType, system: system !== 'Auto' ? system : '', parentBody: parentBody };
             // planet/moon → shows under Planet/Moon on the HUD
-            // station/outpost/gateway/etc. → shows under Location
+            // station/outpost/gateway/etc. → shows under Location, parentBody → Planet/Moon
 
             customLocations[key] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
@@ -5426,6 +5429,7 @@
             document.getElementById('new-loc-val').value = '';
             document.getElementById('new-loc-system').value = 'Auto';
             if (document.getElementById('new-loc-type')) document.getElementById('new-loc-type').value = 'station';
+            if (document.getElementById('new-loc-parent')) document.getElementById('new-loc-parent').value = '';
             renderCustomLocationList();
         }
 
@@ -5469,7 +5473,7 @@
             if (!raw || raw === 'Unknown') return 'Unknown';
             if (typeof customLocations !== 'undefined') {
                 const matched = getCustomLocationMatch(raw, raw, customLocations);
-                if (matched) return matched.name;
+                if (matched) return typeof matched === 'object' ? matched.name : matched;
             }
             if (locationNameHints && locationNameHints[raw]) {
                 return locationNameHints[raw];
@@ -5973,6 +5977,8 @@
             document.getElementById('location-edit-val').value = val;
             const editTypeEl = document.getElementById('location-edit-type');
             if (editTypeEl) editTypeEl.value = typeof valObj === 'object' ? valObj.type || 'station' : 'station';
+            const editParentEl = document.getElementById('location-edit-parent');
+            if (editParentEl) editParentEl.value = typeof valObj === 'object' ? valObj.parentBody || '' : '';
             document.getElementById('location-edit-system').value = typeof valObj === 'object' ? valObj.system || 'Auto' : 'Auto';
             document.getElementById('location-edit-panel').style.display = 'block';
             renderLocationSearchResults(); // Re-render to show selection highlighting
@@ -5981,6 +5987,7 @@
         function saveLocationEdit() {
             const newVal = document.getElementById('location-edit-val').value.trim();
             const newType = document.getElementById('location-edit-type')?.value || 'station';
+            const newParent = document.getElementById('location-edit-parent')?.value.trim() || '';
             const newSystem = document.getElementById('location-edit-system').value;
             const originalKey = document.getElementById('location-edit-original-key').value;
 
@@ -5995,7 +6002,7 @@
             }
 
             // Update with new value
-            const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '' };
+            const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '', parentBody: newParent };
             customLocations[selectedLocationKey] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 

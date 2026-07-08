@@ -3664,29 +3664,39 @@ let afkTimer = null;
 
 function restartAfkTimer() {
     if (afkTimer) {
-        clearInterval(afkTimer);
+        clearTimeout(afkTimer);
         afkTimer = null;
     }
     if (!config.afkEnabled) return;
-    if (config.afkEnabled) {
-        const intervalMs = (config.afkInterval || 60) * 1000;
-        console.log(`[Anti-AFK] Starting timer every ${config.afkInterval}s, action: ${config.afkAction || 'jump'}`);
-        afkTimer = setInterval(() => {
-            if (!config.afkEnabled) return;
-            let key = '{SPACE}';  // default: jump
-            if (config.afkAction === 'strafe') key = 'A';
-            else if (config.afkAction === 'look') key = '{LEFT}';  // look left briefly
-            else if (config.afkAction === 'random') {
-                const actions = ['{SPACE}', 'A', 'D', 'W', 'S'];
-                key = actions[Math.floor(Math.random() * actions.length)];
-            }
-            const psCommand = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${key}')"`;
-            const { exec } = require('child_process');
-            exec(psCommand, (err) => {
-                if (err) console.error('[Anti-AFK] SendKeys error:', err.message);
-            });
-        }, intervalMs);
+    const baseIntervalMs = (config.afkInterval || 60) * 1000;
+    console.log(`[Anti-AFK] Starting timer every ${config.afkInterval}s ± random, action: ${config.afkAction || 'jump'}`);
+
+    function doAfkAction() {
+        if (!config.afkEnabled) return;
+        let key = '{SPACE}';
+        if (config.afkAction === 'strafe') key = 'A';
+        else if (config.afkAction === 'look') key = '{LEFT}';
+        else if (config.afkAction === 'random') {
+            const actions = ['{SPACE}', 'A', 'D', 'W', 'S'];
+            key = actions[Math.floor(Math.random() * actions.length)];
+        }
+        const psCommand = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${key}')"`;
+        const { exec } = require('child_process');
+        exec(psCommand, (err) => {
+            if (err) console.error('[Anti-AFK] SendKeys error:', err.message);
+        });
+        scheduleNext();
     }
+
+    function scheduleNext() {
+        if (!config.afkEnabled) return;
+        const maxExtra = Math.min(60000, Math.floor(baseIntervalMs * 0.5));
+        const randomExtra = Math.floor(Math.random() * (maxExtra + 1));
+        const actualDelay = Math.max(15000, baseIntervalMs + randomExtra);
+        afkTimer = setTimeout(doAfkAction, actualDelay);
+    }
+
+    scheduleNext();
 }
 
     app.whenReady().then(() => {
