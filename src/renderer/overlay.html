@@ -977,10 +977,22 @@
                 const system = typeof valObj === 'object' ? valObj.system || '' : '';
                 const parentBody = typeof valObj === 'object' ? valObj.parentBody || '' : '';
                 const isPlanetary = type === 'planet' || type === 'moon';
+                const isRoom = type === 'room';
 
-                if (isPlanetary) {
+                if (isRoom) {
+                    // Room: append to current location as sub-label
+                    if (locEl && parentBody) {
+                        // parentBody is the station/location this room is in
+                        locEl.dataset.raw = raw;
+                        locEl.textContent = parentBody + ' — ' + name;
+                    } else if (locEl) {
+                        locEl.textContent = name;
+                        if (raw) locEl.dataset.raw = raw;
+                    }
+                    if (systemEl && system) systemEl.textContent = system;
+                } else if (isPlanetary) {
                     // Planet/moon names go to Planet/Moon field
-                    if (planetEl && planetEl.textContent === 'Unknown') planetEl.textContent = name;
+                    if (planetEl) planetEl.textContent = name;
                     if (systemEl && system) systemEl.textContent = system;
                 } else {
                     // Station/outpost/gateway/etc. go to Location field
@@ -989,7 +1001,7 @@
                         if (raw) locEl.dataset.raw = raw;
                     }
                     // parentBody → Planet/Moon field (e.g. "Everus Harbor" is on/around "Hurston")
-                    if (parentBody && planetEl && planetEl.textContent === 'Unknown') {
+                    if (parentBody && planetEl && (planetEl.textContent === 'Unknown' || name === locEl?.textContent)) {
                         planetEl.textContent = parentBody;
                     }
                     if (systemEl && system) systemEl.textContent = system;
@@ -1511,6 +1523,14 @@
                         if (locDisplay && (locDisplay.textContent === 'Unknown' || locDisplay.textContent === 'In Transit')) {
                             locDisplay.textContent = data.value;
                         }
+                    } else if (customName && customType === 'room') {
+                        // Room: combine with current location if parentBody is set
+                        const roomParent = matched && typeof matched === 'object' ? matched.parentBody || '' : '';
+                        if (roomParent && locDisplay) {
+                            locDisplay.textContent = roomParent + ' — ' + customName;
+                        } else if (locDisplay) {
+                            locDisplay.textContent = customName;
+                        }
                     } else {
                         // Station/outpost/etc.: show in Location
                         locDisplay.textContent = customName || data.value;
@@ -1867,6 +1887,9 @@
                             if (customName && isPlanetary) {
                                 if (planetEl) planetEl.textContent = customName;
                                 locEl.textContent = currentTelemetryLocation;
+                            } else if (customName && customType === 'room') {
+                                const roomParent = matched && typeof matched === 'object' ? matched.parentBody || '' : '';
+                                locEl.textContent = roomParent ? roomParent + ' — ' + customName : customName;
                             } else {
                                 locEl.textContent = customName || currentTelemetryLocation;
                                 if (planetEl) planetEl.textContent = currentTelemetryPlanet;
