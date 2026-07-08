@@ -971,12 +971,48 @@
 
         ipcRenderer.on('settings:custom-locations-updated', (e, locations) => {
             customLocations = locations || {};
-            // If current location matches a newly-mapped raw code, update display
             const locEl = document.getElementById('val-location');
+            const planetEl = document.getElementById('val-planet');
+            const systemEl = document.getElementById('val-system');
+
+            // Check if current raw location matches a newly-mapped code
             if (locEl && locEl.dataset.raw) {
                 const matched = getCustomLocationMatch(locEl.dataset.raw, locEl.textContent, customLocations);
                 if (matched) {
-                    locEl.textContent = typeof matched === 'object' ? matched.name : matched;
+                    const name = typeof matched === 'object' ? matched.name : matched;
+                    locEl.textContent = name;
+                    // For LOCATION_* numeric IDs, also update planet/moon from the mapping
+                    if (locEl.dataset.raw.startsWith('LOCATION_')) {
+                        if (typeof matched === 'object') {
+                            if (matched.planet && matched.planet !== 'Auto' && planetEl) planetEl.textContent = matched.planet;
+                            if (matched.system && matched.system !== 'Auto' && systemEl) systemEl.textContent = matched.system;
+                        } else if (planetEl) {
+                            planetEl.textContent = name;
+                        }
+                    }
+                }
+            }
+
+            // For any LOCATION_* that hasn't been applied as a location event yet,
+            // update the HUD if the current location is still generic (e.g. "In Transit" or "Unknown")
+            if (locEl && planetEl) {
+                const currentLoc = locEl.textContent;
+                const currentPlanet = planetEl.textContent;
+                const isGeneric = currentLoc === 'Unknown' || currentLoc === 'In Transit' || currentPlanet === 'Unknown';
+                if (isGeneric) {
+                    for (const [raw, val] of Object.entries(customLocations)) {
+                        if (raw.startsWith('LOCATION_')) {
+                            const name = typeof val === 'object' ? val.name : val;
+                            locEl.textContent = name;
+                            if (typeof val === 'object') {
+                                if (val.planet && val.planet !== 'Auto' && planetEl) planetEl.textContent = val.planet;
+                                if (val.system && val.system !== 'Auto' && systemEl) systemEl.textContent = val.system;
+                            } else if (planetEl) {
+                                planetEl.textContent = name;
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         });
