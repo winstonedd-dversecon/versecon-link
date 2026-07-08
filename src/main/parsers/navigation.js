@@ -195,14 +195,28 @@ class NavigationParser extends BaseParser {
         const roomMatch = line.match(this.patterns.room_name);
         if (roomMatch) {
             const rawRoom = roomMatch[1];
-            // Only emit if value changed to prevent stuck/flood
-            if (rawRoom && rawRoom !== this.lastLocationRaw) {
-                this.lastLocationRaw = rawRoom;
-                this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
-
-                // Also emit as a LOCATION update using the cleaned name
-                const cleaned = this.cleanLocationName(rawRoom);
-                this.emitLocation(cleaned, rawRoom);
+            // For OOC room names: just track raw, don't emit location (stamina handler does it better)
+            // For other rooms: emit NEW_LOCATION toasts for stable names (not entity IDs)
+            const isOOC = rawRoom.startsWith('OOC_');
+            if (!isOOC && rawRoom !== 'Ent_RM_System_002-002') {
+                const hasEntityId = /\d{6,}$/.test(rawRoom.split('_').pop());
+                if (!hasEntityId && !rawRoom.match(/^\d+$/) && rawRoom.length > 4) {
+                    const cleaned = this.cleanLocationName(rawRoom);
+                    this.emit('gamestate', { type: 'NEW_LOCATION', value: cleaned, raw: rawRoom });
+                }
+                if (rawRoom && rawRoom !== this.lastLocationRaw) {
+                    this.lastLocationRaw = rawRoom;
+                    this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
+                    const cleaned = this.cleanLocationName(rawRoom);
+                    this.emitLocation(cleaned, rawRoom);
+                }
+            } else {
+                // OOC or system room: just track raw, don't emit location update
+                if (rawRoom && rawRoom !== this.lastLocationRaw) {
+                    this.lastLocationRaw = rawRoom;
+                    this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
+                }
+                // Don't return — let stamina_room_ooc handler process OOC names below
             }
         }
 
@@ -239,6 +253,9 @@ class NavigationParser extends BaseParser {
             const cleaned = this.cleanOOCName(rawVal);
             if (cleaned) {
                 this.emitLocation(cleaned, rawVal);
+            } else {
+                // OOC_Stanton etc. — emit as NEW_LOCATION so it can be mapped
+                this.emit('gamestate', { type: 'NEW_LOCATION', value: rawVal.replace(/_/g, ' ').replace(/^OOC /, ''), raw: rawVal });
             }
             return true;
         }
@@ -634,6 +651,31 @@ class NavigationParser extends BaseParser {
             'Stanton_PortTressler': 'Port Tressler',
             'Stanton_BaijiniPoint': 'Baijini Point',
             'Stanton_SeraphimStation': 'Seraphim Station',
+            // Rest & Relax Stations (RR_ codes from RequestLocationInventory)
+            'RR_HUR_LEO': 'Everus Harbor',
+            'RR_HUR_L1': 'HUR-L1 Faithful Dream Station',
+            'RR_HUR_L2': 'HUR-L2 Faithful Dream Station',
+            'RR_HUR_L3': 'HUR-L3',
+            'RR_HUR_L4': 'HUR-L4',
+            'RR_HUR_L5': 'HUR-L5',
+            'RR_CRU_L1': 'Port Olisar',
+            'RR_CRU_L2': 'CRU-L2',
+            'RR_CRU_L3': 'CRU-L3',
+            'RR_CRU_L4': 'CRU-L4',
+            'RR_CRU_L5': 'CRU-L5',
+            'RR_ARC_L1': 'ARC-L1',
+            'RR_ARC_L2': 'ARC-L2',
+            'RR_ARC_L3': 'ARC-L3',
+            'RR_ARC_L4': 'ARC-L4',
+            'RR_ARC_L5': 'ARC-L5',
+            'RR_MIC_L1': 'MIC-L1',
+            'RR_MIC_L2': 'MIC-L2',
+            'RR_MIC_L3': 'MIC-L3',
+            'RR_MIC_L4': 'MIC-L4',
+            'RR_MIC_L5': 'MIC-L5',
+            'RR_CRU_LEO': 'Seraphim Station',
+            'RR_ARC_LEO': 'Baijini Point',
+            'RR_MIC_LEO': 'Port Tressler',
             // Distribution Centers (3.23)
             'Stanton1_DC_Greycat_A': 'Covalex Hub G-A',
             'Stanton1_DC_Hurston_B': 'Hurston DC-B',
@@ -701,7 +743,7 @@ class NavigationParser extends BaseParser {
     cleanOOCName(raw) {
         if (!raw) return '';
 
-        // Skip the top-level "OOC_Stanton" (too vague)
+        // Skip the top-level "OOC_Stanton" (too vague) — let specific POI or last known location stand
         if (raw === 'OOC_Stanton') return null;
 
         // Common Stanton Planet Mappings (v2.10.12)

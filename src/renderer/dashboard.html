@@ -1561,6 +1561,19 @@
                         </div>
                     </div>
 
+                    <!-- Room Names Tracker (v2.11.30) -->
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(0,150,255,0.05); border: 1px dashed rgba(0,150,255,0.3); border-radius: 4px;">
+                        <div style="font-size: 0.7rem; color: #0099ff; opacity: 0.7; text-transform: uppercase; margin-bottom: 5px;">
+                            Recent Room Names
+                        </div>
+                        <div id="room-name-list" style="max-height: 100px; overflow-y: auto; display:flex; flex-direction:column; gap:3px; font-family: monospace; font-size: 0.75rem;">
+                            <div style="color:#666; font-style:italic; padding:4px; text-align:center;">Waiting for room names from log...</div>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #555; margin-top: 5px; border-top: 1px solid rgba(0,150,255,0.1); padding-top: 5px;">
+                            Room names from STAMINA logs can be mapped as custom locations. Click a room to Grab it, then add a friendly name above.
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -3664,6 +3677,7 @@
         let lastGlobalLocation = '';
         let lastRawLocation = ''; // Added for Location Sniffing
         let locationNameHints = {}; // Accumulates LOCATION_NAME_HINT events
+        let recentRoomNames = []; // Recent room names for Room Names tracker
 
         ipcRenderer.on('settings:friend-code', (e, code) => {
             const el = document.getElementById('display-friend-code');
@@ -4238,6 +4252,20 @@
                 }
             }
 
+            // Room Names Tracking
+            if (data.type === 'LOCATION_RAW') {
+                const rawVal = data.value;
+                const lowerRaw = (rawVal || '').toLowerCase();
+                // Only track stable room names (not entity IDs with large trailing numbers)
+                const hasEntityId = /\d{6,}$/.test(rawVal.split('_').pop());
+                if (!hasEntityId && !lowerRaw.includes('helmet') && !lowerRaw.includes('weapon') && !lowerRaw.includes('armor') && rawVal.length > 3 && !rawVal.match(/^\d+$/)) {
+                    if (!recentRoomNames.includes(rawVal)) {
+                        recentRoomNames.unshift(rawVal);
+                        if (recentRoomNames.length > 20) recentRoomNames.pop();
+                        updateRoomNameList();
+                    }
+                }
+            }
 
             // Raw Feed (Tail)
             addRawLogLine(data.raw || JSON.stringify(data)); // Fallback if no raw line
@@ -4773,6 +4801,40 @@
             if (sniffer) sniffer.textContent = 'None Detected';
             const container = document.getElementById('suggested-location-container');
             if (container) container.style.display = 'none';
+        };
+
+        function updateRoomNameList() {
+            const list = document.getElementById('room-name-list');
+            if (!list) return;
+            if (recentRoomNames.length === 0) {
+                list.innerHTML = '<div style="color:#666; font-style:italic; padding:4px; text-align:center;">Waiting for room names from log...</div>';
+                return;
+            }
+            list.innerHTML = recentRoomNames.map(rn => {
+                const alreadyMapped = customLocations && getCustomLocationMatch(rn, rn, customLocations);
+                const mapColor = alreadyMapped ? '#00ff88' : '#0099ff';
+                const label = alreadyMapped ? (typeof alreadyMapped === 'object' ? alreadyMapped.name : alreadyMapped) : null;
+                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:2px 4px; border-bottom:1px solid rgba(0,150,255,0.1); cursor:pointer;" onclick="grabRoomName('${escapeHtml(rn)}')" onmouseenter="this.style.background='rgba(0,150,255,0.1)'" onmouseleave="this.style.background='transparent'">
+                    <span style="color:${mapColor};">${escapeHtml(rn)}</span>
+                    <span style="font-size:0.65rem; color:#555;">${label ? '→ ' + escapeHtml(label) : 'click to map'}</span>
+                </div>`;
+            }).join('');
+        }
+
+        window.grabRoomName = function(raw) {
+            document.getElementById('new-loc-key').value = raw;
+            let suggested = raw.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim();
+            suggested = suggested.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            document.getElementById('new-loc-val').value = suggested;
+            document.getElementById('new-loc-val').focus();
+            // Highlight and scroll
+            const formContainer = document.getElementById('new-loc-key').closest('[style*="background: rgba(0,0,0,0.3)"]');
+            if (formContainer) {
+                const originalBg = formContainer.style.background;
+                formContainer.style.background = 'rgba(0, 150, 255, 0.2)';
+                formContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => formContainer.style.background = originalBg, 1000);
+            }
         };
 
 
