@@ -3515,6 +3515,7 @@ ipcMain.handle('data:apply-blueprints', async (event, acceptedNames) => {
     try {
         // Write to userData so it persists in the built .exe (app dir is read-only inside asar)
         const writableDir = path.join(app.getPath('userData'), 'data');
+        try { fs.mkdirSync(writableDir, { recursive: true }); } catch (e) {}
         const localPath = path.join(writableDir, 'blueprint-masterlist-full.json');
         const VERSION = 'LIVE-4.8.0-11825000';
         const PAGE_SIZE = 100;
@@ -3733,6 +3734,8 @@ function restartAfkTimer() {
             locations = { ...locations, ...config.customLocations };
         }
         NavigationParser.setCustomLocations(locations);
+        // Broadcast saved custom locations to overlay/dashboard so they can display mapped names
+        broadcast('settings:custom-locations-updated', config.customLocations || {});
         if (config.bodyMap) {
             NavigationParser.setBodyMap(config.bodyMap);
         }
