@@ -1503,21 +1503,30 @@
                             <option value="Nyx">Nyx</option>
                             <option value="Magnus">Magnus</option>
                         </select>
-                        <select id="new-loc-zone" class="modern-input" style="width:130px; font-size:0.75rem;">
-                            <option value="Auto">Auto Zone</option>
-                            <option value="Armistice Zone">Armistice</option>
-                            <option value="Contested Zone">Contested Zone</option>
-                            <option value="Open Space">Open Space</option>
-                            <option value="Monitored Space">Monitored</option>
-                            <option value="Unmonitored">Unmonitored</option>
-                            <option value="Restricted Area">Restricted</option>
-                            <option value="Comm Array">Comm Array</option>
-                            <option value="Landing Zone">Landing Zone</option>
-                            <option value="Space Station">Space Station</option>
-                            <option value="Facility">Facility</option>
-                            <option value="Outpost">Outpost</option>
-                            <option value="Medical Zone">Medical</option>
-                            <option value="Wormhole Transit">Wormhole</option>
+                        <select id="new-loc-planet" class="modern-input" style="width:130px; font-size:0.75rem;">
+                            <option value="Auto">Auto Planet/Moon</option>
+                            <option value="Hurston">Hurston</option>
+                            <option value="Crusader">Crusader</option>
+                            <option value="ArcCorp">ArcCorp</option>
+                            <option value="microTech">microTech</option>
+                            <option value="Ariel">Ariel</option>
+                            <option value="Aberdeen">Aberdeen</option>
+                            <option value="Ita">Ita</option>
+                            <option value="Magda">Magda</option>
+                            <option value="Cellin">Cellin</option>
+                            <option value="Daymar">Daymar</option>
+                            <option value="Yela">Yela</option>
+                            <option value="Lyria">Lyria</option>
+                            <option value="Wala">Wala</option>
+                            <option value="Calliope">Calliope</option>
+                            <option value="Clio">Clio</option>
+                            <option value="Euterpe">Euterpe</option>
+                            <option value="Pyro I">Pyro I</option>
+                            <option value="Pyro II">Pyro II</option>
+                            <option value="Pyro III">Pyro III</option>
+                            <option value="Pyro IV">Pyro IV</option>
+                            <option value="Pyro V">Pyro V</option>
+                            <option value="Pyro VI">Pyro VI</option>
                         </select>
                         <button class="cyber-btn small" onclick="saveNewCustomLocation()"
                             style="margin:0;">Save</button>
@@ -2384,21 +2393,30 @@
                         <option value="Terra">Terra</option>
                         <option value="Sol">Sol</option>
                     </select>
-                    <select id="location-edit-zone" class="modern-input" style="flex:1.5; font-size:0.75rem; margin:0;">
-                        <option value="Auto">Auto Zone</option>
-                        <option value="Armistice Zone">Armistice</option>
-                        <option value="Contested Zone">Contested Zone</option>
-                        <option value="Open Space">Open Space</option>
-                        <option value="Station">Space Station / R&R</option>
-                        <option value="Facility">Facility</option>
-                        <option value="Outpost">Outpost</option>
-                        <option value="Settlement">Settlement / Village</option>
-                        <option value="Distribution Center">Distribution Center</option>
-                        <option value="Bunker">Underground / Bunker</option>
-                        <option value="Cave">Cave / Tunnel</option>
-                        <option value="Crash Site">Crash Site / Derelict</option>
-                        <option value="Comm-Array">Comm-Array</option>
-                        <option value="Restricted Area">Restricted Area</option>
+                    <select id="location-edit-planet" class="modern-input" style="flex:1.5; font-size:0.75rem; margin:0;">
+                        <option value="Auto">Auto Planet/Moon</option>
+                        <option value="Hurston">Hurston</option>
+                        <option value="Crusader">Crusader</option>
+                        <option value="ArcCorp">ArcCorp</option>
+                        <option value="microTech">microTech</option>
+                        <option value="Ariel">Ariel</option>
+                        <option value="Aberdeen">Aberdeen</option>
+                        <option value="Ita">Ita</option>
+                        <option value="Magda">Magda</option>
+                        <option value="Cellin">Cellin</option>
+                        <option value="Daymar">Daymar</option>
+                        <option value="Yela">Yela</option>
+                        <option value="Lyria">Lyria</option>
+                        <option value="Wala">Wala</option>
+                        <option value="Calliope">Calliope</option>
+                        <option value="Clio">Clio</option>
+                        <option value="Euterpe">Euterpe</option>
+                        <option value="Pyro I">Pyro I</option>
+                        <option value="Pyro II">Pyro II</option>
+                        <option value="Pyro III">Pyro III</option>
+                        <option value="Pyro IV">Pyro IV</option>
+                        <option value="Pyro V">Pyro V</option>
+                        <option value="Pyro VI">Pyro VI</option>
                     </select>
                 </div>
                 <div style="display:flex; gap:8px;">
@@ -3336,7 +3354,8 @@
                 alert('No active Mission ID tracked. Accept a contract first.');
                 return;
             }
-            const currentName = document.getElementById('mission-title').innerText;
+            const titleEl = document.getElementById('mission-title');
+            const currentName = titleEl ? titleEl.innerText : '';
             const newName = await window.vcModal.prompt('Rename Mission', `Enter name for ID ${window.currentMissionId}:`, currentName);
 
             if (newName && newName !== currentName) {
@@ -3944,7 +3963,7 @@
                 alert('This ID is already being tracked.');
                 return;
             }
-            const customLabel = prompt(`Enter a name/label for KOS Target ID ${id}:`, label || `Target ${id.substring(Math.max(0, id.length - 6))}`);
+            const customLabel = await vcModal.prompt(`Enter a name/label for KOS Target ID ${id}:`, label || `Target ${id.substring(Math.max(0, id.length - 6))}`);
             if (customLabel === null) {
                 return;
             }
@@ -4437,8 +4456,6 @@
                 case 'SPAWN_POINT':
                     addDashItem('📍', `Spawn: <span class="feed-highlight">${data.value}</span>`);
                     break;
-
-                // ═══ PHASE 2: INDUSTRIAL ═══
                 case 'MINING':
                     if (data.subtype === 'LASER') {
                         const color = data.state === 'ON' ? '#00ff88' : '#888';
@@ -4471,11 +4488,15 @@
                     }
                     break;
 
-                // MISSION TRACKING
+                // MISSION TRACKER (New)
                 case 'MISSION_CURRENT':
-                    document.getElementById('mission-status-box').style.display = 'block';
-                    document.getElementById('mission-title').innerText = data.value;
-                    document.getElementById('mission-title').title = data.value; // Tooltip for overflow
+                    const statusBox = document.getElementById('mission-status-box');
+                    if (statusBox) statusBox.style.display = 'block';
+                    const missionTitle = document.getElementById('mission-title');
+                    if (missionTitle) {
+                        missionTitle.innerText = data.value;
+                        missionTitle.title = data.value; // Tooltip for overflow
+                    }
                     
                     const dashBanner = document.getElementById('dash-mission-banner');
                     if (dashBanner) {
@@ -4487,8 +4508,12 @@
                     addDashItem('📜', `Mission Accepted: <span class="feed-highlight">${data.value}</span>`);
                     break;
                 case 'MISSION_OBJECTIVE':
-                    document.getElementById('mission-status-box').style.display = 'block';
-                    document.getElementById('mission-objective').innerText = data.value;
+                    const statusBoxObj = document.getElementById('mission-status-box');
+                    if (statusBoxObj) statusBoxObj.style.display = 'block';
+                    const missionObj = document.getElementById('mission-objective');
+                    if (missionObj) {
+                        missionObj.innerText = data.value;
+                    }
                     
                     const dashObj = document.getElementById('dash-mission-objective');
                     if (dashObj) {
@@ -5142,13 +5167,13 @@
             const key = document.getElementById('new-loc-key').value.trim();
             const val = document.getElementById('new-loc-val').value.trim();
             const system = document.getElementById('new-loc-system').value;
-            const zone = document.getElementById('new-loc-zone').value;
+            const planet = document.getElementById('new-loc-planet').value;
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
             // Build object if any field is not Auto
             let finalObj = val;
-            if (system !== 'Auto' || zone !== 'Auto') {
-                finalObj = { name: val, system: system, zone: zone };
+            if (system !== 'Auto' || planet !== 'Auto') {
+                finalObj = { name: val, system: system, planet: planet };
             }
 
             customLocations[key] = finalObj;
@@ -5161,7 +5186,7 @@
             document.getElementById('new-loc-key').value = '';
             document.getElementById('new-loc-val').value = '';
             document.getElementById('new-loc-system').value = 'Auto';
-            document.getElementById('new-loc-zone').value = 'Auto';
+            document.getElementById('new-loc-planet').value = 'Auto';
             renderCustomLocationList();
         }
 
@@ -5553,14 +5578,14 @@
             const key = decodeURIComponent(encodedKey);
             const valObj = customLocations[key] || locationSearchCache[key]; // Fallback to cache if needed
             const val = typeof valObj === 'object' ? valObj.name : valObj;
-            const zone = typeof valObj === 'object' ? valObj.zone || 'Auto' : 'Auto';
+            const planet = typeof valObj === 'object' ? (valObj.planet || valObj.zone || 'Auto') : 'Auto';
 
             selectedLocationKey = key;
 
             document.getElementById('location-edit-original-key').value = key;
             document.getElementById('location-edit-key').value = key;
             document.getElementById('location-edit-val').value = val;
-            document.getElementById('location-edit-zone').value = typeof valObj === 'object' ? valObj.zone || 'Auto' : 'Auto';
+            document.getElementById('location-edit-planet').value = planet;
             document.getElementById('location-edit-system').value = typeof valObj === 'object' ? valObj.system || 'Auto' : 'Auto';
             document.getElementById('location-edit-panel').style.display = 'block';
             renderLocationSearchResults(); // Re-render to show selection highlighting
@@ -5568,8 +5593,9 @@
 
         function saveLocationEdit() {
             const newVal = document.getElementById('location-edit-val').value.trim();
-            const newZone = document.getElementById('location-edit-zone').value;
+            const newPlanet = document.getElementById('location-edit-planet').value;
             const newSystem = document.getElementById('location-edit-system').value;
+            const originalKey = document.getElementById('location-edit-original-key').value;
 
             if (!newVal) {
                 alert('Please enter a friendly name.');
@@ -5582,7 +5608,7 @@
             }
 
             // Update with new value
-            const finalObj = (newZone === 'Auto' && newSystem === 'Auto') ? newVal : { name: newVal, zone: newZone, system: newSystem };
+            const finalObj = (newPlanet === 'Auto' && newSystem === 'Auto') ? newVal : { name: newVal, planet: newPlanet, system: newSystem };
             customLocations[selectedLocationKey] = finalObj;
             ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
