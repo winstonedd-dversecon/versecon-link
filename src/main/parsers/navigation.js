@@ -85,7 +85,7 @@ class NavigationParser extends BaseParser {
             quantumArrivedRegex: /Quantum Drive Arrived - Arrived at Final Destination/,
             planetCellsRegex: /planet cells:\s+(\d+)\s+\[\s*\d+\]\s+meshes:\s+(\d+)\s+\[\s*\d+\]\s+name:\s+(\S+)/,
             requestLocationRegex: /RequestLocationInventory.*Location\[(.*?)\]/,
-            updateInventoryLocationRegex: /Update Inventory Location.*Location \[(\d+)\] -> \[(\d+)\]/
+            updateInventoryLocationRegex: /Update Inventory Location.*Landing \[(\d+)\] -> \[(\d+)\].*Location \[(\d+)\] -> \[(\d+)\]/
         };
         this.lastLocationHint = null;
         this.lastLocation = null;
@@ -218,12 +218,26 @@ class NavigationParser extends BaseParser {
         const invLocMatch = line.match(this.patterns.inventory_location_change);
         if (invLocMatch) {
             const player = invLocMatch[1];
-            const fromLoc = invLocMatch[2];
-            const toLoc = invLocMatch[3];
+            const landingFrom = invLocMatch[2];
+            const landingTo = invLocMatch[3];
+            const locFrom = invLocMatch[4];
+            const locTo = invLocMatch[5];
 
             // If an RSI handle is configured, verify it matches
             if (this.rsiHandle && player.toLowerCase() !== this.rsiHandle.toLowerCase()) {
                 return false;
+            }
+
+            // Emit numeric location IDs as NEW_LOCATION for mapping (e.g. Landing 308639451, Location 1902223495)
+            const numericIds = [landingFrom, landingTo, locFrom, locTo].filter(id => id && id !== '0');
+            for (const id of numericIds) {
+                const key = `LOCATION_${id}`;
+                if (!this._seenNumericLocIds) this._seenNumericLocIds = new Set();
+                if (!this._seenNumericLocIds.has(key)) {
+                    this._seenNumericLocIds.add(key);
+                    this.emit('gamestate', { type: 'NEW_LOCATION', value: `Location ID ${id}`, raw: key });
+                }
+                this.emit('gamestate', { type: 'LOCATION_RAW', value: key });
             }
 
             this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
