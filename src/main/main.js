@@ -462,6 +462,11 @@ function loadConfig() {
             if (config.clipTriggerSoftdeath === undefined) config.clipTriggerSoftdeath = false;
             if (config.clipTriggerQuantum === undefined) config.clipTriggerQuantum = false;
             
+            // Anti-AFK (v2.11.30)
+            if (config.afkEnabled === undefined) config.afkEnabled = false;
+            if (config.afkInterval === undefined) config.afkInterval = 60;
+            if (config.afkAction === undefined) config.afkAction = 'jump';
+            
             // Health Monitoring (v2.10)
             if (!config.healthZone) config.healthZone = null;
             if (config.monitorHealth === undefined) config.monitorHealth = false;
@@ -1321,6 +1326,12 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.clipTriggerFire !== undefined) config.clipTriggerFire = newConfig.clipTriggerFire;
     if (newConfig.clipTriggerSoftdeath !== undefined) config.clipTriggerSoftdeath = newConfig.clipTriggerSoftdeath;
     if (newConfig.clipTriggerQuantum !== undefined) config.clipTriggerQuantum = newConfig.clipTriggerQuantum;
+
+    // Anti-AFK Settings
+    if (newConfig.afkEnabled !== undefined) config.afkEnabled = newConfig.afkEnabled;
+    if (newConfig.afkInterval !== undefined) config.afkInterval = newConfig.afkInterval;
+    if (newConfig.afkAction !== undefined) config.afkAction = newConfig.afkAction;
+    restartAfkTimer();
 
     saveConfig();
 
@@ -3501,6 +3512,36 @@ if (!gotTheLock) {
     });
 
 
+// ═══ ANTI-AFK TIMER (v2.11.30) ═══
+let afkTimer = null;
+
+function restartAfkTimer() {
+    if (afkTimer) {
+        clearInterval(afkTimer);
+        afkTimer = null;
+    }
+    if (!config.afkEnabled) return;
+    if (config.afkEnabled) {
+        const intervalMs = (config.afkInterval || 60) * 1000;
+        console.log(`[Anti-AFK] Starting timer every ${config.afkInterval}s, action: ${config.afkAction || 'jump'}`);
+        afkTimer = setInterval(() => {
+            if (!config.afkEnabled) return;
+            let key = '{SPACE}';  // default: jump
+            if (config.afkAction === 'strafe') key = 'A';
+            else if (config.afkAction === 'look') key = '{LEFT}';  // look left briefly
+            else if (config.afkAction === 'random') {
+                const actions = ['{SPACE}', 'A', 'D', 'W', 'S'];
+                key = actions[Math.floor(Math.random() * actions.length)];
+            }
+            const psCommand = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${key}')"`;
+            const { exec } = require('child_process');
+            exec(psCommand, (err) => {
+                if (err) console.error('[Anti-AFK] SendKeys error:', err.message);
+            });
+        }, intervalMs);
+    }
+}
+
     app.whenReady().then(() => {
         loadConfig(); // Load saved config
         patternDatabase = loadPatternDB(); // Load pattern DB
@@ -3674,6 +3715,9 @@ if (!gotTheLock) {
         } catch (e) {
             console.error('[Main] Local token check failed:', e);
         }
+
+        // Start Anti-AFK timer
+        restartAfkTimer();
     });
 
     app.on('open-url', (event, url) => {

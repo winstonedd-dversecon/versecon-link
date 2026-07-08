@@ -192,31 +192,25 @@ class NavigationParser extends BaseParser {
         }
 
         // ── 0. Custom Location Map (RoomName) ──
+        // Note: RoomName events (STAMINA room stack) only emit LOCATION_RAW for the sniffer
+        // and NEW_LOCATION toasts for unmapped names. They do NOT call emitLocation to
+        // avoid overriding the specific POI from RequestLocationInventory.
         const roomMatch = line.match(this.patterns.room_name);
         if (roomMatch) {
             const rawRoom = roomMatch[1];
-            // For OOC room names: just track raw, don't emit location (stamina handler does it better)
-            // For other rooms: emit NEW_LOCATION toasts for stable names (not entity IDs)
             const isOOC = rawRoom.startsWith('OOC_');
-            if (!isOOC && rawRoom !== 'Ent_RM_System_002-002') {
-                const hasEntityId = /\d{6,}$/.test(rawRoom.split('_').pop());
-                if (!hasEntityId && !rawRoom.match(/^\d+$/) && rawRoom.length > 4) {
+            // Skip entity-ID room names (helmet IDs, etc.)
+            const hasEntityId = /\d{6,}$/.test(rawRoom.split('_').pop());
+            if (!hasEntityId && !rawRoom.match(/^\d+$/) && rawRoom.length > 4) {
+                if (!isOOC && rawRoom !== 'Ent_RM_System_002-002') {
+                    // Stable non-OOC room name — emit toast so user can map it
                     const cleaned = this.cleanLocationName(rawRoom);
                     this.emit('gamestate', { type: 'NEW_LOCATION', value: cleaned, raw: rawRoom });
                 }
-                if (rawRoom && rawRoom !== this.lastLocationRaw) {
-                    this.lastLocationRaw = rawRoom;
-                    this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
-                    const cleaned = this.cleanLocationName(rawRoom);
-                    this.emitLocation(cleaned, rawRoom);
-                }
-            } else {
-                // OOC or system room: just track raw, don't emit location update
-                if (rawRoom && rawRoom !== this.lastLocationRaw) {
+                if (rawRoom !== this.lastLocationRaw) {
                     this.lastLocationRaw = rawRoom;
                     this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
                 }
-                // Don't return — let stamina_room_ooc handler process OOC names below
             }
         }
 
@@ -252,7 +246,18 @@ class NavigationParser extends BaseParser {
             const rawVal = oocMatch[1];  // e.g. "OOC_Stanton_1_Hurston"
             const cleaned = this.cleanOOCName(rawVal);
             if (cleaned) {
-                this.emitLocation(cleaned, rawVal);
+                // Only emit planet/system metadata — don't overwrite specific POI
+                const details = this.getPlanetAndSystem(rawVal, cleaned);
+                if (details.system) {
+                    this.emit('gamestate', { type: 'SYSTEM', value: details.system });
+                }
+                if (details.planet) {
+                    this.emit('gamestate', { type: 'PLANET', value: details.planet });
+                }
+                // Only emit location update if we don't already have a specific POI
+                if (!this.specificPoi) {
+                    this.emitLocation(cleaned, rawVal);
+                }
             } else {
                 // OOC_Stanton etc. — emit as NEW_LOCATION so it can be mapped
                 this.emit('gamestate', { type: 'NEW_LOCATION', value: rawVal.replace(/_/g, ' ').replace(/^OOC /, ''), raw: rawVal });

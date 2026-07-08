@@ -620,11 +620,6 @@
                 <div class="fd-value large" id="val-system">Unknown</div>
             </div>
 
-            <div class="fd-col" id="col-zone">
-                <div class="fd-label">Zone</div>
-                <div class="fd-value" id="val-zone">---</div>
-            </div>
-
             <!-- Nearby -->
             <div class="fd-col" id="col-nearby">
                 <div class="fd-label">Nearby</div>
@@ -1453,9 +1448,17 @@
                     const matched = getCustomLocationMatch(data.raw, data.value, customLocations);
                     const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
                     
+                    let customPlanet = null;
+                    let customSystem = null;
+                    if (matched && typeof matched === 'object') {
+                        if (matched.planet && matched.planet !== 'Auto') customPlanet = matched.planet;
+                        else if (matched.zone && matched.zone !== 'Auto') customPlanet = matched.zone; // backward compatibility
+                        if (matched.system && matched.system !== 'Auto') customSystem = matched.system;
+                    }
+                    
                     locDisplay.textContent = customName || data.value;
-                    if (planetDisplay) planetDisplay.textContent = currentTelemetryPlanet;
-                    if (systemDisplay) systemDisplay.textContent = currentTelemetrySystem;
+                    if (planetDisplay) planetDisplay.textContent = customPlanet || currentTelemetryPlanet;
+                    if (systemDisplay) systemDisplay.textContent = customSystem || currentTelemetrySystem;
                     break;
 
 
@@ -1786,10 +1789,20 @@
                         if (locEl) {
                             const matched = getCustomLocationMatch(currentTelemetryLocationRaw, currentTelemetryLocation, customLocations);
                             const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
+                            let customPlanet = null;
+                            let customSystem = null;
+                            if (matched && typeof matched === 'object') {
+                                if (matched.planet && matched.planet !== 'Auto') customPlanet = matched.planet;
+                                else if (matched.zone && matched.zone !== 'Auto') customPlanet = matched.zone;
+                                if (matched.system && matched.system !== 'Auto') customSystem = matched.system;
+                            }
                             locEl.textContent = customName || currentTelemetryLocation;
+                            if (planetEl) planetEl.textContent = customPlanet || currentTelemetryPlanet;
+                            if (systemEl) systemEl.textContent = customSystem || currentTelemetrySystem;
+                        } else {
+                            if (planetEl) planetEl.textContent = currentTelemetryPlanet;
+                            if (systemEl) systemEl.textContent = currentTelemetrySystem;
                         }
-                        if (planetEl) planetEl.textContent = currentTelemetryPlanet;
-                        if (systemEl) systemEl.textContent = currentTelemetrySystem;
                         // Restore Zone info
                         const zoneEl = document.getElementById('val-zone');
                         if (zoneEl) {

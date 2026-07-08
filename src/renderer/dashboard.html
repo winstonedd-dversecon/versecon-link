@@ -1383,6 +1383,38 @@
                 </div>
             </div>
 
+            <!-- Anti-AFK (v2.11.30) -->
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">🛌 Anti-AFK</div>
+                <div style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">
+                    Periodically performs a small action to prevent being kicked for inactivity.
+                    Only activates when Star Citizen is the active window.
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #888; font-size: 0.75rem;">Enable Anti-AFK</span>
+                    <input type="checkbox" id="config-afk-enabled" onchange="saveConfig()" style="margin: 0;">
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #888; font-size: 0.75rem;">Interval (seconds)</span>
+                    <select id="config-afk-interval" class="modern-input" style="width: 100px; font-size: 0.75rem; margin: 0;" onchange="saveConfig()">
+                        <option value="30">30s</option>
+                        <option value="60" selected>60s</option>
+                        <option value="120">2 min</option>
+                        <option value="300">5 min</option>
+                        <option value="600">10 min</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="color: #888; font-size: 0.75rem;">Action</span>
+                    <select id="config-afk-action" class="modern-input" style="width: 140px; font-size: 0.75rem; margin: 0;" onchange="saveConfig()">
+                        <option value="jump">Jump (Space)</option>
+                        <option value="strafe">Strafe Left (A)</option>
+                        <option value="look">Look Around</option>
+                        <option value="random">Random</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Ship Image Manager (v2.2) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -1571,6 +1603,20 @@
                         </div>
                         <div style="font-size: 0.65rem; color: #555; margin-top: 5px; border-top: 1px solid rgba(0,150,255,0.1); padding-top: 5px;">
                             Room names from STAMINA logs can be mapped as custom locations. Click a room to Grab it, then add a friendly name above.
+                        </div>
+                    </div>
+
+                    <!-- Unmapped Locations Backlog Queue -->
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(255,165,0,0.05); border: 1px solid rgba(255,165,0,0.2); border-radius: 4px;">
+                        <div style="font-size: 0.7rem; color: var(--accent); opacity: 0.8; text-transform: uppercase; margin-bottom: 5px;">
+                            📋 Unmapped Location Backlog <span id="backlog-count" style="color:#666; font-size:0.6rem;">(0)</span>
+                        </div>
+                        <div id="backlog-list" style="max-height: 120px; overflow-y: auto; display:flex; flex-direction:column; gap:2px; font-family: monospace; font-size: 0.75rem;">
+                            <div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped locations — good!</div>
+                        </div>
+                        <div style="display:flex; gap:5px; margin-top:5px;">
+                            <button class="cyber-btn small" onclick="advanceBacklog()" style="flex:1; margin:0; font-size:0.65rem;">Next Unmapped</button>
+                            <button class="cyber-btn small" onclick="clearBacklog()" style="flex:1; margin:0; font-size:0.65rem; background:rgba(255,100,100,0.15); border-color:#ff4444; color:#ff4444;">Clear</button>
                         </div>
                     </div>
 
@@ -2640,7 +2686,10 @@
                 clipTriggerKos: document.getElementById('config-clip-trigger-kos').checked,
                 clipTriggerFire: document.getElementById('config-clip-trigger-fire').checked,
                 clipTriggerSoftdeath: document.getElementById('config-clip-trigger-softdeath').checked,
-                clipTriggerQuantum: document.getElementById('config-clip-trigger-quantum').checked
+                clipTriggerQuantum: document.getElementById('config-clip-trigger-quantum').checked,
+                afkEnabled: document.getElementById('config-afk-enabled')?.checked || false,
+                afkInterval: parseInt(document.getElementById('config-afk-interval')?.value || '60'),
+                afkAction: document.getElementById('config-afk-action')?.value || 'jump'
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
@@ -2706,6 +2755,20 @@
             if (config.clipTriggerFire !== undefined) document.getElementById('config-clip-trigger-fire').checked = config.clipTriggerFire;
             if (config.clipTriggerSoftdeath !== undefined) document.getElementById('config-clip-trigger-softdeath').checked = config.clipTriggerSoftdeath;
             if (config.clipTriggerQuantum !== undefined) document.getElementById('config-clip-trigger-quantum').checked = config.clipTriggerQuantum;
+
+            // Anti-AFK Settings
+            if (config.afkEnabled !== undefined) {
+                const el = document.getElementById('config-afk-enabled');
+                if (el) el.checked = config.afkEnabled;
+            }
+            if (config.afkInterval !== undefined) {
+                const el = document.getElementById('config-afk-interval');
+                if (el) el.value = String(config.afkInterval);
+            }
+            if (config.afkAction !== undefined) {
+                const el = document.getElementById('config-afk-action');
+                if (el) el.value = config.afkAction;
+            }
 
             // Hue Settings
             if (config.hueEnabled !== undefined) {
@@ -3678,6 +3741,9 @@
         let lastRawLocation = ''; // Added for Location Sniffing
         let locationNameHints = {}; // Accumulates LOCATION_NAME_HINT events
         let recentRoomNames = []; // Recent room names for Room Names tracker
+        let unmappedLocationQueue = []; // Backlog of unmapped locations to map
+        let unmappedShipQueue = []; // Backlog of unmapped ship names
+        let _shownLocationToasts = new Set();
 
         ipcRenderer.on('settings:friend-code', (e, code) => {
             const el = document.getElementById('display-friend-code');
@@ -4392,6 +4458,7 @@
                     break;
                 // ═══ NEW: Unmapped Location Toast ═══
                 case 'NEW_LOCATION':
+                    addToBacklog(data.raw || data.value);
                     showNewLocationToast(data.value || data.raw, data.raw);
                     break;
                 case 'NEW_SHIP':
@@ -4837,6 +4904,72 @@
             }
         };
 
+        // ═══ UNMAPPED LOCATION BACKLOG QUEUE ═══
+        window.addToBacklog = function(raw) {
+            if (!raw || unmappedLocationQueue.includes(raw)) return;
+            // Check not already custom-mapped
+            if (customLocations && getCustomLocationMatch(raw, raw, customLocations)) return;
+            unmappedLocationQueue.push(raw);
+            if (unmappedLocationQueue.length > 50) unmappedLocationQueue.shift();
+            updateBacklogUI();
+        };
+
+        function updateBacklogUI() {
+            const list = document.getElementById('backlog-list');
+            const countEl = document.getElementById('backlog-count');
+            if (!list) return;
+            if (countEl) countEl.textContent = `(${unmappedLocationQueue.length})`;
+            if (unmappedLocationQueue.length === 0) {
+                list.innerHTML = '<div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped locations — good!</div>';
+                return;
+            }
+            // Show first few items
+            const shown = unmappedLocationQueue.slice(0, 10);
+            list.innerHTML = shown.map((item, i) => {
+                const isActive = i === 0;
+                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:3px 4px; border-bottom:1px solid rgba(255,165,0,0.1); ${isActive ? 'background:rgba(255,165,0,0.15); border-left:2px solid var(--accent);' : ''}">
+                    <span style="${isActive ? 'color:#fff; font-weight:600;' : 'color:#aaa;'}">${escapeHtml(item)}</span>
+                    <button class="cyber-btn small" onclick="grabFromBacklog('${escapeHtml(item)}')" style="margin:0; font-size:0.6rem; padding:1px 4px;">Map</button>
+                </div>`;
+            }).join('');
+            if (unmappedLocationQueue.length > 10) {
+                list.innerHTML += `<div style="color:#555; font-size:0.6rem; padding:2px; text-align:center;">+ ${unmappedLocationQueue.length - 10} more</div>`;
+            }
+        }
+
+        window.grabFromBacklog = function(raw) {
+            grabRawLocation();
+            document.getElementById('new-loc-key').value = raw;
+            const nameEl = document.getElementById('suggested-location-name');
+            if (nameEl && nameEl.textContent) {
+                document.getElementById('new-loc-val').value = nameEl.textContent;
+            }
+            document.getElementById('new-loc-val').focus();
+        };
+
+        window.advanceBacklog = function() {
+            if (unmappedLocationQueue.length === 0) return;
+            const current = unmappedLocationQueue.shift();
+            grabFromBacklog(current);
+            updateBacklogUI();
+        };
+
+        window.clearBacklog = function() {
+            unmappedLocationQueue = [];
+            updateBacklogUI();
+        };
+
+        // Remove from backlog when a location is saved
+        const _origSaveLoc = saveNewCustomLocation;
+        saveNewCustomLocation = function() {
+            const key = document.getElementById('new-loc-key').value.trim();
+            if (key) {
+                const idx = unmappedLocationQueue.indexOf(key);
+                if (idx !== -1) unmappedLocationQueue.splice(idx, 1);
+                updateBacklogUI();
+            }
+            _origSaveLoc();
+        };
 
         // ═══ BUILT-IN PATTERN MANAGER (v2.2) ═══
         let defaultPatterns = {};
