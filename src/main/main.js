@@ -3432,6 +3432,153 @@ ipcMain.handle('settings:import-shipmap-dialog', async () => {
     }
 });
 
+// ═══ DATA MANAGER (v2.11.30) ═══
+const https = require('https');
+
+function fetchJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, { headers: { 'User-Agent': 'VerseCon-Link/1.0' } }, res => {
+            if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
+            const chunks = [];
+            res.on('data', c => chunks.push(c));
+            res.on('end', () => {
+                try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+                catch (e) { reject(e); }
+            });
+        }).on('error', reject);
+    });
+}
+
+ipcMain.handle('data:check-updates', async () => {
+    try {
+        const VERSION = 'LIVE-4.8.0-11825000';
+        const PAGE_SIZE = 100;
+        const API_BASE = 'https://sc-craft.tools/api/blueprints';
+
+        // Fetch blueprints
+        const first = await fetchJson(`${API_BASE}?page=1&limit=${PAGE_SIZE}&version=${VERSION}`);
+        const PAGES = 20;
+        const pagePromises = [];
+        for (let p = 2; p <= PAGES; p++) {
+            pagePromises.push(fetchJson(`${API_BASE}?page=${p}&limit=${PAGE_SIZE}&version=${VERSION}`));
+        }
+        const rest = await Promise.all(pagePromises);
+        const remoteItems = [
+            ...(first.items || []),
+            ...rest.flatMap(r => r.items || []),
+        ].filter(bp => bp.name);
+
+        // Load local data
+        const localPath = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
+        let localItems = [];
+        try {
+            if (fs.existsSync(localPath)) {
+                const localData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+                localItems = localData.masterList || [];
+            }
+        } catch (e) {
+            console.error('[Data] Failed to load local blueprints:', e.message);
+        }
+
+        // Find new items (not in local by name)
+        const localNames = new Set(localItems.map(i => i.name.toLowerCase()));
+        const newItems = remoteItems.filter(bp => !localNames.has(bp.name.toLowerCase()));
+
+        return {
+            success: true,
+            newItems: newItems.map(bp => ({
+                name: bp.name,
+                category: bp.category || 'Unknown',
+                ingredients: bp.ingredients ? bp.ingredients.length : 0,
+                missions: bp.missions ? bp.missions.length : 0
+            })),
+            totalRemote: remoteItems.length,
+            totalLocal: localItems.length,
+            version: VERSION
+        };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('data:apply-blueprints', async (event, acceptedNames) => {
+    try {
+        const localPath = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
+        const VERSION = 'LIVE-4.8.0-11825000';
+        const PAGE_SIZE = 100;
+        const API_BASE = 'https://sc-craft.tools/api/blueprints';
+
+        // Re-fetch fresh data
+        const first = await fetchJson(`${API_BASE}?page=1&limit=${PAGE_SIZE}&version=${VERSION}`);
+        const PAGES = 20;
+        const pagePromises = [];
+        for (let p = 2; p <= PAGES; p++) {
+            pagePromises.push(fetchJson(`${API_BASE}?page=${p}&limit=${PAGE_SIZE}&version=${VERSION}`));
+        }
+        const rest = await Promise.all(pagePromises);
+        const allItems = [
+            ...(first.items || []),
+            ...rest.flatMap(r => r.items || []),
+        ].filter(bp => bp.name);
+
+        const acceptedSet = new Set(acceptedNames.map(n => n.toLowerCase()));
+
+        // Simplify and filter to only accepted items
+        function simplifyCategory(cat) {
+            if (!cat) return 'Unknown';
+            if (/flightsuit/i.test(cat)) return 'Armor/Apparel';
+            if (/armour|armor/i.test(cat)) return 'Armor';
+            if (/quantum/i.test(cat)) return 'Quantum Drive';
+            if (/shield/i.test(cat)) return 'Shield';
+            if (/powerplant|power plant/i.test(cat)) return 'Powerplant';
+            if (/cooler/i.test(cat)) return 'Cooler';
+            if (/thruster/i.test(cat)) return 'Thruster';
+            if (/cannon|ballistic|laser|shotgun|rifle|pistol|smg|lmg|sniper|weapons/i.test(cat)) return 'Weapon';
+            if (/ammo|magazine|battery|rocket$/i.test(cat)) return 'Ammo';
+            if (/vehiclegear/i.test(cat)) return 'Ship Component';
+            return cat.split('/')[0].trim();
+        }
+
+        const newEntries = allItems
+            .filter(bp => acceptedSet.has(bp.name.toLowerCase()))
+            .map(bp => ({
+                name: bp.name,
+                category: simplifyCategory(bp.category),
+                source: '',
+                ingredients: bp.ingredients ? bp.ingredients.map(ing => ({ name: ing.name, quantity: ing.quantity_scu })) : []
+            }));
+
+        // Load existing, merge, save
+        let existing = [];
+        try {
+            if (fs.existsSync(localPath)) {
+                existing = JSON.parse(fs.readFileSync(localPath, 'utf8')).masterList || [];
+            }
+        } catch (e) {}
+
+        const allNames = new Set(existing.map(i => i.name.toLowerCase()));
+        for (const entry of newEntries) {
+            if (!allNames.has(entry.name.toLowerCase())) {
+                existing.push(entry);
+                allNames.add(entry.name.toLowerCase());
+            }
+        }
+        existing.sort((a, b) => a.name.localeCompare(b.name));
+
+        const output = {
+            _generated: new Date().toISOString(),
+            _source: 'sc-craft.tools API',
+            _version: VERSION,
+            _count: existing.length,
+            masterList: existing,
+        };
+        fs.writeFileSync(localPath, JSON.stringify(output, null, 2), 'utf8');
+        return { success: true, count: newEntries.length };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
 // ═══════════════════════════════════════════════════════
 // APP LIFECYCLE
 // ═══════════════════════════════════════════════════════

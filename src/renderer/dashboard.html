@@ -1663,6 +1663,26 @@
                 </div>
             </div>
 
+            <!-- Data Manager (v2.11.30) -->
+            <div style="background: rgba(0,200,255,0.08); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,200,255,0.3); margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0;">📦 Data Manager</div>
+                <div style="font-size: 0.7rem; color: #888; margin-bottom: 10px;">
+                    Fetch latest blueprints, items, and components from sc-craft.tools. New items are shown for review before adding.
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                    <button class="cyber-btn" id="btn-check-updates" onclick="checkDataUpdates()"
+                        style="margin:0;">🔍 Check for Updates</button>
+                    <span id="data-status" style="font-size:0.75rem; color:#888;">Ready</span>
+                </div>
+                <div id="data-diff-container" style="display:none; max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.3); border:1px solid rgba(0,200,255,0.2); border-radius:4px; padding:10px; margin-bottom:10px;">
+                    <div style="font-size:0.75rem; color:#00c8ff; margin-bottom:8px;">
+                        New items available: <span id="data-new-count">0</span>
+                        <button class="cyber-btn small success" onclick="applySelectedUpdates()" style="float:right; margin:0; font-size:0.6rem;">Accept All</button>
+                    </div>
+                    <div id="data-diff-list"></div>
+                </div>
+            </div>
+
             <!-- Remote Access (v2.9) -->
             <div
                 style="background: rgba(170,100,255,0.1); padding: 15px; border-radius: 8px; border: 1px solid #aa64ff; margin-bottom: 15px;">
@@ -4901,10 +4921,10 @@
 
         // ═══ UNMAPPED LOCATION BACKLOG QUEUE ═══
         window.addToBacklog = function(raw) {
-            if (!raw || unmappedLocationQueue.includes(raw)) return;
+            if (!raw || unmappedLocationQueue.some(e => e.raw === raw)) return;
             // Check not already custom-mapped
             if (customLocations && getCustomLocationMatch(raw, raw, customLocations)) return;
-            unmappedLocationQueue.push(raw);
+            unmappedLocationQueue.push({ raw, time: Date.now() });
             if (unmappedLocationQueue.length > 50) unmappedLocationQueue.shift();
             updateBacklogUI();
         };
@@ -4924,6 +4944,12 @@
             return cleaned.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
 
+        function formatTime(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
         function updateBacklogUI() {
             const list = document.getElementById('backlog-list');
             const countEl = document.getElementById('backlog-count');
@@ -4934,15 +4960,18 @@
                 return;
             }
             const shown = unmappedLocationQueue.slice(0, 10);
-            list.innerHTML = shown.map((item, i) => {
+            list.innerHTML = shown.map((entry, i) => {
+                const raw = entry.raw || entry;
+                const ts = entry.time;
                 const isActive = i === 0;
-                const suggested = getSuggestedName(item);
+                const suggested = getSuggestedName(raw);
+                const timeStr = ts ? formatTime(ts) : '';
                 return `<div style="display:flex; justify-content:space-between; align-items:center; padding:3px 4px; border-bottom:1px solid rgba(255,165,0,0.1); ${isActive ? 'background:rgba(255,165,0,0.15); border-left:2px solid var(--accent);' : ''}">
                     <div style="flex:1; overflow:hidden;">
-                        <div style="${isActive ? 'color:#fff; font-weight:600;' : 'color:#aaa;'}">${escapeHtml(item)}</div>
-                        <div style="font-size:0.65rem; color:#666;">Suggested: ${escapeHtml(suggested)}</div>
+                        <div style="${isActive ? 'color:#fff; font-weight:600;' : 'color:#aaa;'}">${escapeHtml(raw)}</div>
+                        <div style="font-size:0.65rem; color:#666;">Suggested: ${escapeHtml(suggested)}${timeStr ? ' <span style="color:#555;">· ' + timeStr + '</span>' : ''}</div>
                     </div>
-                    <button class="cyber-btn small" onclick="grabFromBacklog('${escapeHtml(item)}')" style="margin:0; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Map</button>
+                    <button class="cyber-btn small" onclick="grabFromBacklog('${escapeHtml(raw)}')" style="margin:0; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Map</button>
                 </div>`;
             }).join('');
             if (unmappedLocationQueue.length > 10) {
@@ -4962,8 +4991,9 @@
 
         window.advanceBacklog = function() {
             if (unmappedLocationQueue.length === 0) return;
-            const current = unmappedLocationQueue.shift();
-            grabFromBacklog(current);
+            const entry = unmappedLocationQueue.shift();
+            const raw = entry.raw || entry;
+            grabFromBacklog(raw);
             updateBacklogUI();
         };
 
@@ -4977,7 +5007,7 @@
         saveNewCustomLocation = function() {
             const key = document.getElementById('new-loc-key').value.trim();
             if (key) {
-                const idx = unmappedLocationQueue.indexOf(key);
+                const idx = unmappedLocationQueue.findIndex(e => (e.raw || e) === key);
                 if (idx !== -1) unmappedLocationQueue.splice(idx, 1);
                 updateBacklogUI();
             }
@@ -5503,11 +5533,25 @@
                                 <div style="font-family:monospace; color:var(--accent); font-size:0.8rem; font-weight:600;">${escapeHtml(key)}</div>
                                 <div style="color:#00c8ff; font-size:0.75rem; margin-top:2px;">➔ ${escapeHtml(name)}</div>
                             </div>
-                            <button class="cyber-btn small danger" onclick="removeCustomShip('${escapeHtml(key)}')" style="margin-left:10px; margin:0 0 0 8px; padding:2px 8px;">×</button>
+                            <div style="display:flex; gap:4px;">
+                                <button class="cyber-btn small" onclick="editCustomShip('${escapeHtml(key)}')" style="margin:0; padding:2px 6px;">✏️</button>
+                                <button class="cyber-btn small danger" onclick="removeCustomShip('${escapeHtml(key)}')" style="margin:0; padding:2px 6px;">×</button>
+                            </div>
                         </div>
                 `;
             }).join('');
         }
+
+        window.editCustomShip = async function(key) {
+            const currentName = customShipNames[key] || '';
+            const newName = await vcModal.prompt('Edit Ship Name', `Enter new friendly name for "${key}":`, currentName);
+            if (newName === null || newName.trim() === '') return;
+            customShipNames[key] = newName.trim();
+            ipcRenderer.invoke('settings:save-custom-shipnames', customShipNames).then(() => {
+                loadCustomShipList();
+                addDashItem('✏️', `Updated ship name: <span class="feed-highlight">${escapeHtml(key)}</span> → <span style="color:#00c8ff;">${escapeHtml(newName.trim())}</span>`);
+            });
+        };
 
         window.saveNewCustomShip = function() {
             const keyEl = document.getElementById('new-ship-key');
@@ -5649,6 +5693,74 @@
         window.clearShipBacklog = function() {
             unmappedShipQueue = [];
             updateShipBacklogUI();
+        };
+
+        // ═══ DATA MANAGER ═══
+        let pendingNewItems = [];
+
+        window.checkDataUpdates = async function() {
+            const btn = document.getElementById('btn-check-updates');
+            const status = document.getElementById('data-status');
+            if (btn) btn.textContent = '⏳ Fetching...';
+            if (status) status.textContent = 'Connecting to sc-craft.tools...';
+            try {
+                const result = await ipcRenderer.invoke('data:check-updates');
+                if (result.success) {
+                    pendingNewItems = result.newItems || [];
+                    const container = document.getElementById('data-diff-container');
+                    const countEl = document.getElementById('data-new-count');
+                    const list = document.getElementById('data-diff-list');
+                    if (countEl) countEl.textContent = pendingNewItems.length;
+                    if (list) {
+                        if (pendingNewItems.length === 0) {
+                            list.innerHTML = '<div style="color:#666; padding:10px; text-align:center;">✓ All items up to date!</div>';
+                        } else {
+                            list.innerHTML = pendingNewItems.map((item, i) => `
+                                <div style="display:flex; align-items:center; gap:8px; padding:6px 4px; border-bottom:1px solid rgba(0,200,255,0.1);">
+                                    <input type="checkbox" id="data-accept-${i}" checked style="margin:0;">
+                                    <div style="flex:1;">
+                                        <div style="color:#fff; font-size:0.8rem;">${escapeHtml(item.name)}</div>
+                                        <div style="color:#888; font-size:0.65rem;">${escapeHtml(item.category || 'Unknown')} — ${item.ingredients} ingredients</div>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                    if (container) container.style.display = 'block';
+                    if (status) status.textContent = `${result.totalRemote} remote items, ${result.newItems.length} new`;
+                } else {
+                    if (status) status.textContent = '❌ ' + (result.error || 'Failed to fetch');
+                }
+            } catch (e) {
+                if (status) status.textContent = '❌ ' + e.message;
+            }
+            if (btn) btn.textContent = '🔍 Check for Updates';
+        };
+
+        window.applySelectedUpdates = async function() {
+            const status = document.getElementById('data-status');
+            const accepted = [];
+            pendingNewItems.forEach((item, i) => {
+                const cb = document.getElementById(`data-accept-${i}`);
+                if (cb && cb.checked) accepted.push(item.name);
+            });
+            if (accepted.length === 0) {
+                if (status) status.textContent = 'No items selected.';
+                return;
+            }
+            if (status) status.textContent = `Applying ${accepted.length} items...`;
+            try {
+                const result = await ipcRenderer.invoke('data:apply-blueprints', accepted);
+                if (result.success) {
+                    if (status) status.textContent = `✅ ${result.count} items added to local database.`;
+                    pendingNewItems = [];
+                    document.getElementById('data-diff-container').style.display = 'none';
+                } else {
+                    if (status) status.textContent = '❌ ' + (result.error || 'Apply failed');
+                }
+            } catch (e) {
+                if (status) status.textContent = '❌ ' + e.message;
+            }
         };
 
         window.exportCustomLocationsForPublic = function () {
