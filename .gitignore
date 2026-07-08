@@ -8,3 +8,4 @@ Game.log
 *.log
 .DS_Store
 thumbs.db
+*.exe
