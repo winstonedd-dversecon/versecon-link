@@ -1176,19 +1176,6 @@ ipcMain.on('mission:rename', (event, { id, name }) => {
     }
 });
 
-// Unknown log management
-ipcMain.on('log:ignore-unknown', (event, key) => {
-    LogWatcher.ignoreUnknownPattern(key);
-});
-
-ipcMain.on('log:clear-unknowns', () => {
-    LogWatcher.clearUnknowns();
-});
-
-ipcMain.on('log:request-unknowns', () => {
-    LogWatcher.emitUnknowns();
-});
-
 // Custom Locations
 const NavigationParser = require('./parsers/navigation');
 // Initialize with config - NOW MOVED INTO app.whenReady() for proper timing
@@ -1667,6 +1654,17 @@ LogWatcher.on('gamestate', (data) => {
     // ═════ FRIEND SHARING (Phase 5) ═══
     if (data.type === 'LOCATION' && config.shareLocation) {
         APIClient.updateLocation(data);
+    }
+
+    // Persistent location history logging
+    if (data.type === 'LOCATION' && data.value) {
+        try {
+            const logLine = `[${new Date().toISOString()}] System: ${data.system || 'Unknown'} | Planet/Moon: ${data.planet || 'Unknown'} | Location: ${data.value} | Raw: ${data.raw || 'N/A'}\n`;
+            const logFile = path.join(app.getPath('userData'), 'location-history.log');
+            fs.appendFileSync(logFile, logLine, 'utf-8');
+        } catch (err) {
+            console.error('[Main] Failed to write location history:', err);
+        }
     }
 
     // Handle options: quantumExitsOnly and suppressMassQuantumAlerts

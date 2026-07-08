@@ -1,6 +1,6 @@
 {
   "name": "versecon-link",
-  "version": "2.11.28",
+  "version": "2.11.29",
   "description": "Star Citizen Log Reader & Overlay Controller for VerseCon",
   "main": "src/main/main.js",
   "scripts": {
@@ -20,14 +20,11 @@
   },
   "dependencies": {
     "axios": "^1.6.5",
-    "chokidar": "^3.5.3",
     "electron-updater": "^6.1.7",
     "express": "^4.22.1",
     "nat-upnp": "^1.1.1",
-    "obs-websocket-js": "^5.0.5",
     "screenshot-desktop": "^1.15.3",
     "socket.io-client": "^4.7.4",
-    "tail": "^2.2.6",
     "tesseract.js": "^7.0.0",
     "ws": "^8.19.0"
   },
@@ -36,6 +33,11 @@
     "productName": "VerseCon Link",
     "asarUnpack": [
       "node_modules/screenshot-desktop"
+    ],
+    "files": [
+      "**/*",
+      "!VerseCon-Link-*.exe",
+      "!dist"
     ],
     "publish": {
       "provider": "github",
