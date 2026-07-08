@@ -3468,20 +3468,24 @@ ipcMain.handle('data:check-updates', async () => {
             ...rest.flatMap(r => r.items || []),
         ].filter(bp => bp.name);
 
-        // Load local data
-        const localPath = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
-        let localItems = [];
+        // Load local data from BOTH master and seed files
+        const masterPath = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
+        const seedPath = path.join(__dirname, '..', '..', 'data', 'blueprints.json');
+        let localNames = new Set();
         try {
-            if (fs.existsSync(localPath)) {
-                const localData = JSON.parse(fs.readFileSync(localPath, 'utf8'));
-                localItems = localData.masterList || [];
+            if (fs.existsSync(masterPath)) {
+                const d = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+                (d.masterList || []).forEach(i => localNames.add(i.name.toLowerCase()));
+            }
+            if (fs.existsSync(seedPath)) {
+                const d = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+                (d.masterList || []).forEach(i => localNames.add(i.name.toLowerCase()));
             }
         } catch (e) {
             console.error('[Data] Failed to load local blueprints:', e.message);
         }
 
         // Find new items (not in local by name)
-        const localNames = new Set(localItems.map(i => i.name.toLowerCase()));
         const newItems = remoteItems.filter(bp => !localNames.has(bp.name.toLowerCase()));
 
         return {

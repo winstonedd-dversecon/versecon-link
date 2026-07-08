@@ -909,6 +909,7 @@
         // ═══ CUSTOM LOCATION SYNC ═══
         // When custom locations are saved in dashboard, update overlay display instantly
         let customLocations = {};
+        let isInQuantum = false;
         let locationNameHints = {}; // Accumulates LOCATION_NAME_HINT events
 
         function getCustomLocationMatch(rawName, cleanedName, customLocs) {
@@ -1854,6 +1855,7 @@
                 case 'QUANTUM':
                     addFeedEntry('🌌', `Quantum ${data.value}`);
                     if (data.value === 'entered') {
+                        isInQuantum = true;
                         // Clear proximity feed
                         const list = document.getElementById('tactical-feed-list');
                         if (list) {
@@ -1864,17 +1866,18 @@
                         updateNearbyUI();
                         const countEl = document.getElementById('prox-count');
                         if (countEl) countEl.textContent = '[0]';
-                        // Update HUD Location info
-                        const locEl = document.getElementById('val-location');
-                        if (locEl) locEl.textContent = 'IN QUANTUM';
-                        const zoneEl = document.getElementById('val-zone');
-                        if (zoneEl) {
-                            zoneEl.textContent = 'TRANSIT';
-                            zoneEl.style.color = 'var(--cyan)';
+                        // Add quantum badge to location instead of overwriting
+                        const qlEl = document.getElementById('val-location');
+                        if (qlEl && !qlEl.textContent.includes('🚀')) {
+                            qlEl.textContent = '🚀 ' + qlEl.textContent;
                         }
                     } else if (data.value === 'exited' || data.value === 'arrived') {
-                        // Restore HUD Location info
+                        isInQuantum = false;
+                        // Restore HUD Location info — remove quantum badge
                         const locEl = document.getElementById('val-location');
+                        if (locEl && locEl.textContent.startsWith('🚀 ')) {
+                            locEl.textContent = locEl.textContent.replace(/^🚀 /, '');
+                        }
                         const planetEl = document.getElementById('val-planet');
                         const systemEl = document.getElementById('val-system');
                         if (locEl) {

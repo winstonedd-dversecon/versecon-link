@@ -1528,15 +1528,23 @@
                         <span style="color:#666;">➔</span>
                         <input type="text" id="new-loc-val" placeholder="Friendly Name" class="modern-input"
                             style="flex:1; min-width:120px;">
-                        <select id="new-loc-type" class="modern-input" style="width:110px; font-size:0.75rem;">
+                        <select id="new-loc-type" class="modern-input" style="width:115px; font-size:0.75rem;">
                             <option value="station">Station / Outpost</option>
                             <option value="room">Room (Interior)</option>
                             <option value="planet">Planet</option>
                             <option value="moon">Moon</option>
                             <option value="space_station">Space Station</option>
+                            <option value="asteroid_station">Asteroid Station</option>
+                            <option value="city">City / Landing Zone</option>
+                            <option value="settlement">Settlement</option>
+                            <option value="bunker">Bunker</option>
+                            <option value="cave">Cave</option>
+                            <option value="outpost">Outpost</option>
+                            <option value="distro_center">Distribution Center</option>
                             <option value="gateway">Gateway / Jump Point</option>
-                            <option value="landing_zone">Landing Zone (City)</option>
+                            <option value="wreck">Ship Wreck</option>
                             <option value="contested_zone">Contested Zone</option>
+                            <option value="poi">Point of Interest</option>
                             <option value="other">Other</option>
                         </select>
                         <input type="text" id="new-loc-parent" placeholder="Inside/around" class="modern-input" style="width:90px; font-size:0.7rem; margin:0;">
@@ -2470,9 +2478,17 @@
                         <option value="planet">Planet</option>
                         <option value="moon">Moon</option>
                         <option value="space_station">Space Station</option>
+                        <option value="asteroid_station">Asteroid Station</option>
+                        <option value="city">City / Landing Zone</option>
+                        <option value="settlement">Settlement</option>
+                        <option value="bunker">Bunker</option>
+                        <option value="cave">Cave</option>
+                        <option value="outpost">Outpost</option>
+                        <option value="distro_center">Distribution Center</option>
                         <option value="gateway">Gateway / Jump Point</option>
-                        <option value="landing_zone">Landing Zone (City)</option>
+                        <option value="wreck">Ship Wreck</option>
                         <option value="contested_zone">Contested Zone</option>
+                        <option value="poi">Point of Interest</option>
                         <option value="other">Other</option>
                     </select>
                     <input type="text" id="location-edit-parent" placeholder="Inside/around" class="modern-input" style="flex:0.8; font-size:0.7rem; margin:0;">
@@ -3950,7 +3966,9 @@
                 }
                 
                 const displayShip = s.rawShip ? getDisplayShip(s.rawShip) : 'Unknown Ship';
-                const displayLoc = s.rawLocation ? getDisplayLocation(s.rawLocation) : 'Unknown Location';
+                const rawLoc = s.rawLocation || '';
+                const displayLoc = (rawLoc && !rawLoc.toLowerCase().includes('quantum') && !rawLoc.toLowerCase().includes('transit') && rawLoc !== 'QuantumTravel')
+                    ? getDisplayLocation(rawLoc) : '';
                 const formattedTime = new Date(s.timestamp).toLocaleString();
 
                 return `
