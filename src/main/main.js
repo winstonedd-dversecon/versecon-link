@@ -2302,9 +2302,19 @@ ipcMain.handle('settings:get-custom-locations', async () => {
 });
 
 ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
-    console.log('[Main] Saving custom locations:', locations);
+    const locCount = Object.keys(locations).length;
+    const sample = Object.entries(locations).slice(0, 2).map(([k,v]) => `${k}=${typeof v === 'object' ? v.name : v}`);
+    console.log(`[Main] Saving ${locCount} custom locations, sample:`, sample);
     config.customLocations = locations;
     saveConfig();
+    // Verify save
+    try {
+        const verify = JSON.parse(require('fs').readFileSync(CONFIG_PATH, 'utf-8'));
+        const savedCount = Object.keys(verify.customLocations || {}).length;
+        console.log(`[Main] Verified ${savedCount} custom locations saved to config`);
+    } catch (e) {
+        console.error('[Main] Verify save failed:', e.message);
+    }
     
     // Merge with bundled locations to keep navigation parser up-to-date locally
     let merged = {};
