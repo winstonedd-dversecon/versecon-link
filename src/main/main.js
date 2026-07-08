@@ -3468,11 +3468,17 @@ ipcMain.handle('data:check-updates', async () => {
             ...rest.flatMap(r => r.items || []),
         ].filter(bp => bp.name);
 
-        // Load local data from BOTH master and seed files
+        // Load local data from BOTH master, user, and seed files
         const masterPath = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
+        const userMasterPath = path.join(app.getPath('userData'), 'data', 'blueprint-masterlist-full.json');
         const seedPath = path.join(__dirname, '..', '..', 'data', 'blueprints.json');
         let localNames = new Set();
         try {
+            // Check user's writable list first (from data:apply-blueprints)
+            if (fs.existsSync(userMasterPath)) {
+                const d = JSON.parse(fs.readFileSync(userMasterPath, 'utf8'));
+                (d.masterList || []).forEach(i => localNames.add(i.name.toLowerCase()));
+            }
             if (fs.existsSync(masterPath)) {
                 const d = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
                 (d.masterList || []).forEach(i => localNames.add(i.name.toLowerCase()));
@@ -3507,7 +3513,9 @@ ipcMain.handle('data:check-updates', async () => {
 
 ipcMain.handle('data:apply-blueprints', async (event, acceptedNames) => {
     try {
-        const localPath = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
+        // Write to userData so it persists in the built .exe (app dir is read-only inside asar)
+        const writableDir = path.join(app.getPath('userData'), 'data');
+        const localPath = path.join(writableDir, 'blueprint-masterlist-full.json');
         const VERSION = 'LIVE-4.8.0-11825000';
         const PAGE_SIZE = 100;
         const API_BASE = 'https://sc-craft.tools/api/blueprints';
@@ -4157,6 +4165,8 @@ LogWatcher.start = function(filePath) {
 function loadBlueprintData() {
     // Priority 1: full list fetched from sc-craft.tools (run: npm run update-blueprints)
     const fullListFile = path.join(__dirname, '..', '..', 'data', 'blueprint-masterlist-full.json');
+    // Priority 1b: user's downloaded blueprint list (writable, from data:apply-blueprints)
+    const userFullList = path.join(app.getPath('userData'), 'data', 'blueprint-masterlist-full.json');
     // Priority 2: hand-curated seed bundled with the app
     const seedFile     = path.join(__dirname, '..', '..', 'data', 'blueprints.json');
 
@@ -4168,6 +4178,18 @@ function loadBlueprintData() {
         if (fs.existsSync(fullListFile)) {
             const full = JSON.parse(fs.readFileSync(fullListFile, 'utf8'));
             fullList = full.masterList || [];
+        }
+        // Also load user's downloaded list (writable directory)
+        if (fs.existsSync(userFullList)) {
+            try {
+                const userData = JSON.parse(fs.readFileSync(userFullList, 'utf8'));
+                if (userData.masterList && userData.masterList.length > 0) {
+                    // User list takes priority over app-bundled full list
+                    fullList = userData.masterList;
+                }
+            } catch (e) {
+                console.warn('[Blueprint] Failed to load user blueprint list:', e.message);
+            }
         }
         if (fs.existsSync(seedFile)) {
             const seed = JSON.parse(fs.readFileSync(seedFile, 'utf8'));
