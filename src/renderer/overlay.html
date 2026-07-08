@@ -1016,15 +1016,17 @@
                 }
             }
 
-            // If current HUD state is generic, look for any LOCATION_* mapping to fill in
-            if (locEl && planetEl) {
-                const currentLoc = locEl.textContent;
-                const currentPlanet = planetEl.textContent;
-                const isGeneric = currentLoc === 'Unknown' || currentLoc === 'In Transit' || currentPlanet === 'Unknown';
-                if (isGeneric) {
-                    for (const [raw, val] of Object.entries(customLocations)) {
-                        if (raw.startsWith('LOCATION_')) {
-                            applyMapping(raw, val);
+            // If HUD Planet/Moon is Unknown, look for any planet/moon-type LOCATION_* mapping
+            // Only applies to Planet/Moon field — never overwrites Location with a numeric ID
+            if (planetEl && planetEl.textContent === 'Unknown') {
+                for (const [raw, val] of Object.entries(customLocations)) {
+                    if (raw.startsWith('LOCATION_')) {
+                        const v = typeof val === 'object' ? val : null;
+                        const type = v ? v.type || 'station' : 'station';
+                        if (type === 'planet' || type === 'moon') {
+                            const name = v ? v.name : (typeof val === 'string' ? val : '');
+                            if (name) planetEl.textContent = name;
+                            if (v && v.system && systemEl) systemEl.textContent = v.system;
                             break;
                         }
                     }

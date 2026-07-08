@@ -35,9 +35,14 @@
       "node_modules/screenshot-desktop"
     ],
     "files": [
-      "**/*",
-      "!VerseCon-Link-*.exe",
-      "!dist"
+      "src/**/*",
+      "data/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "scripts/**/*",
+      "package.json",
+      "package-lock.json",
+      "!src/**/*.test.js"
     ],
     "publish": {
       "provider": "github",
