@@ -1547,7 +1547,36 @@
                             <option value="poi">Point of Interest</option>
                             <option value="other">Other</option>
                         </select>
-                        <input type="text" id="new-loc-parent" placeholder="Inside/around" class="modern-input" style="width:90px; font-size:0.7rem; margin:0;">
+                        <select id="new-loc-parent" class="modern-input" style="width:95px; font-size:0.7rem; margin:0;">
+                            <option value="">No planet/moon</option>
+                            <option value="Hurston">Hurston</option>
+                            <option value="Crusader">Crusader</option>
+                            <option value="ArcCorp">ArcCorp</option>
+                            <option value="microTech">microTech</option>
+                            <option value="Ariel">Ariel</option>
+                            <option value="Aberdeen">Aberdeen</option>
+                            <option value="Ita">Ita</option>
+                            <option value="Magda">Magda</option>
+                            <option value="Cellin">Cellin</option>
+                            <option value="Daymar">Daymar</option>
+                            <option value="Yela">Yela</option>
+                            <option value="Lyria">Lyria</option>
+                            <option value="Wala">Wala</option>
+                            <option value="Calliope">Calliope</option>
+                            <option value="Clio">Clio</option>
+                            <option value="Euterpe">Euterpe</option>
+                            <option value="Pyro I">Pyro I</option>
+                            <option value="Pyro II">Pyro II</option>
+                            <option value="Pyro III">Pyro III</option>
+                            <option value="Pyro IV">Pyro IV</option>
+                            <option value="Pyro V">Pyro V</option>
+                            <option value="Pyro VI">Pyro VI</option>
+                        </select>
+                        <select id="new-loc-orbit" class="modern-input" style="width:70px; font-size:0.65rem; margin:0;">
+                            <option value="on">On</option>
+                            <option value="orbiting">Orbiting</option>
+                            <option value="around">Around</option>
+                        </select>
                         <select id="new-loc-system" class="modern-input" style="width:70px; font-size:0.7rem;">
                             <option value="Auto">Sys</option>
                             <option value="Stanton">Stanton</option>
@@ -1679,9 +1708,12 @@
                 <div style="font-size: 0.7rem; color: #888; margin-bottom: 10px;">
                     Fetch latest blueprints, items, and components from sc-craft.tools. New items are shown for review before adding.
                 </div>
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
                     <button class="cyber-btn" id="btn-check-updates" onclick="checkDataUpdates()"
                         style="margin:0;">🔍 Check for Updates</button>
+                    <label style="font-size:0.7rem; color:#888; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                        <input type="checkbox" id="data-blueprint-only" checked> Blueprints only (hide store items)
+                    </label>
                     <span id="data-status" style="font-size:0.75rem; color:#888;">Ready</span>
                 </div>
                 <div id="data-diff-container" style="display:none; max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.3); border:1px solid rgba(0,200,255,0.2); border-radius:4px; padding:10px; margin-bottom:10px;">
@@ -2491,7 +2523,36 @@
                         <option value="poi">Point of Interest</option>
                         <option value="other">Other</option>
                     </select>
-                    <input type="text" id="location-edit-parent" placeholder="Inside/around" class="modern-input" style="flex:0.8; font-size:0.7rem; margin:0;">
+                    <select id="location-edit-parent" style="flex:0.8; font-size:0.7rem; margin:0; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 6px; color:#ccc;">
+                        <option value="">No planet/moon</option>
+                        <option value="Hurston">Hurston</option>
+                        <option value="Crusader">Crusader</option>
+                        <option value="ArcCorp">ArcCorp</option>
+                        <option value="microTech">microTech</option>
+                        <option value="Ariel">Ariel</option>
+                        <option value="Aberdeen">Aberdeen</option>
+                        <option value="Ita">Ita</option>
+                        <option value="Magda">Magda</option>
+                        <option value="Cellin">Cellin</option>
+                        <option value="Daymar">Daymar</option>
+                        <option value="Yela">Yela</option>
+                        <option value="Lyria">Lyria</option>
+                        <option value="Wala">Wala</option>
+                        <option value="Calliope">Calliope</option>
+                        <option value="Clio">Clio</option>
+                        <option value="Euterpe">Euterpe</option>
+                        <option value="Pyro I">Pyro I</option>
+                        <option value="Pyro II">Pyro II</option>
+                        <option value="Pyro III">Pyro III</option>
+                        <option value="Pyro IV">Pyro IV</option>
+                        <option value="Pyro V">Pyro V</option>
+                        <option value="Pyro VI">Pyro VI</option>
+                    </select>
+                    <select id="location-edit-orbit" style="width:60px; font-size:0.65rem; margin:0; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 4px; color:#ccc;">
+                        <option value="on">On</option>
+                        <option value="orbiting">Orbiting</option>
+                        <option value="around">Around</option>
+                    </select>
                     <select id="location-edit-system" class="modern-input" style="flex:0.7; font-size:0.75rem; margin:0;">
                         <option value="Auto">System</option>
                         <option value="Stanton">Stanton</option>
@@ -5427,14 +5488,16 @@
             const val = document.getElementById('new-loc-val').value.trim();
             const type = document.getElementById('new-loc-type')?.value || 'station';
             const system = document.getElementById('new-loc-system').value;
-            const parentBody = document.getElementById('new-loc-parent')?.value.trim() || '';
+            const parentBody = document.getElementById('new-loc-parent')?.value || '';
+            const orbitType = document.getElementById('new-loc-orbit')?.value || '';
+            const parentDisplay = parentBody ? (orbitType ? parentBody + ' (' + orbitType + ')' : parentBody) : '';
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
             // Build object with type info
             // Auto-detect type for numeric location IDs: they're likely planets/moons
             const selectedType = document.getElementById('new-loc-type')?.value || 'station';
             const finalType = key.startsWith('LOCATION_') && selectedType === 'station' ? 'moon' : selectedType;
-            let finalObj = { name: val, type: finalType, system: system !== 'Auto' ? system : '', parentBody: parentBody };
+            let finalObj = { name: val, type: finalType, system: system !== 'Auto' ? system : '', parentBody: parentDisplay };
             // planet/moon → shows under Planet/Moon on the HUD
             // station/outpost/gateway/etc. → shows under Location, parentBody → Planet/Moon
 
@@ -5450,6 +5513,7 @@
             document.getElementById('new-loc-system').value = 'Auto';
             if (document.getElementById('new-loc-type')) document.getElementById('new-loc-type').value = 'station';
             if (document.getElementById('new-loc-parent')) document.getElementById('new-loc-parent').value = '';
+            if (document.getElementById('new-loc-orbit')) document.getElementById('new-loc-orbit').value = 'on';
             renderCustomLocationList();
         }
 
@@ -5730,7 +5794,8 @@
             try {
                 const result = await ipcRenderer.invoke('data:check-updates');
                 if (result.success) {
-                    pendingNewItems = result.newItems || [];
+                    const bpOnly = document.getElementById('data-blueprint-only')?.checked;
+                    pendingNewItems = (result.newItems || []).filter(item => !bpOnly || item.ingredients > 0);
                     const container = document.getElementById('data-diff-container');
                     const countEl = document.getElementById('data-new-count');
                     const list = document.getElementById('data-diff-list');
@@ -5997,8 +6062,14 @@
             document.getElementById('location-edit-val').value = val;
             const editTypeEl = document.getElementById('location-edit-type');
             if (editTypeEl) editTypeEl.value = typeof valObj === 'object' ? valObj.type || 'station' : 'station';
+            const parentBodyRaw = typeof valObj === 'object' ? valObj.parentBody || '' : '';
+            // Parse "Hurston (orbiting)" or "Ita (on)" or just "Hurston"
+            let parentName = parentBodyRaw.replace(/\s*\(.*?\)\s*$/, '').trim();
+            let orbitType = (parentBodyRaw.match(/\(([^)]+)\)$/) || [])[1] || 'on';
             const editParentEl = document.getElementById('location-edit-parent');
-            if (editParentEl) editParentEl.value = typeof valObj === 'object' ? valObj.parentBody || '' : '';
+            if (editParentEl) editParentEl.value = parentName || '';
+            const editOrbitEl = document.getElementById('location-edit-orbit');
+            if (editOrbitEl) editOrbitEl.value = orbitType;
             document.getElementById('location-edit-system').value = typeof valObj === 'object' ? valObj.system || 'Auto' : 'Auto';
             document.getElementById('location-edit-panel').style.display = 'block';
             renderLocationSearchResults(); // Re-render to show selection highlighting
@@ -6007,7 +6078,9 @@
         async function saveLocationEdit() {
             const newVal = document.getElementById('location-edit-val').value.trim();
             const newType = document.getElementById('location-edit-type')?.value || 'station';
-            const newParent = document.getElementById('location-edit-parent')?.value.trim() || '';
+            const newParent = document.getElementById('location-edit-parent')?.value || '';
+            const newOrbit = document.getElementById('location-edit-orbit')?.value || 'on';
+            const parentDisplay = newParent ? newParent + ' (' + newOrbit + ')' : '';
             const newSystem = document.getElementById('location-edit-system').value;
             const originalKey = document.getElementById('location-edit-original-key').value;
 
@@ -6022,7 +6095,7 @@
             }
 
             // Update with new value
-            const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '', parentBody: newParent };
+            const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '', parentBody: parentDisplay };
             customLocations[selectedLocationKey] = finalObj;
             await ipcRenderer.invoke('settings:save-custom-locations', customLocations);
 
