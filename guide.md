@@ -88,3 +88,21 @@ npm run dist
 - **Sub-HUD Text Labels** can be added to any custom log pattern (both simple single-stage alerts and stateful start/stop alerts).
 - Stateful alerts remove the Sub-HUD banner when their stop pattern matches.
 - Simple single-regex alerts support a **Duration (Seconds)** timer. If set (e.g. `5` seconds), the Sub-HUD warning displays immediately when the log matches and is cleared automatically by a background callback. Setting it to `0` leaves it persistent on-screen. Timeout calls are cleared on player death or game exit to prevent HUD leaks.
+
+---
+
+## 🏗️ Public App Architecture Strategy (Future Proofing)
+
+To create a secure, public-facing mirror of this app without exposing your private developer tools or risking your dev build being overwritten, we will employ a strict **Codebase Separation and Remote Data** strategy:
+
+1. **Codebase Isolation**:
+   - The public app will exist in a completely separate folder (e.g. `versecon-link-public`). This guarantees that no automated AI edits or scripts can accidentally overwrite or delete your private dev project (`versecon-link`).
+2. **Physical Feature Stripping**:
+   - The public version will have all "cheat" features and developer tools (such as speculative parsers, certain trackers, and Chromium DevTools) physically deleted from the codebase, not just hidden by CSS.
+3. **Remote JSON Syncing**:
+   - Instead of hardcoding new locations, ships, and regex patterns into the app, the public app will be programmed to download these from a remote server (like a raw GitHub URL) on startup. 
+   - This allows you to map new game content in your Dev app, export the JSON, and push it to the server. All public clients will receive the new logs and abilities instantly without needing a full `.exe` update.
+4. **Independent Auto-Updates**:
+   - The public app will use `electron-updater` tied to a separate GitHub repository (`versecon-link-public-releases`), ensuring public users never pull a developer build.
+5. **Log Tailing Performance**:
+   - The public app will still read the user's `Game.log` using the highly optimized tailing method and noise-filtering engine, meaning there will be zero impact on their game performance. The raw "Live Log Stream" UI will be disabled to prevent them from reverse-engineering the telemetry data.
