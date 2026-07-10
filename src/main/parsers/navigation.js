@@ -10,7 +10,7 @@ class NavigationParser extends BaseParser {
             location_inventory: /<RequestLocationInventory>\s+Player\[[^\]]+\]\s+requested inventory for Location\[([^\]]+)\]/i,
 
             // Update Inventory Location tracking for quantum transitions
-            inventory_location_change: /<Update Inventory Location>\s+Player\s+\[([^\]]+)\]\s+is\s+changing\s+location\.\s+Landing\s+\[[^\]]*\]\s+->\s+\[[^\]]*\].\s+Location\s+\[(\d+)\]\s+->\s+\[(\d+)\]/i,
+            inventory_location_change: /<Update Inventory Location>\s+Player\s+\[([^\]]+)\]\s+is\s+changing\s+location\.\s+Landing\s+\[([^\]]*)\]\s+->\s+\[([^\]]*)\].\s+Location\s+\[(\d+)\]\s+->\s+\[(\d+)\]/i,
 
             // Line 1878: [STAMINA] \t-> RoomName: OOC_Stanton_1_Hurston
             // Matches OOC room names like OOC_Stanton_1_Hurston, OOC_Stanton_2b_Daymar
@@ -98,17 +98,30 @@ class NavigationParser extends BaseParser {
 
         // Priority Location state
         this.bodyMap = {
+            pyro1: "Pyro I",
             pyro2: "Monox",
+            pyro3: "Bloom",
+            pyro4: "Pyro IV",
+            pyro5: "Pyro V",
+            pyro6: "Terminus",
+            pyro5_a: "Adir",
+            pyro5_b: "Fairo",
+            pyro5_c: "Fuego",
+            pyro5_d: "Ignis",
+            pyro5_e: "Vatra",
+            pyro5_f: "Vuur",
             RR_P2_L4: "Rough & Ready - Pyro 2 L4"
         };
         this.pendingQuantum = null;
         this.specificPoi = null;
+        this.specificPoiSource = null;
         this.detectedBody = null;
         this.quantumDest = null;
         this.lastInventoryLoc = null;
         this.quantumDestCustom = null; // Resolved from customLocations via numeric IDs
         this.currentDisplayLocation = '';
         this.currentLocationSource = '';
+        this.isOnFoot = true;
     }
 
     setRsiHandle(handle) {
@@ -126,6 +139,24 @@ class NavigationParser extends BaseParser {
     parse(line) {
         let handled = false;
 
+        // Track whether player is on foot or in ship
+        if (line.includes('ClearDriver') && line.includes('releasing control token')) {
+            this.isOnFoot = true;
+            this.updateLocationDisplay();
+        } else if (line.includes('joined channel') && line.includes(' : ')) {
+            this.isOnFoot = false;
+            this.updateLocationDisplay();
+        } else if (line.includes('Failed to get starmap route data')) {
+            this.isOnFoot = false;
+            this.updateLocationDisplay();
+        } else if (line.includes('<Jump Drive Requesting State Change>') && line.includes('to Traveling')) {
+            this.isOnFoot = false;
+            this.updateLocationDisplay();
+        } else if (line.includes('<Spawn Flow>') || line.includes('RequestLocationInventory')) {
+            this.isOnFoot = true;
+            this.updateLocationDisplay();
+        }
+
         // ── 0.0 Quantum & Planet Cell Priority Detections ──
         const routeStartMatch = line.match(this.patterns.routeStartRegex);
         if (routeStartMatch) {
@@ -136,7 +167,7 @@ class NavigationParser extends BaseParser {
                 destination: destName,
                 timestamp: Date.now()
             };
-            this.specificPoi = null; // Clear old POI on route calculate/selected
+            this.specificPoi = null; this.specificPoiSource = null;
             this.updateLocationDisplay();
         }
 
@@ -151,7 +182,7 @@ class NavigationParser extends BaseParser {
                     timestamp: Date.now()
                 };
             }
-            this.specificPoi = null;
+            this.specificPoi = null; this.specificPoiSource = null;
             this.updateLocationDisplay();
         }
 
@@ -159,7 +190,7 @@ class NavigationParser extends BaseParser {
             if (this.pendingQuantum) {
                 this.quantumDest = this.pendingQuantum.destination;
             }
-            this.specificPoi = null;
+            this.specificPoi = null; this.specificPoiSource = null;
             this.updateLocationDisplay();
         }
 
@@ -179,23 +210,17 @@ class NavigationParser extends BaseParser {
             const rawVal = requestLocMatch[1];
             const cleaned = this.cleanLocationName(rawVal);
             this.specificPoi = cleaned;
+            this.specificPoiSource = rawVal;
             this.lastInventoryLoc = cleaned;
             this.updateLocationDisplay();
         }
 
-        const updateInvMatch = line.match(this.patterns.updateInventoryLocationRegex);
-        if (updateInvMatch) {
-            const rawVal = updateInvMatch[2];
-            const cleaned = this.cleanLocationName(rawVal);
-            this.specificPoi = cleaned;
-            this.lastInventoryLoc = cleaned;
-            this.updateLocationDisplay();
-        }
+        // NOTE: updateInventoryLocationRegex is intentionally NOT used to set specificPoi here,
+        // because group 2 is a raw numeric Landing ID that cleanLocationName cannot resolve.
+        // specificPoi is set by requestLocationRegex (location_inventory) above, which uses
+        // the human-readable location key like 'RR_HUR_LEO'.
 
         // ── 0. Custom Location Map (RoomName) ──
-        // Note: RoomName events (STAMINA room stack) only emit LOCATION_RAW for the sniffer
-        // and NEW_LOCATION toasts for unmapped names. They do NOT call emitLocation to
-        // avoid overriding the specific POI from RequestLocationInventory.
         const roomMatch = line.match(this.patterns.room_name);
         if (roomMatch) {
             const rawRoom = roomMatch[1];
@@ -203,11 +228,21 @@ class NavigationParser extends BaseParser {
             // Skip entity-ID room names (helmet IDs, etc.)
             const hasEntityId = /\d{6,}$/.test(rawRoom.split('_').pop());
             if (!hasEntityId && !rawRoom.match(/^\d+$/) && rawRoom.length > 4) {
+                const isOutpostLike = /_outpost_|_bunker_|_cave_|_settlement_|_shelter_|_camp_|_farm_|_residence_|_homestead_|_habs_|_hab_|_col_|_trdpst_|_scrp_|_shck_/i.test(rawRoom);
+                const isCommonRoom = /hangar|airlock|transit|elevator|lobby|corridor|train|lounge|habitation|room|cargobay|bridge|cockpit/i.test(rawRoom);
+
                 if (!isOOC && rawRoom !== 'Ent_RM_System_002-002') {
-                    // Stable non-OOC room name — emit toast so user can map it
+                    // Stable non-OOC room name
                     const cleaned = this.cleanLocationName(rawRoom);
-                    this.emit('gamestate', { type: 'NEW_LOCATION', value: cleaned, raw: rawRoom });
+                    const isMapped = this.customLocations && (this.customLocations[rawRoom] || this.customLocations[cleaned]);
+                    if (isOutpostLike || isCommonRoom || isMapped) {
+                        console.log(`[nav] RoomName matching: raw="${rawRoom}", cleaned="${cleaned}"-> emitLocation`);
+                        this.emitLocation(cleaned, rawRoom);
+                    } else {
+                        this.emit('gamestate', { type: 'NEW_LOCATION', value: cleaned, raw: rawRoom });
+                    }
                 }
+
                 if (rawRoom !== this.lastLocationRaw) {
                     this.lastLocationRaw = rawRoom;
                     this.emit('gamestate', { type: 'LOCATION_RAW', value: rawRoom });
@@ -250,8 +285,34 @@ class NavigationParser extends BaseParser {
                 }
             }
 
-            this.emit('gamestate', { type: 'QUANTUM', value: 'entered' });
-            this.emitLocation('In Transit', 'QuantumTravel');
+            // Do NOT emit QUANTUM entered here — this is a general inventory location change, not a quantum jump!
+            // Quantum jumps are explicitly handled by Jump Drive state changes.
+            console.log(`[nav] invLocChange: locTo=${locTo}, quantumDestCustom=${this.quantumDestCustom ? 'SET' : 'null'}, specificPoi="${this.specificPoi}"`);
+            
+            // If they change location, clear stale orbit states
+            this.detectedBody = null;
+            this.quantumDest = null;
+
+            if (this.quantumDestCustom) {
+                // Destination known via custom locations — show it directly
+                this.lastLocationRaw = (locTo && locTo !== '0') ? `LOCATION_${locTo}` : 'QuantumTravel';
+                // Clear stale specificPoi if destination is a different location (only if not on foot)
+                if (this.specificPoi && this.specificPoi !== 'In Transit' && this.specificPoi !== 'Wormhole Transit' && !this.isOnFoot) {
+                    const destName = typeof this.quantumDestCustom === 'object'
+                        ? this.quantumDestCustom.name
+                        : this.quantumDestCustom;
+                    console.log(`[nav] invLocChange: destName="${destName}" vs specificPoi="${this.specificPoi}"`);
+                    if (destName && destName.toLowerCase() !== this.specificPoi.toLowerCase()) {
+                        console.log(`[nav] invLocChange: CLEARING specificPoi`);
+                        this.specificPoi = null;
+                        this.specificPoiSource = null;
+                    }
+                }
+                this.updateLocationDisplay();
+            } else if (!this.specificPoi || this.specificPoi === 'In Transit' || this.specificPoi === 'Wormhole Transit') {
+                // Only emit transit if we don't already have a real location
+                this.emitLocation('In Transit', 'QuantumTravel');
+            }
             return true;
         }
 
@@ -279,7 +340,8 @@ class NavigationParser extends BaseParser {
                     this.emit('gamestate', { type: 'PLANET', value: details.planet });
                 }
                 // Only emit location update if we don't already have a specific POI
-                if (!this.specificPoi) {
+                // Allow overriding transient states (In Transit, Wormhole Transit)
+                if (!this.specificPoi || this.specificPoi === 'In Transit' || this.specificPoi === 'Wormhole Transit') {
                     this.emitLocation(cleaned, rawVal);
                 }
             } else {
@@ -352,6 +414,15 @@ class NavigationParser extends BaseParser {
                 this.emit('gamestate', { type: 'NEW_LOCATION', value: rawCode });
             });
 
+            // Emit location update for surface outpost/bunker/cave names
+            for (const [rawCode, friendlyName] of Object.entries(nameMap)) {
+                const isSurface = /outpost|bunker|cave|settlement|shelter|camp|farm|residence|homestead|habitat|mining|salvage/i.test(friendlyName) ||
+                    /_outpost_|_bunker_|_cave_|_settlement_/i.test(rawCode);
+                if (isSurface && friendlyName && !rawCode.match(/^\d+$/) && rawCode.length > 4) {
+                    this.emitLocation(friendlyName, rawCode);
+                }
+            }
+
             return true;
         }
 
@@ -369,6 +440,11 @@ class NavigationParser extends BaseParser {
                     this.emit('gamestate', { type: 'LOCATION_HINT', value: cleanVal });
                     // Also emit as NEW_LOCATION so it appears in backlog for mapping
                     this.emit('gamestate', { type: 'NEW_LOCATION', value: cleanVal, raw: rawVal });
+                    // Update location display for outpost/yard platforms
+                    const isOutpostPlatform = /_outpost_|outpost|bunker|cave|breaker|salvage|scrap|farm|mining|yard|station/i.test(rawVal);
+                    if (isOutpostPlatform && cleanVal && cleanVal.length > 3) {
+                        this.emitLocation(cleanVal, rawVal);
+                    }
                 }
             }
         }
@@ -444,11 +520,11 @@ class NavigationParser extends BaseParser {
                     else if (dest.includes('Stanton3')) planetName = 'ArcCorp Orbit';
                     else if (dest.includes('Stanton4')) planetName = 'microTech Orbit';
                     else if (dest.includes('Pyro1')) planetName = 'Pyro I Orbit';
-                    else if (dest.includes('Pyro2')) planetName = 'Pyro II Orbit';
-                    else if (dest.includes('Pyro3')) planetName = 'Pyro III Orbit';
+                    else if (dest.includes('Pyro2')) planetName = 'Monox Orbit';
+                    else if (dest.includes('Pyro3')) planetName = 'Bloom Orbit';
                     else if (dest.includes('Pyro4')) planetName = 'Pyro IV Orbit';
                     else if (dest.includes('Pyro5')) planetName = 'Pyro V Orbit';
-                    else if (dest.includes('Pyro6')) planetName = 'Pyro VI Orbit';
+                    else if (dest.includes('Pyro6')) planetName = 'Terminus Orbit';
                     
                     if (planetName) {
                         this.emitLocation(planetName, dest);
@@ -489,7 +565,7 @@ class NavigationParser extends BaseParser {
             const zoneName = rawVal.split(' - ')[0].trim();
 
             // Clean up the generic "StreamingSOC_" part if present
-            let cleanVal = zoneName.replace(/^StreamingSOC_/, '').replace(/_/g, ' ').replace(/\b\d+\b/g, '').replace(/\b(?:int|ext|c|b|a|final|rund|cmpd|wrhse|lge|util)\b/ig, '').replace(/\s+/g, ' ').replace(/[\r\n]/g, '').trim();
+            let cleanVal = zoneName.replace(/^StreamingSOC_/, '').replace(/_/g, ' ').replace(/\b\d{3,}\b/g, '').replace(/\b(?:int|ext|c|b|a|final|rund|cmpd|wrhse|lge|util)\b/ig, '').replace(/\s+/g, ' ').replace(/[\r\n]/g, '').trim();
 
             // Sometimes it's left completely empty after aggressive cleaning, fallback to slightly cleaner raw
             if (!cleanVal) cleanVal = zoneName.replace(/^StreamingSOC_/, '').replace(/_/g, ' ').replace(/[\r\n]/g, '').trim();
@@ -532,6 +608,7 @@ class NavigationParser extends BaseParser {
 
     emitLocation(cleanedName, rawName) {
         if (!cleanedName && !rawName) return;
+        if (cleanedName === '0' || rawName === '0' || rawName === 'LOCATION_0') return;
 
         this.lastLocationRaw = rawName || cleanedName || this.lastLocationRaw;
         let finalName = cleanedName || rawName;
@@ -579,9 +656,22 @@ class NavigationParser extends BaseParser {
                 }
             }
 
+            // 4. Fallback: match by friendly name (for OOC/room names resolved after arrival)
+            if (!matchedObj && finalName) {
+                const lowerName = finalName.toLowerCase();
+                for (const [key, val] of Object.entries(this.customLocations)) {
+                    const valObj = typeof val === 'object' ? val : { name: val };
+                    if (valObj.name && valObj.name.toLowerCase() === lowerName) {
+                        matchedObj = val;
+                        isCustomMapped = true;
+                        break;
+                    }
+                }
+            }
+
             if (matchedObj) {
                 const matchType = typeof matchedObj === 'object' ? matchedObj.type : null;
-                if (matchType === 'hangar') return; // Suppress HUD updates for hangar codes
+                if (matchType === 'hangar' || matchType === 'ignore') return; // Suppress HUD updates for hangar/ignore codes
 
                 finalName = typeof matchedObj === 'object' ? matchedObj.name : matchedObj;
                 const zone = typeof matchedObj === 'object' ? matchedObj.zone : 'Auto';
@@ -610,6 +700,7 @@ class NavigationParser extends BaseParser {
                 this.emit('gamestate', { type: 'PLANET', value: details.planet });
             }
             this.specificPoi = finalName;
+            this.specificPoiSource = rawName; // track what raw/log set this POI
             this.lastInventoryLoc = finalName;
             this.updateLocationDisplay();
 
@@ -840,7 +931,7 @@ class NavigationParser extends BaseParser {
                 .replace(/\baeroview\b/i, '').replace(/\bselfland\b/i, '')
                 .replace(/\bindustrial\b/i, '').replace(/\bvfg\b/i, '')
                 .replace(/\brevelyork\b/i, '').replace(/\bhangar\b/i, '')
-                .replace(/\b\d+\b/g, '').replace(/[()]/g, '')
+                .replace(/\b\d{3,}\b/g, '').replace(/[()]/g, '')
                 .replace(/\s+/g, ' ').trim();
             return name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
@@ -888,14 +979,14 @@ class NavigationParser extends BaseParser {
 
         // 3. Resolve Planet/Moon if still unknown
         if (planet === 'Unknown') {
-            // Check Stanton bodies
-            if (rawLower.includes('hurston') || rawLower.includes('stanton1') || rawLower.includes('hur_') || rawLower.includes('lorville') || rawLower.includes('everus') || cleanLower.includes('hurston') || cleanLower.includes('lorville')) {
+            // Check Stanton bodies — include station names that orbit each planet/moon
+            if (rawLower.includes('hurston') || rawLower.includes('stanton1') || rawLower.includes('hur_') || rawLower.includes('rr_hur') || rawLower.includes('lorville') || rawLower.includes('everus') || cleanLower.includes('hurston') || cleanLower.includes('lorville') || cleanLower.includes('everus harbor')) {
                 planet = 'Hurston';
-            } else if (rawLower.includes('crusader') || rawLower.includes('stanton2') || rawLower.includes('cru_') || rawLower.includes('orison') || rawLower.includes('seraphim') || cleanLower.includes('crusader') || cleanLower.includes('orison')) {
+            } else if (rawLower.includes('crusader') || rawLower.includes('stanton2') || rawLower.includes('cru_') || rawLower.includes('rr_cru') || rawLower.includes('orison') || rawLower.includes('seraphim') || cleanLower.includes('crusader') || cleanLower.includes('orison') || cleanLower.includes('seraphim')) {
                 planet = 'Crusader';
-            } else if (rawLower.includes('arccorp') || rawLower.includes('stanton3') || rawLower.includes('arc_') || rawLower.includes('area18') || rawLower.includes('baijini') || cleanLower.includes('arccorp') || cleanLower.includes('area 18')) {
+            } else if (rawLower.includes('arccorp') || rawLower.includes('stanton3') || rawLower.includes('arc_') || rawLower.includes('rr_arc') || rawLower.includes('area18') || rawLower.includes('baijini') || cleanLower.includes('arccorp') || cleanLower.includes('area 18') || cleanLower.includes('baijini')) {
                 planet = 'ArcCorp';
-            } else if (rawLower.includes('microtech') || rawLower.includes('stanton4') || rawLower.includes('mic_') || rawLower.includes('newbabbage') || rawLower.includes('tressler') || cleanLower.includes('microtech') || cleanLower.includes('babbage')) {
+            } else if (rawLower.includes('microtech') || rawLower.includes('stanton4') || rawLower.includes('mic_') || rawLower.includes('rr_mic') || rawLower.includes('newbabbage') || rawLower.includes('tressler') || cleanLower.includes('microtech') || cleanLower.includes('babbage') || cleanLower.includes('tressler')) {
                 planet = 'microTech';
             }
             // Check moons
@@ -913,11 +1004,18 @@ class NavigationParser extends BaseParser {
             else if (rawLower.includes('euterpe') || cleanLower.includes('euterpe')) planet = 'Euterpe';
             // Check Pyro bodies
             else if (rawLower.includes('pyro1') || rawLower.includes('pyro 1') || cleanLower.includes('pyro i')) planet = 'Pyro I';
-            else if (rawLower.includes('pyro2') || rawLower.includes('pyro 2') || cleanLower.includes('pyro ii') || rawLower.includes('monastery')) planet = 'Pyro II';
-            else if (rawLower.includes('pyro3') || rawLower.includes('pyro 3') || cleanLower.includes('pyro iii')) planet = 'Pyro III';
+            else if (rawLower.includes('pyro2') || rawLower.includes('pyro 2') || cleanLower.includes('pyro ii') || rawLower.includes('monastery') || rawLower.includes('monox') || cleanLower.includes('monox')) planet = 'Monox';
+            else if (rawLower.includes('pyro3') || rawLower.includes('pyro 3') || cleanLower.includes('pyro iii') || rawLower.includes('bloom') || cleanLower.includes('bloom')) planet = 'Bloom';
             else if (rawLower.includes('pyro4') || rawLower.includes('pyro 4') || cleanLower.includes('pyro iv')) planet = 'Pyro IV';
             else if (rawLower.includes('pyro5') || rawLower.includes('pyro 5') || cleanLower.includes('pyro v')) planet = 'Pyro V';
-            else if (rawLower.includes('pyro6') || rawLower.includes('pyro 6') || cleanLower.includes('pyro vi')) planet = 'Pyro VI';
+            else if (rawLower.includes('pyro6') || rawLower.includes('pyro 6') || cleanLower.includes('pyro vi') || rawLower.includes('terminus') || cleanLower.includes('terminus')) planet = 'Terminus';
+            // Check Pyro moons
+            else if (rawLower.includes('adir') || cleanLower.includes('adir')) planet = 'Adir';
+            else if (rawLower.includes('fairo') || cleanLower.includes('fairo')) planet = 'Fairo';
+            else if (rawLower.includes('fuego') || cleanLower.includes('fuego')) planet = 'Fuego';
+            else if (rawLower.includes('ignis') || cleanLower.includes('ignis')) planet = 'Ignis';
+            else if (rawLower.includes('vatra') || cleanLower.includes('vatra')) planet = 'Vatra';
+            else if (rawLower.includes('vuur') || cleanLower.includes('vuur')) planet = 'Vuur';
         }
 
         return { planet, system };
@@ -927,7 +1025,9 @@ class NavigationParser extends BaseParser {
         let chosenLocation = '';
         let chosenSource = '';
 
-        if (this.specificPoi) {
+
+
+        if (this.specificPoi && this.specificPoi !== 'In Transit' && this.specificPoi !== 'Wormhole Transit') {
             chosenLocation = this.specificPoi;
             chosenSource = 'inventory/location update';
         } else if (this.detectedBody) {
@@ -937,7 +1037,23 @@ class NavigationParser extends BaseParser {
         } else if (this.quantumDestCustom) {
             const destInfo = this.quantumDestCustom;
             const destName = typeof destInfo === 'object' ? destInfo.name : destInfo;
-            chosenLocation = `${destName} orbit`;
+            const knownPlanetsMoons = [
+                'hurston', 'crusader', 'arccorp', 'microtech', 
+                'ariel', 'aberdeen', 'ita', 'magda', 
+                'cellin', 'daymar', 'yela', 'lyria', 'wala', 
+                'calliope', 'clio', 'euterpe', 
+                'pyro i', 'pyro ii', 'pyro iii', 'pyro iv', 'pyro v', 'pyro vi', 
+                'monox', 'bloom', 'terminus', 'adir', 'fairo', 'fuego', 'ignis', 'vatra', 'vuur'
+            ];
+            let isPlanetOrMoon = knownPlanetsMoons.includes(destName.toLowerCase());
+            if (!isPlanetOrMoon && typeof destInfo === 'object') {
+                isPlanetOrMoon = destInfo.type === 'planet' || destInfo.type === 'moon';
+            }
+            if (isPlanetOrMoon) {
+                chosenLocation = `${destName} orbit`;
+            } else {
+                chosenLocation = destName;
+            }
             chosenSource = 'custom location destination';
         } else if (this.quantumDest) {
             const mappedName = this.bodyMap[this.quantumDest] || `Unknown body (${this.quantumDest})`;
@@ -946,12 +1062,17 @@ class NavigationParser extends BaseParser {
         } else if (this.lastInventoryLoc) {
             chosenLocation = this.lastInventoryLoc;
             chosenSource = 'last known inventory location';
+        } else if (this.specificPoi) {
+            // Fallback: show transit/jump states when nothing better available
+            chosenLocation = this.specificPoi;
+            chosenSource = 'transit fallback';
         } else {
             chosenLocation = 'Unknown Location';
             chosenSource = 'fallback';
         }
 
         if (chosenLocation !== this.currentDisplayLocation) {
+            console.log(`[nav] updateDisplay: "${this.currentDisplayLocation}" -> "${chosenLocation}", source=${chosenSource}, specificPoi="${this.specificPoi}", quantDestCustom=${!!this.quantumDestCustom}`);
             this.currentDisplayLocation = chosenLocation;
             this.currentLocationSource = chosenSource;
             this.lastLocation = chosenLocation;
@@ -963,7 +1084,60 @@ class NavigationParser extends BaseParser {
             if (chosenLocation.toLowerCase().endsWith(' orbit')) {
                 const body = chosenLocation.slice(0, -6).trim();
                 planetName = body;
-                finalValue = 'Orbit';
+
+                const knownPlanetsMoons = [
+                    'hurston', 'crusader', 'arccorp', 'microtech', 
+                    'ariel', 'aberdeen', 'ita', 'magda', 
+                    'cellin', 'daymar', 'yela', 'lyria', 'wala', 
+                    'calliope', 'clio', 'euterpe', 
+                    'pyro i', 'pyro ii', 'pyro iii', 'pyro iv', 'pyro v', 'pyro vi', 
+                    'monox', 'bloom', 'terminus', 'adir', 'fairo', 'fuego', 'ignis', 'vatra', 'vuur'
+                ];
+                let isPlanetOrMoon = knownPlanetsMoons.includes(body.toLowerCase());
+                if (!isPlanetOrMoon && this.customLocations) {
+                    for (const val of Object.values(this.customLocations)) {
+                        const valObj = typeof val === 'object' ? val : { name: val };
+                        if (valObj.name && valObj.name.toLowerCase() === body.toLowerCase()) {
+                            if (valObj.type === 'planet' || valObj.type === 'moon') {
+                                isPlanetOrMoon = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Check customLocations for body match to resolve orbit prefix
+                let orbitPrefix = (this.isOnFoot && isPlanetOrMoon) ? 'Surface' : 'Orbit';
+                if (this.customLocations) {
+                    for (const [locKey, val] of Object.entries(this.customLocations)) {
+                        const valObj = typeof val === 'object' ? val : { name: val };
+                        if (valObj.name && valObj.name.toLowerCase() === body.toLowerCase()) {
+                            // Prefer explicit orbit field, fallback to parsing parentBody
+                            if (valObj.orbit && valObj.orbit !== 'on' && valObj.orbit !== 'off') {
+                                if (!this.isOnFoot) {
+                                    orbitPrefix = valObj.orbit.charAt(0).toUpperCase() + valObj.orbit.slice(1);
+                                }
+                                break;
+                            }
+                            // Backward compat: parse "Hurston (orbiting)" → orbit = "orbiting"
+                            if (valObj.parentBody) {
+                                const parenMatch = valObj.parentBody.match(/\(([^)]+)\)$/);
+                                if (parenMatch && parenMatch[1] !== 'on' && parenMatch[1] !== 'off') {
+                                    if (!this.isOnFoot) {
+                                        const parsed = parenMatch[1];
+                                        orbitPrefix = parsed.charAt(0).toUpperCase() + parsed.slice(1);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        // Also check if the raw key matches a LOCATION_ numeric pattern
+                        if (locKey.startsWith('LOCATION_') || /^\d+$/.test(locKey)) {
+                            // Already matched by name above, but this keeps backward compat for key-only matches
+                        }
+                    }
+                }
+                finalValue = orbitPrefix;
 
                 const rawBody = this.detectedBody || this.quantumDest || '';
                 const lowerRaw = rawBody.toLowerCase();
@@ -985,6 +1159,9 @@ class NavigationParser extends BaseParser {
                 let locObj = null;
                 if (this.customLocations) {
                     locObj = this.customLocations[lookupName] || this.customLocations[chosenLocation] || null;
+                }
+                if (locObj && locObj.type === 'ignore') {
+                    return;
                 }
                 const details = this.getPlanetAndSystem(lookupName, chosenLocation, locObj);
                 planetName = details.planet || 'Unknown';

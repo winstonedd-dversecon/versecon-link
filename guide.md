@@ -73,3 +73,18 @@ npm run dist
 
 ### 11. Manual Blueprint Collection
 - **Manual "Collect" Action**: Missing or unreleased blueprints in the database browser can now be manually marked as collected with a custom date and time prompt, enabling quick local progress tracking outside log scans.
+
+### 12. Dynamic `{player}` Pattern Binding
+- Custom log patterns (both start and stop patterns) support the `{player}` placeholder.
+- The telemetry engine replaces `{player}` with the escaped player RSI handle in memory, allowing rules to remain player-agnostic and shareable.
+- The built-in Pattern Manager regex tester also swaps `{player}` with your configured name for instant test evaluation.
+
+### 13. Click-to-Ignore Regex Builders
+- The modal features interactive segment click selectors for both the **Regex Pattern** and the **Stop/Closing Regex Pattern**.
+- You can paste any example log line (like `Request[32] Player[TypicallyBrit_ish] Result[succeed]`) and click on the token buttons.
+- Clicking cycles tokens between **Literal** (matches exact text), **Ignore** (turns it into regex wildcards like `\[\d+\]` or `.*?`), and **Player Placeholder** (binds to the dynamic `{player}` selector).
+
+### 14. Sub-HUD Text & Timers
+- **Sub-HUD Text Labels** can be added to any custom log pattern (both simple single-stage alerts and stateful start/stop alerts).
+- Stateful alerts remove the Sub-HUD banner when their stop pattern matches.
+- Simple single-regex alerts support a **Duration (Seconds)** timer. If set (e.g. `5` seconds), the Sub-HUD warning displays immediately when the log matches and is cleared automatically by a background callback. Setting it to `0` leaves it persistent on-screen. Timeout calls are cleared on player death or game exit to prevent HUD leaks.

@@ -950,6 +950,9 @@
             }
 
             if (channel === 'log:update') {
+                if (data.type === 'SERVER_REROUTED' && currentConfig && currentConfig.enableServerRerouteTabletAlerts === false) {
+                    return;
+                }
                 // If it matches a filter category and the category is muted, ignore it
                 if (!shouldShowAlert(data.type, data.value)) {
                     return;

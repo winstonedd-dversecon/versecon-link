@@ -115,8 +115,12 @@ class LogWatcher extends EventEmitter {
                     console.error('[LogWatcher] Failed to update attachment state:', e.message);
                 }
             }
-            if (data.type === 'JURISDICTION') this.cachedState.jurisdiction = data.value;
-            if (data.type === 'ZONE') this.cachedState.zone = data.value;
+            if (data.type === 'JURISDICTION') {
+                this.cachedState.jurisdiction = data.value;
+            }
+            if (data.type === 'ZONE') {
+                this.cachedState.zone = data.value;
+            }
 
             // Check alert cooldowns if applicable
             if (data.type === 'STATUS' || data.type === 'HAZARD_FIRE') {
@@ -310,16 +314,22 @@ class LogWatcher extends EventEmitter {
                 const content = await fs.promises.readFile(this.filePath, 'utf-8');
                 const allLines = content.split('\n');
                 
-                // Scan backwards for the last <Join PU> line to get shard connection info
+                // Scan backwards for the last <Join PU> line to get shard connection info and process all lines since
+                let joinPuIndex = -1;
                 for (let i = allLines.length - 1; i >= 0; i--) {
                     if (allLines[i].includes('<Join PU>')) {
-                        console.log('[LogWatcher] Found last Join PU line in log:', allLines[i]);
-                        this.processLine(allLines[i], true);
+                        joinPuIndex = i;
                         break;
                     }
                 }
                 
-                const lines = allLines.slice(-this.initialScanLimit);
+                let lines;
+                if (joinPuIndex !== -1) {
+                    console.log(`[LogWatcher] Found last Join PU line at index ${joinPuIndex} of ${allLines.length}. Processing all lines since.`);
+                    lines = allLines.slice(joinPuIndex);
+                } else {
+                    lines = allLines.slice(-this.initialScanLimit);
+                }
                 console.log(`[LogWatcher] Initial scan processing ${lines.length} lines asynchronously.`);
 
                 // Process in batches of 500 to yield event loop

@@ -36,6 +36,11 @@ let recentShipNotifications = {}; // ship name -> last notification timestamp (m
 let lastHudWarningTimes = {}; // warning text -> last speech timestamp (ms)
 let lastHudWarningBroadcastTimes = {}; // warning text -> last broadcast timestamp (ms)
 
+// ═══ UNMAPPED LOCATION BACKLOG (persists across renderer reloads) ═══
+// Populated whenever a NEW_LOCATION event fires, so the dashboard can
+// fetch the full list via IPC once its renderer has finished loading.
+const unmappedLocationBacklog = new Set();
+
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
 class SquadManager {
@@ -647,6 +652,8 @@ function createWindows() {
             dashboardWindow.webContents.send('log:update', { type: 'SPAWN_POINT', value: config.spawnPoint });
         }
 
+        // Do not restore last known location on start to prevent stale guesses
+
         // Sync Settings so dashboard UI inputs aren't blank (Fixes Hue getting wiped on first save)
         dashboardWindow.webContents.send('settings:updated', config);
         dashboardWindow.webContents.send('settings:custom-locations-updated', config.customLocations || {});
@@ -1210,6 +1217,7 @@ ipcMain.on('settings:save', (event, newConfig) => {
             require('./parsers/social').setRsiHandle(config.rsiHandle);
             require('./parsers/navigation').setRsiHandle(config.rsiHandle);
             require('./parsers/inventory').setRsiHandle(config.rsiHandle);
+            require('./parsers/custom').setRsiHandle(config.rsiHandle);
         } catch (e) {
             console.warn('[Main] Could not update RSI handle on parsers:', e.message);
         }
@@ -1280,14 +1288,25 @@ ipcMain.on('settings:save', (event, newConfig) => {
         config.suppressMassQuantumAlerts = newConfig.suppressMassQuantumAlerts;
     }
     if (newConfig.enableFreightElevatorAlerts !== undefined) config.enableFreightElevatorAlerts = newConfig.enableFreightElevatorAlerts;
+    if (newConfig.enableFreightElevatorTabletAlerts !== undefined) config.enableFreightElevatorTabletAlerts = newConfig.enableFreightElevatorTabletAlerts;
     if (newConfig.enableStaminaOxygenAlerts !== undefined) config.enableStaminaOxygenAlerts = newConfig.enableStaminaOxygenAlerts;
+    if (newConfig.enableStaminaOxygenTabletAlerts !== undefined) config.enableStaminaOxygenTabletAlerts = newConfig.enableStaminaOxygenTabletAlerts;
     if (newConfig.enableJurisdictionAlerts !== undefined) config.enableJurisdictionAlerts = newConfig.enableJurisdictionAlerts;
+    if (newConfig.enableJurisdictionTabletAlerts !== undefined) config.enableJurisdictionTabletAlerts = newConfig.enableJurisdictionTabletAlerts;
     if (newConfig.enableFireAlerts !== undefined) config.enableFireAlerts = newConfig.enableFireAlerts;
+    if (newConfig.enableFireTabletAlerts !== undefined) config.enableFireTabletAlerts = newConfig.enableFireTabletAlerts;
     if (newConfig.enableCorpseAlerts !== undefined) config.enableCorpseAlerts = newConfig.enableCorpseAlerts;
+    if (newConfig.enableCorpseTabletAlerts !== undefined) config.enableCorpseTabletAlerts = newConfig.enableCorpseTabletAlerts;
     if (newConfig.enableDeathAlerts !== undefined) config.enableDeathAlerts = newConfig.enableDeathAlerts;
+    if (newConfig.enableDeathTabletAlerts !== undefined) config.enableDeathTabletAlerts = newConfig.enableDeathTabletAlerts;
     if (newConfig.enableVehicleDestructionAlerts !== undefined) config.enableVehicleDestructionAlerts = newConfig.enableVehicleDestructionAlerts;
+    if (newConfig.enableVehicleDestructionTabletAlerts !== undefined) config.enableVehicleDestructionTabletAlerts = newConfig.enableVehicleDestructionTabletAlerts;
     if (newConfig.enableMissionStatusAlerts !== undefined) config.enableMissionStatusAlerts = newConfig.enableMissionStatusAlerts;
+    if (newConfig.enableMissionStatusTabletAlerts !== undefined) config.enableMissionStatusTabletAlerts = newConfig.enableMissionStatusTabletAlerts;
     if (newConfig.enableCrimestatAlerts !== undefined) config.enableCrimestatAlerts = newConfig.enableCrimestatAlerts;
+    if (newConfig.enableCrimestatTabletAlerts !== undefined) config.enableCrimestatTabletAlerts = newConfig.enableCrimestatTabletAlerts;
+    if (newConfig.enableServerRerouteAlerts !== undefined) config.enableServerRerouteAlerts = newConfig.enableServerRerouteAlerts;
+    if (newConfig.enableServerRerouteTabletAlerts !== undefined) config.enableServerRerouteTabletAlerts = newConfig.enableServerRerouteTabletAlerts;
     if (newConfig.hudWarningsEnabled !== undefined) {
         config.hudWarningsEnabled = newConfig.hudWarningsEnabled;
     }
@@ -1547,20 +1566,41 @@ LogWatcher.on('gamestate', (data) => {
     }
 
     // Update gameActive state based on events
-    if (data.type === 'SERVER_CONNECTED' || data.type === 'SESSION_START' || data.type === 'WORLD_LOADED') {
+    if (data.type === 'SERVER_CONNECTED' || data.type === 'SESSION_START' || data.type === 'WORLD_LOADED' || data.type === 'DEATH' || data.type === 'SPAWN_SET') {
         gameActive = true;
     } else if (data.type === 'GAME_LEAVE' || data.type === 'GAME_RESTART') {
         gameActive = false;
     }
 
-    // Keep CombatParser currentShip reference in sync
+    // Keep CombatParser & NavigationParser states in sync
     if (data.type === 'SHIP_ENTER' || data.type === 'SHIP_CURRENT') {
         try {
             require('./parsers/combat').currentShip = data.value;
         } catch (e) {}
+        try {
+            const nav = require('./parsers/navigation');
+            nav.isOnFoot = false;
+            nav.updateLocationDisplay();
+        } catch (e) {}
     } else if (data.type === 'SHIP_EXIT') {
         try {
             require('./parsers/combat').currentShip = null;
+        } catch (e) {}
+        try {
+            const nav = require('./parsers/navigation');
+            nav.isOnFoot = true;
+            nav.updateLocationDisplay();
+        } catch (e) {}
+    } else if (data.type === 'DEATH' || data.type === 'SPAWN_SET') {
+        try {
+            const nav = require('./parsers/navigation');
+            nav.isOnFoot = true;
+            nav.detectedBody = null;
+            nav.quantumDest = null;
+            nav.specificPoi = null;
+            nav.specificPoiSource = null;
+            nav.quantumDestCustom = null;
+            nav.updateLocationDisplay();
         } catch (e) {}
     }
 
@@ -1571,9 +1611,25 @@ LogWatcher.on('gamestate', (data) => {
     if (data.type === 'BUILD_INFO') LogWatcher.cachedState.build = data.value;
     if (data.type === 'HANGAR_STATE') LogWatcher.cachedState.hangarState = data.value;
 
+    // Persist last known location for restore across restarts
+    if (data.type === 'LOCATION' && data.value) {
+        config.lastLocation = {
+            value: data.value,
+            raw: data.raw || '',
+            planet: data.planet || 'Unknown',
+            system: data.system || 'Unknown'
+        };
+        // Async save, don't block the event pipeline
+        saveConfig();
+    }
+
     if (LogWatcher.isInitialScanning) {
         // Broadcast parsed data to windows so logs tail, but skip alerts / writing to disk
-        broadcast('log:update', data);
+        // Prevent broadcasting stale locations from previous sessions so UI stays waiting for fresh logs
+        const skipBroadcast = ['LOCATION', 'PLANET', 'SYSTEM', 'ZONE', 'LOCATION_HINT'].includes(data.type);
+        if (!skipBroadcast) {
+            broadcast('log:update', data);
+        }
         return;
     }
 
@@ -1634,7 +1690,7 @@ LogWatcher.on('gamestate', (data) => {
             // Suppress from processing downstream too (TTS, reactions) by clearing data type
             return;
         }
-    } else if (!gameActive && isWarning) {
+    } else if (!gameActive && isWarning && data.type !== 'DEATH' && data.type !== 'VEHICLE_DESTRUCTION') {
         console.log(`[Main] Suppressed warning/alert broadcast (${data.type}) because gameActive is false.`);
     } else {
         broadcast('log:update', data);
@@ -1734,7 +1790,14 @@ LogWatcher.on('gamestate', (data) => {
             }
         } else if (data.type === 'DEATH') {
             const killer = data.details?.killer || 'Unknown';
-            if (config.enableDeathAlerts !== false) showTrayNotification('☠️ KILLED', `Killed by ${killer}`);
+            if (config.enableDeathAlerts !== false) {
+                showTrayNotification('☠️ KILLED', `Killed by ${killer}`);
+                if (killer && killer !== 'Unknown' && killer !== 'self' && !killer.toLowerCase().includes('environment')) {
+                    speak(`Warning. Killed by ${killer}.`);
+                } else {
+                    speak('Warning. You have been eliminated.');
+                }
+            }
             LogWatcher.cachedState.ship = null;
             broadcast('gamestate', { type: 'SHIP_EXIT', value: null });
         } else if (data.type === 'HAZARD_FIRE') {
@@ -1786,9 +1849,12 @@ LogWatcher.on('gamestate', (data) => {
         }
     }
     if (gameActive && data.type === 'VEHICLE_DEATH') {
-        if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
-            // alertWindow.show();
-            alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'soft_death' });
+        if (config.enableVehicleDeathAlerts !== false) {
+            if (config.hudWarningsEnabled && alertWindow && !alertWindow.isDestroyed()) {
+                // alertWindow.show();
+                alertWindow.webContents.send('alert:trigger', { type: 'STATUS', value: 'soft_death' });
+            }
+            speak('Warning. Ship systems critical.');
         }
     }
 
@@ -1972,10 +2038,18 @@ LogWatcher.on('gamestate', (data) => {
                 config.activeMissions[targetId].status = data.value; // 'completed', 'failed'
                 if (data.value === 'completed' || data.value === 'ended') {
                     config.activeMissions[targetId].status = 'completed';
-                    if (config.enableMissionStatusAlerts !== false) showTrayNotification('✅ Contract Complete', config.activeMissions[targetId].title || 'Mission');
+                    const mTitle = config.activeMissions[targetId].title || 'Mission';
+                    if (config.enableMissionStatusAlerts !== false) {
+                        showTrayNotification('✅ Contract Complete', mTitle);
+                        speak(`Contract complete. ${mTitle}.`);
+                    }
                 } else if (data.value === 'failed') {
                     config.activeMissions[targetId].status = 'failed';
-                    if (config.enableMissionStatusAlerts !== false) showTrayNotification('❌ Contract Failed', config.activeMissions[targetId].title || 'Mission');
+                    const mTitle = config.activeMissions[targetId].title || 'Mission';
+                    if (config.enableMissionStatusAlerts !== false) {
+                        showTrayNotification('❌ Contract Failed', mTitle);
+                        speak(`Contract failed. ${mTitle}.`);
+                    }
                 }
             }
         }
@@ -2038,6 +2112,20 @@ LogWatcher.on('gamestate', (data) => {
 
     // New Location Alert (Unmapped)
     if (data.type === 'NEW_LOCATION') {
+        // Cache in persistent backlog so dashboard can retrieve it on startup
+        const rawKey = data.raw || data.value;
+        if (rawKey) {
+            // Only cache if not already a known/mapped custom location
+            const alreadyMapped = config.customLocations && Object.prototype.hasOwnProperty.call(config.customLocations, rawKey);
+            if (!alreadyMapped) {
+                unmappedLocationBacklog.add(rawKey);
+                // Cap at 100 entries to avoid unbounded growth
+                if (unmappedLocationBacklog.size > 100) {
+                    const first = unmappedLocationBacklog.values().next().value;
+                    unmappedLocationBacklog.delete(first);
+                }
+            }
+        }
         showTrayNotification('📍 New Location Detected', `${data.value || data.raw}\nClick to name it in the app.`);
     }
 
@@ -2300,10 +2388,29 @@ ipcMain.handle('settings:save-kos-ignore', async (event, ignoreList) => {
 });
 
 ipcMain.handle('settings:get-custom-locations', async () => {
-    return config.customLocations || {};
+    const locs = config.customLocations || {};
+    let updated = false;
+    for (const key of Object.keys(locs)) {
+        if (locs[key] && typeof locs[key] === 'object') {
+            if (locs[key].parentBody === 'Pyro II') { locs[key].parentBody = 'Monox'; updated = true; }
+            else if (locs[key].parentBody === 'Pyro III') { locs[key].parentBody = 'Bloom'; updated = true; }
+            else if (locs[key].parentBody === 'Pyro VI') { locs[key].parentBody = 'Terminus'; updated = true; }
+        }
+    }
+    if (updated) {
+        saveConfig();
+    }
+    return locs;
 });
 
 ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
+    for (const key of Object.keys(locations || {})) {
+        if (locations[key] && typeof locations[key] === 'object') {
+            if (locations[key].parentBody === 'Pyro II') locations[key].parentBody = 'Monox';
+            else if (locations[key].parentBody === 'Pyro III') locations[key].parentBody = 'Bloom';
+            else if (locations[key].parentBody === 'Pyro VI') locations[key].parentBody = 'Terminus';
+        }
+    }
     const locCount = Object.keys(locations).length;
     const sample = Object.entries(locations).slice(0, 2).map(([k,v]) => `${k}=${typeof v === 'object' ? v.name : v}`);
     console.log(`[Main] Saving ${locCount} custom locations, sample:`, sample);
@@ -2314,6 +2421,12 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     
     config.customLocations = locations;
     saveConfig();
+    // Remove newly mapped keys from the in-memory backlog so they no longer
+    // appear in the dashboard's unmapped location queue.
+    for (const key of Object.keys(locations)) {
+        unmappedLocationBacklog.delete(key);
+    }
+
     // Verify save
     try {
         const verify = JSON.parse(require('fs').readFileSync(CONFIG_PATH, 'utf-8'));
@@ -2334,18 +2447,37 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     merged = { ...merged, ...locations };
     NavigationParser.setCustomLocations(merged);
     
-    // Re-emit NEW_LOCATION for any deleted location the user is currently at
-    if (deletedKeys.length > 0) {
-        const currentRaw = NavigationParser.lastLocationRaw;
-        const currentDisplay = NavigationParser.lastLocation;
-        for (const key of deletedKeys) {
-            if (key === currentRaw || key === currentDisplay) {
-                NavigationParser.emit('gamestate', { type: 'NEW_LOCATION', value: currentDisplay || key, raw: currentRaw || key });
-            }
-        }
-    }
+    // ── Direct HUD refresh is now handled explicitly by dashboard via hud:refresh-location ──
     
     broadcast('settings:custom-locations-updated', locations);
+    return true;
+});
+
+// Direct HUD refresh: dashboard calls this after saving to force overlay update
+ipcMain.handle('hud:refresh-location', async (event, key, locObj) => {
+    const name = typeof locObj === 'object' ? locObj.name : locObj;
+    const type = typeof locObj === 'object' ? locObj.type || '' : '';
+    if (type === 'ignore') return true;
+    const system = typeof locObj === 'object' ? locObj.system || '' : '';
+    let parent = typeof locObj === 'object' ? (locObj.parentBody || '').replace(/\s*\([^)]*\)\s*$/, '').trim() : '';
+    if (parent === 'Pyro II') parent = 'Monox';
+    else if (parent === 'Pyro III') parent = 'Bloom';
+    else if (parent === 'Pyro VI') parent = 'Terminus';
+    const isPlanetary = type === 'planet' || type === 'moon';
+    
+    const locData = {
+        type: 'LOCATION',
+        value: isPlanetary ? 'Orbiting' : name,
+        raw: key,
+        planet: isPlanetary ? name : (parent || 'Unknown'),
+        system: system || 'Unknown'
+    };
+    console.log('[Main] hud:refresh-location ->', JSON.stringify(locData));
+    
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('log:update', locData);
+    }
+    broadcast('log:update', locData);
     return true;
 });
 
@@ -2360,6 +2492,17 @@ ipcMain.handle('settings:save-body-map', async (event, bodyMap) => {
     NavigationParser.setBodyMap(bodyMap);
     broadcast('settings:bodymap-updated', bodyMap);
     return true;
+});
+
+// Returns every unmapped location raw key seen since app start.
+// The dashboard calls this once on load to populate its backlog queue,
+// bypassing the startup race condition where NEW_LOCATION events fired
+// before the renderer window was ready to receive them.
+ipcMain.handle('settings:get-unmapped-backlog', async () => {
+    // Filter out any that have since been mapped
+    const mapped = config.customLocations || {};
+    const filtered = [...unmappedLocationBacklog].filter(k => !Object.prototype.hasOwnProperty.call(mapped, k));
+    return filtered;
 });
 
 ipcMain.handle('settings:get-custom-shipnames', async () => {
@@ -3796,6 +3939,7 @@ function restartAfkTimer() {
             require('./parsers/social').setRsiHandle(config.rsiHandle);
             require('./parsers/navigation').setRsiHandle(config.rsiHandle);
             require('./parsers/inventory').setRsiHandle(config.rsiHandle);
+            require('./parsers/custom').setRsiHandle(config.rsiHandle);
             if (config.rsiId) {
                 require('./parsers/social').setRsiId(config.rsiId);
             }

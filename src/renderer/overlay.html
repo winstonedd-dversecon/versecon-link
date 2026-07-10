@@ -745,6 +745,9 @@
             <div class="fd-col hidden" id="col-armistice" style="padding:0 10px;">
                 <div class="helmet-warning visible" id="val-armistice" style="color: var(--success);">🛡️ ARMISTICE</div>
             </div>
+
+            <!-- Stateful custom sub-HUD containers -->
+            <div id="stateful-alerts-container" style="display: flex; gap: 15px;"></div>
         </div>
 
         <!-- Squad HUD Row (v2.8) -->
@@ -976,8 +979,13 @@
                 const name = typeof valObj === 'object' ? valObj.name : valObj;
                 const type = typeof valObj === 'object' ? valObj.type || 'station' : 'station';
                 const system = typeof valObj === 'object' ? valObj.system || '' : '';
-                const parentBody = typeof valObj === 'object' ? valObj.parentBody || '' : '';
-                const isPlanetary = type === 'planet' || type === 'moon';
+                let parentBody = typeof valObj === 'object' ? valObj.parentBody || '' : '';
+                if (parentBody === 'Pyro II') parentBody = 'Monox';
+                else if (parentBody === 'Pyro III') parentBody = 'Bloom';
+                else if (parentBody === 'Pyro VI') parentBody = 'Terminus';
+                // If type is planet/moon but parentBody is also set, it was auto-mistyped.
+                // Treat as a station so the custom name shows in Location, not Planet/Moon.
+                const isPlanetary = (type === 'planet' || type === 'moon') && !parentBody;
                 const isRoom = type === 'room';
 
                 if (isRoom) {
@@ -1024,7 +1032,9 @@
                     if (raw.startsWith('LOCATION_')) {
                         const v = typeof val === 'object' ? val : null;
                         const type = v ? v.type || 'station' : 'station';
-                        if (type === 'planet' || type === 'moon') {
+                        // Skip if parentBody is set — it's a station/outpost, not a real planet/moon
+                        const hasParent = v && !!v.parentBody;
+                        if (!hasParent && (type === 'planet' || type === 'moon')) {
                             const name = v ? v.name : (typeof val === 'string' ? val : '');
                             if (name) planetEl.textContent = name;
                             if (v && v.system && systemEl) systemEl.textContent = v.system;
@@ -1512,7 +1522,11 @@
                     const matched = getCustomLocationMatch(data.raw, data.value, customLocations);
                     const customName = matched ? (typeof matched === 'object' ? matched.name : matched) : null;
                     const customType = matched && typeof matched === 'object' ? matched.type || 'station' : 'station';
-                    const isPlanetary = customType === 'planet' || customType === 'moon';
+                    if (customType === 'ignore') break;
+                    // If type is planet/moon but a parentBody is set, the entry was auto-mistyped
+                    // (old LOCATION_ key auto-override bug). Treat it as a station instead.
+                    const hasParentBody = matched && typeof matched === 'object' && !!matched.parentBody;
+                    const isPlanetary = (customType === 'planet' || customType === 'moon') && !hasParentBody;
                     
                     let customPlanet = null;
                     let customSystem = null;
@@ -1521,26 +1535,32 @@
                     }
                     
                     if (customName && isPlanetary) {
-                        // Planet/moon: show in Planet/Moon field, don't overwrite Location
+                        // Planet/moon (no parentBody): show in Planet/Moon field, don't overwrite Location
                         if (planetDisplay) planetDisplay.textContent = customName;
                         if (locDisplay && (locDisplay.textContent === 'Unknown' || locDisplay.textContent === 'In Transit')) {
                             locDisplay.textContent = data.value;
                         }
                     } else if (customName && customType === 'room') {
                         // Room: combine with current location if parentBody is set
-                        const roomParent = matched && typeof matched === 'object' ? matched.parentBody || '' : '';
+                        let roomParent = matched && typeof matched === 'object' ? matched.parentBody || '' : '';
+                        if (roomParent === 'Pyro II') roomParent = 'Monox';
+                        else if (roomParent === 'Pyro III') roomParent = 'Bloom';
+                        else if (roomParent === 'Pyro VI') roomParent = 'Terminus';
                         if (roomParent && locDisplay) {
                             locDisplay.textContent = roomParent + ' — ' + customName;
                         } else if (locDisplay) {
                             locDisplay.textContent = customName;
                         }
-                    } else if (customName && customType === 'hangar') {
+                    } else if (customName && (customType === 'hangar' || customType === 'ignore')) {
                         // Hangar requests: don't overwrite current location
                     } else {
-                        // Station/outpost/etc.: show in Location
+                        // Station/outpost/planet+parentBody mistype/etc.: show custom name in Location
                         locDisplay.textContent = customName || data.value;
                         // parentBody → Planet/Moon
-                        const customParentBody = matched && typeof matched === 'object' ? (matched.parentBody || '').replace(/\s*\([^)]*\)\s*$/, '').trim() : '';
+                        let customParentBody = matched && typeof matched === 'object' ? (matched.parentBody || '').replace(/\s*\([^)]*\)\s*$/, '').trim() : '';
+                        if (customParentBody === 'Pyro II') customParentBody = 'Monox';
+                        else if (customParentBody === 'Pyro III') customParentBody = 'Bloom';
+                        else if (customParentBody === 'Pyro VI') customParentBody = 'Terminus';
                         if (customParentBody && planetDisplay && (planetDisplay.textContent === 'Unknown' || planetDisplay.textContent === currentTelemetryPlanet)) {
                             planetDisplay.textContent = customParentBody;
                         } else if (planetDisplay) {
@@ -1895,7 +1915,10 @@
                                 if (planetEl) planetEl.textContent = customName;
                                 locEl.textContent = currentTelemetryLocation;
                             } else if (customName && customType === 'room') {
-                                const roomParent = matched && typeof matched === 'object' ? matched.parentBody || '' : '';
+                                let roomParent = matched && typeof matched === 'object' ? matched.parentBody || '' : '';
+                                if (roomParent === 'Pyro II') roomParent = 'Monox';
+                                else if (roomParent === 'Pyro III') roomParent = 'Bloom';
+                                else if (roomParent === 'Pyro VI') roomParent = 'Terminus';
                                 locEl.textContent = roomParent ? roomParent + ' — ' + customName : customName;
                             } else {
                                 locEl.textContent = customName || currentTelemetryLocation;
@@ -2142,8 +2165,14 @@
                     break;
 
                 case 'SERVER_REROUTED':
-                    addFeedEntry('🌐', 'Server Rerouted');
-                    addTacticalFeedEntry('🌐', data.value);
+                    if (currentConfig.enableServerRerouteAlerts !== false) {
+                        addFeedEntry('🌐', 'Server Rerouted');
+                        addTacticalFeedEntry('🌐', data.value);
+                    }
+                    break;
+
+                case 'SUB_HUD_STATE':
+                    updateSubHudState(data.id, data.active, data.label);
                     break;
 
                 case 'VOIP':
@@ -2349,6 +2378,31 @@
                 else barEl.style.background = 'var(--success)';
             }
         });
+        function updateSubHudState(id, active, label) {
+            const container = document.getElementById('stateful-alerts-container');
+            if (!container) return;
+
+            const existing = document.getElementById(`stateful-alert-${id}`);
+            if (active) {
+                if (existing) {
+                    const textEl = existing.querySelector('.stateful-text');
+                    if (textEl) textEl.textContent = label;
+                } else {
+                    const col = document.createElement('div');
+                    col.className = 'fd-col';
+                    col.id = `stateful-alert-${id}`;
+                    col.style.padding = '0 10px';
+                    col.innerHTML = `<div class="dead-indicator visible stateful-text" style="color: var(--accent); animation: pulse 2s infinite; font-weight: bold;">${label}</div>`;
+                    container.appendChild(col);
+                }
+            } else {
+                if (existing) {
+                    existing.remove();
+                }
+            }
+            updateHUDWarningsRow();
+        }
+
         function updateHUDWarningsRow() {
             const warningsRow = document.getElementById('hud-warnings-row');
             if (!warningsRow) return;
@@ -2357,7 +2411,7 @@
                 'col-dead', 'col-helmet', 'col-suffocation', 'col-fire', 
                 'col-interdiction', 'col-softdeath', 'col-crimestat', 
                 'col-proximity', 'col-radar', 'col-quantum-arrival',
-                'col-armistice'
+                'col-kos', 'col-armistice'
             ];
             
             let anyVisible = false;
@@ -2367,6 +2421,11 @@
                     anyVisible = true;
                     break;
                 }
+            }
+
+            const container = document.getElementById('stateful-alerts-container');
+            if (container && container.children.length > 0) {
+                anyVisible = true;
             }
             
             if (anyVisible) {
@@ -2383,7 +2442,7 @@
             'col-dead', 'col-helmet', 'col-suffocation', 'col-fire', 
             'col-interdiction', 'col-softdeath', 'col-crimestat', 
             'col-proximity', 'col-radar', 'col-quantum-arrival',
-            'col-armistice'
+            'col-kos', 'col-armistice'
         ];
         warningIds.forEach(id => {
             const el = document.getElementById(id);

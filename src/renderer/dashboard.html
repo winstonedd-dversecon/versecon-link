@@ -975,6 +975,13 @@
                         <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-crimestat-tablet-alerts" onchange="saveConfig()"> Tablet</label>
                     </div>
                 </div>
+                <div class="status-row" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color: var(--text-dim);">Server Reroute Alerts</span>
+                    <div style="display:flex; gap:12px;">
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-server-reroute-alerts" onchange="saveConfig()"> HUD</label>
+                        <label style="cursor: pointer; font-size:0.8rem; color:#aaa;"><input type="checkbox" id="config-server-reroute-tablet-alerts" onchange="saveConfig()"> Tablet</label>
+                    </div>
+                </div>
             </div>
 
             <!-- Overlay Visibility Toggles -->
@@ -1528,7 +1535,7 @@
                         <span style="color:#666;">➔</span>
                         <input type="text" id="new-loc-val" placeholder="Friendly Name" class="modern-input"
                             style="flex:1; min-width:120px;">
-                        <select id="new-loc-type" class="modern-input" style="width:115px; font-size:0.75rem;">
+                        <select id="new-loc-type" class="modern-input" style="width:115px; font-size:0.75rem;" onchange="toggleParentDropdown()">
                             <option value="station">Station / Outpost</option>
                             <option value="room">Room (Interior)</option>
                             <option value="planet">Planet</option>
@@ -1546,10 +1553,11 @@
                             <option value="contested_zone">Contested Zone</option>
                             <option value="poi">Point of Interest</option>
                             <option value="hangar">Hangar Requests</option>
+                            <option value="ignore">Ignore Location</option>
                             <option value="other">Other</option>
                         </select>
-                        <select id="new-loc-parent" class="modern-input" style="width:95px; font-size:0.7rem; margin:0;">
-                            <option value="">No planet/moon</option>
+                        <select id="new-loc-parent" class="modern-input" style="width:115px; font-size:0.7rem; margin:0;" title="The parent planet or moon this location belongs to">
+                            <option value="">No parent</option>
                             <option value="Hurston">Hurston</option>
                             <option value="Crusader">Crusader</option>
                             <option value="ArcCorp">ArcCorp</option>
@@ -1567,18 +1575,19 @@
                             <option value="Clio">Clio</option>
                             <option value="Euterpe">Euterpe</option>
                             <option value="Pyro I">Pyro I</option>
-                            <option value="Pyro II">Pyro II</option>
-                            <option value="Pyro III">Pyro III</option>
+                            <option value="Monox">Monox</option>
+                            <option value="Bloom">Bloom</option>
                             <option value="Pyro IV">Pyro IV</option>
                             <option value="Pyro V">Pyro V</option>
-                            <option value="Pyro VI">Pyro VI</option>
+                            <option value="Terminus">Terminus</option>
+                            <option value="Adir">Adir</option>
+                            <option value="Fairo">Fairo</option>
+                            <option value="Fuego">Fuego</option>
+                            <option value="Ignis">Ignis</option>
+                            <option value="Vatra">Vatra</option>
+                            <option value="Vuur">Vuur</option>
                         </select>
-                        <select id="new-loc-orbit" class="modern-input" style="width:70px; font-size:0.65rem; margin:0;">
-                            <option value="on">On</option>
-                            <option value="orbiting">Orbiting</option>
-                            <option value="around">Around</option>
-                        </select>
-                        <select id="new-loc-system" class="modern-input" style="width:70px; font-size:0.7rem;">
+                        <select id="new-loc-system" class="modern-input" style="width:80px; font-size:0.7rem;">
                             <option value="Auto">Sys</option>
                             <option value="Stanton">Stanton</option>
                             <option value="Pyro">Pyro</option>
@@ -1587,8 +1596,11 @@
                         </select>
                         <button class="cyber-btn small" onclick="saveNewCustomLocation()"
                             style="margin:0;">Save</button>
+                        <select id="alias-target-select" class="modern-input" style="width:140px; font-size:0.65rem; margin:0;">
+                            <option value="">Alias to...</option>
+                        </select>
                         <button class="cyber-btn small" onclick="aliasGrabbedToExisting()"
-                            style="margin:0; background:rgba(0,150,255,0.15); border-color:rgba(0,150,255,0.4);" title="Add this code as an alias of an existing location">🔗 Alias</button>
+                            style="margin:0; background:rgba(0,150,255,0.15); border-color:rgba(0,150,255,0.4);" title="Add grabbed code as alias of selected location">🔗</button>
                     </div>
 
                     <!-- List -->
@@ -1638,7 +1650,7 @@
                         <div style="font-size: 0.7rem; color: var(--accent); opacity: 0.8; text-transform: uppercase; margin-bottom: 5px;">
                             📋 Unmapped Location Backlog <span id="backlog-count" style="color:#666; font-size:0.6rem;">(0)</span>
                         </div>
-                        <div id="backlog-list" style="max-height: 120px; overflow-y: auto; display:flex; flex-direction:column; gap:2px; font-family: monospace; font-size: 0.75rem;">
+                        <div id="backlog-list" style="max-height: 200px; overflow-y: auto; display:flex; flex-direction:column; gap:2px; font-family: monospace; font-size: 0.75rem;">
                             <div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped locations — good!</div>
                         </div>
                         <div style="display:flex; gap:5px; margin-top:5px;">
@@ -2379,7 +2391,19 @@
                     <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Example Log Line</label>
                     <input type="text" id="pm-example" class="modern-input"
                         style="margin:0; font-family:monospace; font-size:0.75rem;"
-                        placeholder="<SHUDEvent_OnNotification> You have joined channel 'Prowler : Player'">
+                        placeholder="<SHUDEvent_OnNotification> You have joined channel 'Prowler : Player'"
+                        oninput="onExampleLineInput()">
+                </div>
+
+                <!-- Interactive Segment Regex Helper -->
+                <div id="pm-tokenizer-container" style="display:none; background:rgba(0,0,0,0.4); border:1px dashed rgba(255,165,0,0.3); border-radius:4px; padding:10px; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.7rem; color:#ffa600; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">⚡ Click-to-Ignore Regex Builder</span>
+                        <span style="font-size:0.65rem; color:#888;">Select segments to make pattern player/time-agnostic</span>
+                    </div>
+                    <div id="pm-tokens-list" style="display:flex; flex-wrap:wrap; gap:6px; background:rgba(0,0,0,0.2); padding:8px; border-radius:4px; border:1px solid rgba(255,255,255,0.05); max-height:120px; overflow-y:auto;">
+                        <!-- dynamic token buttons will go here -->
+                    </div>
                 </div>
 
                 <!-- Regex Tester -->
@@ -2450,6 +2474,52 @@
                     </div>
                 </div>
 
+                <!-- Sub-HUD Configuration -->
+                <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:4px; border:1px solid rgba(255,255,255,0.08); margin-top:5px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.7rem; color:#ffa600; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">📋 Custom Sub-HUD Message</span>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:2;">
+                            <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Sub-HUD Text Label (Supports $1, $2)</label>
+                            <input type="text" id="pm-sub-hud-label" class="modern-input" placeholder="⚠️ INVENTORY OPEN" style="margin:0;">
+                        </div>
+                        <div style="flex:1;" id="pm-duration-container">
+                            <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Duration (Seconds)</label>
+                            <input type="number" id="pm-sub-hud-duration" class="modern-input" placeholder="e.g. 5 (0 for persistent)" style="margin:0;" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(255,165,0,0.05); padding:10px; border-radius:4px; border:1px solid rgba(255,165,0,0.15); margin-top:5px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" id="pm-is-stateful" onchange="toggleStatefulFields()">
+                        <label for="pm-is-stateful" style="font-size:0.8rem; color:#eee; cursor:pointer; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Stateful Alert (Start/Stop Pair)</label>
+                    </div>
+                    <div id="pm-stateful-fields" style="display:none; flex-direction:column; gap:10px; margin-top:8px; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
+                        <div>
+                            <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Stop/Closing Regex Pattern</label>
+                            <input type="text" id="pm-stop-regex" class="modern-input" placeholder="inventory.*removed from UI" style="margin:0; font-family:monospace; color:#ffaa55;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Stop Example Log Line</label>
+                            <input type="text" id="pm-stop-example" class="modern-input"
+                                style="margin:0; font-family:monospace; font-size:0.75rem;"
+                                placeholder="Example closing log text here..."
+                                oninput="onStopExampleLineInput()">
+                        </div>
+                        <!-- Interactive Segment Regex Helper for Stop Pattern -->
+                        <div id="pm-stop-tokenizer-container" style="display:none; background:rgba(0,0,0,0.4); border:1px dashed rgba(255,165,0,0.3); border-radius:4px; padding:10px; flex-direction:column; gap:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-size:0.7rem; color:#ffa600; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">⚡ Stop-Pattern Click-to-Ignore Regex Builder</span>
+                            </div>
+                            <div id="pm-stop-tokens-list" style="display:flex; flex-wrap:wrap; gap:6px; background:rgba(0,0,0,0.2); padding:8px; border-radius:4px; border:1px solid rgba(255,255,255,0.05); max-height:120px; overflow-y:auto;">
+                                <!-- dynamic stop token buttons will go here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">Notes</label>
                     <textarea id="pm-notes" class="modern-input" rows="2" style="margin:0; resize:vertical;"
@@ -2507,7 +2577,7 @@
                         style="flex:1; margin:0;">
                 </div>
                 <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-                    <select id="location-edit-type" class="modern-input" style="flex:1; font-size:0.75rem; margin:0;">
+                    <select id="location-edit-type" class="modern-input" style="flex:1; font-size:0.75rem; margin:0;" onchange="toggleEditParentDropdown()">
                         <option value="station">Station / Outpost</option>
                         <option value="room">Room (Interior)</option>
                         <option value="planet">Planet</option>
@@ -2525,10 +2595,11 @@
                         <option value="contested_zone">Contested Zone</option>
                         <option value="poi">Point of Interest</option>
                         <option value="hangar">Hangar Requests</option>
+                        <option value="ignore">Ignore Location</option>
                         <option value="other">Other</option>
                     </select>
-                    <select id="location-edit-parent" style="flex:0.8; font-size:0.7rem; margin:0; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 6px; color:#ccc;">
-                        <option value="">No planet/moon</option>
+                     <select id="location-edit-parent" style="flex:0.8; font-size:0.7rem; margin:0; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 6px; color:#ccc;">
+                        <option value="">No parent</option>
                         <option value="Hurston">Hurston</option>
                         <option value="Crusader">Crusader</option>
                         <option value="ArcCorp">ArcCorp</option>
@@ -2546,16 +2617,17 @@
                         <option value="Clio">Clio</option>
                         <option value="Euterpe">Euterpe</option>
                         <option value="Pyro I">Pyro I</option>
-                        <option value="Pyro II">Pyro II</option>
-                        <option value="Pyro III">Pyro III</option>
+                        <option value="Monox">Monox</option>
+                        <option value="Bloom">Bloom</option>
                         <option value="Pyro IV">Pyro IV</option>
                         <option value="Pyro V">Pyro V</option>
-                        <option value="Pyro VI">Pyro VI</option>
-                    </select>
-                    <select id="location-edit-orbit" style="width:60px; font-size:0.65rem; margin:0; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 4px; color:#ccc;">
-                        <option value="on">On</option>
-                        <option value="orbiting">Orbiting</option>
-                        <option value="around">Around</option>
+                        <option value="Terminus">Terminus</option>
+                        <option value="Adir">Adir</option>
+                        <option value="Fairo">Fairo</option>
+                        <option value="Fuego">Fuego</option>
+                        <option value="Ignis">Ignis</option>
+                        <option value="Vatra">Vatra</option>
+                        <option value="Vuur">Vuur</option>
                     </select>
                     <select id="location-edit-system" class="modern-input" style="flex:0.7; font-size:0.75rem; margin:0;">
                         <option value="Auto">System</option>
@@ -2606,6 +2678,7 @@
         let scanStrategy = 'bottom-most'; // Default for SC 4.0 cluster
         let soundEnabled = true;
         let soundVolume = 0.7;
+        let customLocations = {};
         let unknownCount = 0;
         let currentLocation = 'Searching...';
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2760,6 +2833,8 @@
                 enableMissionStatusTabletAlerts: document.getElementById('config-mission-tablet-alerts').checked,
                 enableCrimestatAlerts: document.getElementById('config-crimestat-alerts').checked,
                 enableCrimestatTabletAlerts: document.getElementById('config-crimestat-tablet-alerts').checked,
+                enableServerRerouteAlerts: document.getElementById('config-server-reroute-alerts').checked,
+                enableServerRerouteTabletAlerts: document.getElementById('config-server-reroute-tablet-alerts').checked,
                 showShipsProximityFeed: document.getElementById('config-ship-prox').checked,
                 showShipsTacticalFeed: document.getElementById('config-ship-tactical').checked,
                 showShipsOverlayHud: document.getElementById('config-ship-hud').checked,
@@ -2823,6 +2898,8 @@
             document.getElementById('config-mission-tablet-alerts').checked = config.enableMissionStatusTabletAlerts !== false;
             document.getElementById('config-crimestat-alerts').checked = config.enableCrimestatAlerts !== false;
             document.getElementById('config-crimestat-tablet-alerts').checked = config.enableCrimestatTabletAlerts !== false;
+            document.getElementById('config-server-reroute-alerts').checked = config.enableServerRerouteAlerts !== false;
+            document.getElementById('config-server-reroute-tablet-alerts').checked = config.enableServerRerouteTabletAlerts !== false;
 
             document.getElementById('config-ship-prox').checked = config.showShipsProximityFeed !== false;
             document.getElementById('config-ship-tactical').checked = config.showShipsTacticalFeed !== false;
@@ -3092,11 +3169,17 @@
                             <button onclick="addKosTarget('${entityId}', '${nameLabel}')" style="background:none; border:1px solid var(--danger); color:var(--danger); border-radius:3px; cursor:pointer; padding:1px 5px; font-size:0.65rem; margin-left:6px; font-family:inherit; outline:none; font-weight:bold; width:auto; display:inline-block;">🎯 +KOS</button>
                             <button onclick="addIgnoreTarget('${entityId}', '${nameLabel}')" style="background:none; border:1px solid #0099ff; color:#0099ff; border-radius:3px; cursor:pointer; padding:1px 5px; font-size:0.65rem; margin-left:6px; font-family:inherit; outline:none; font-weight:bold; width:auto; display:inline-block;">🛡️ Ignore</button>
                         `;
-                        if (window.trackRecentDetectedShip) {
-                            window.trackRecentDetectedShip(entityId, nameLabel, rawShip, rawLocation);
-                        }
                     }
                 }
+            }
+
+            if (!extraButton && rawLocation) {
+                const isMapped = customLocations && Object.prototype.hasOwnProperty.call(customLocations, rawLocation);
+                const btnLabel = isMapped ? '✏️ Edit' : '📍 Map';
+                const btnClass = isMapped ? 'cyber-btn small' : 'cyber-btn small warning';
+                extraButton = `
+                    <button class="${btnClass}" onclick="editOrMapLocation('${escapeHtml(rawLocation)}')" style="margin:0 0 0 8px; font-size:0.6rem; padding:1px 5px; vertical-align:middle; line-height:1.2;">${btnLabel}</button>
+                `;
             }
             
             const item = document.createElement('div');
@@ -3111,7 +3194,7 @@
             return item;
         }
 
-        function addDashItem(icon, text) { return addFeedItem('event-feed', icon, text); }
+        function addDashItem(icon, text, rawLocation = '') { return addFeedItem('event-feed', icon, text, null, '', rawLocation); }
         function addVconItem(icon, text) { addFeedItem('vcon-feed', icon, text); }
 
         // ═══ AUTH ═══
@@ -4134,7 +4217,7 @@
                 alert('This ID is already being tracked.');
                 return;
             }
-            const customLabel = await vcModal.prompt(`Enter a name/label for KOS Target ID ${id}:`, label || `Target ${id.substring(Math.max(0, id.length - 6))}`);
+            const customLabel = await vcModal.prompt('Rename KOS Target', `Enter a name/label for KOS Target ID ${id}:`, label || `Target ${id.substring(Math.max(0, id.length - 6))}`);
             if (customLabel === null) {
                 return;
             }
@@ -4404,8 +4487,24 @@
                 if (!isNoise) {
                     lastRawLocation = rawVal;
                     const sniffer = document.getElementById('last-raw-location');
-                    if (sniffer) sniffer.textContent = rawVal;
-                    updateLocationSuggestion(rawVal);
+                    // Skip display if this raw already has a custom mapping
+                    const alreadyMapped = Object.keys(customLocations || {}).find(k => {
+                        const v = customLocations[k];
+                        const name = typeof v === 'object' ? v.name : v;
+                        return k === rawVal || name === rawVal;
+                    });
+                    if (sniffer) {
+                        if (alreadyMapped) {
+                            sniffer.textContent = 'None (Mapped)';
+                            sniffer.style.opacity = '0.5';
+                        } else {
+                            sniffer.textContent = rawVal;
+                            sniffer.style.opacity = '1';
+                        }
+                    }
+                    if (!alreadyMapped) {
+                        updateLocationSuggestion(rawVal);
+                    }
                 }
             }
 
@@ -4430,11 +4529,11 @@
             switch (data.type) {
                 case 'LOCATION':
                     lastGlobalLocation = data.value;
-                    addDashItem('📍', `Location: <span class="feed-highlight">${data.value}</span>`);
+                    addDashItem('📍', `Location: <span class="feed-highlight">${data.value}</span>`, data.raw || '');
                     break;
                 case 'LOCATION_HINT':
                     const display = lastGlobalLocation ? `${lastGlobalLocation} — ${data.value}` : data.value;
-                    addDashItem('🗺️', `Area: <span class="feed-highlight">${display}</span>`);
+                    addDashItem('🗺️', `Area: <span class="feed-highlight">${display}</span>`, data.raw || data.value || '');
                     break;
                 case 'QUANTUM':
                     addDashItem('🚀', `Quantum: <span class="feed-highlight">${data.value === 'entered' ? 'ENGAGED' : 'DISENGAGED'}</span>`);
@@ -4872,7 +4971,7 @@
             document.getElementById('last-ship-debug').style.color = '#fff';
         });
         // ═══ CUSTOM LOCATIONS (Fixed) ═══
-        let customLocations = {};
+        customLocations = {};
 
         function loadCustomLocationList() {
             ipcRenderer.invoke('settings:get-custom-locations').then(locs => {
@@ -4895,7 +4994,7 @@
                 const type = typeof val === 'object' ? val.type || '' : '';
                 const system = typeof val === 'object' ? val.system || '' : '';
 
-                const typeColors = { planet: '#00ff88', moon: '#00ccaa', station: '#ffa500', space_station: '#ffa500', gateway: '#a855f7', landing_zone: '#00c8ff', contested_zone: '#ff4444', hangar: '#888' };
+                const typeColors = { planet: '#00ff88', moon: '#00ccaa', station: '#ffa500', space_station: '#ffa500', gateway: '#a855f7', landing_zone: '#00c8ff', contested_zone: '#ff4444', hangar: '#888', ignore: '#ff4444' };
                 const typeColor = typeColors[type] || '#888';
                 const typeLabel = type ? type.replace(/_/g, ' ') : '';
                 const typeBadge = typeLabel ? `<span style="background:rgba(0,0,0,0.3); padding:2px 5px; border-radius:3px; font-size:0.6rem; margin-left:5px; color:${typeColor}; border:1px solid ${typeColor}33;">${typeLabel}</span>` : '';
@@ -5010,8 +5109,9 @@
         // ═══ UNMAPPED LOCATION BACKLOG QUEUE ═══
         window.addToBacklog = function(raw) {
             if (!raw || unmappedLocationQueue.some(e => e.raw === raw)) return;
-            // Check not already custom-mapped
-            if (customLocations && getCustomLocationMatch(raw, raw, customLocations)) return;
+            // Use exact key match only — fuzzy matching was too aggressive and could
+            // prevent legitimate new LOCATION_ codes from showing up in the backlog
+            if (customLocations && Object.prototype.hasOwnProperty.call(customLocations, raw)) return;
             unmappedLocationQueue.push({ raw, time: Date.now() });
             if (unmappedLocationQueue.length > 50) unmappedLocationQueue.shift();
             updateBacklogUI();
@@ -5047,7 +5147,8 @@
                 list.innerHTML = '<div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped locations — good!</div>';
                 return;
             }
-            const shown = unmappedLocationQueue.slice(0, 10);
+
+            const shown = unmappedLocationQueue;
             list.innerHTML = shown.map((entry, i) => {
                 const raw = entry.raw || entry;
                 const ts = entry.time;
@@ -5060,21 +5161,61 @@
                         <div style="font-size:0.65rem; color:#666;">Suggested: ${escapeHtml(suggested)}${timeStr ? ' <span style="color:#555;">· ' + timeStr + '</span>' : ''}</div>
                     </div>
                     <button class="cyber-btn small" onclick="grabFromBacklog('${escapeHtml(raw)}')" style="margin:0; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Map</button>
+                    <button class="cyber-btn small danger" onclick="ignoreFromBacklog('${escapeHtml(raw)}')" style="margin:0 0 0 5px; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Ignore</button>
                 </div>`;
             }).join('');
             if (unmappedLocationQueue.length > 10) {
-                list.innerHTML += `<div style="color:#555; font-size:0.6rem; padding:2px; text-align:center;">+ ${unmappedLocationQueue.length - 10} more</div>`;
+                list.innerHTML += `<div style="color:#555; font-size:0.6rem; padding:2px; text-align:center;">${unmappedLocationQueue.length} total — scroll for more</div>`;
             }
         }
 
+        window.ignoreFromBacklog = async function(raw) {
+            if (!raw) return;
+            const finalObj = { name: 'Ignore', type: 'ignore', system: '', parentBody: '' };
+            const current = await ipcRenderer.invoke('settings:get-custom-locations');
+            current[raw] = finalObj;
+            await ipcRenderer.invoke('settings:save-custom-locations', current);
+            customLocations = current;
+
+            // Remove from backlog
+            const idx = unmappedLocationQueue.findIndex(e => (e.raw || e) === raw);
+            if (idx !== -1) unmappedLocationQueue.splice(idx, 1);
+            updateBacklogUI();
+
+            // Refresh HUD to reflect this ignored location immediately
+            ipcRenderer.invoke('hud:refresh-location', raw, finalObj).catch(() => {});
+
+            // Feedback
+            addDashItem('🚫', `Ignored location ${escapeHtml(raw)}`);
+            renderCustomLocationList();
+        };
+
         window.grabFromBacklog = function(raw) {
-            grabRawLocation();
-            document.getElementById('new-loc-key').value = raw;
-            const nameEl = document.getElementById('suggested-location-name');
-            if (nameEl && nameEl.textContent) {
-                document.getElementById('new-loc-val').value = nameEl.textContent;
+            // Directly populate form with this specific backlog entry — don't call grabRawLocation()
+            // which would overwrite the key with lastRawLocation (potentially a different location)
+            const keyInput = document.getElementById('new-loc-key');
+            const valInput = document.getElementById('new-loc-val');
+            if (keyInput) keyInput.value = raw;
+            // Auto-fill the suggested friendly name
+            const suggested = getSuggestedName(raw);
+            if (valInput && suggested) valInput.value = suggested;
+            if (valInput) valInput.focus();
+            // Switch to config tab if not already there
+            if (typeof switchTab === 'function') switchTab('config');
+        };
+
+        window.editOrMapLocation = function(raw) {
+            if (!raw) return;
+            const cleanRaw = raw.trim();
+            const isMapped = customLocations && Object.prototype.hasOwnProperty.call(customLocations, cleanRaw);
+            if (isMapped) {
+                // Open modal search & specific key edit form
+                openLocationSearch();
+                selectLocationForEdit(encodeURIComponent(cleanRaw));
+            } else {
+                // Not mapped — switch to config tab, grab the code, suggest a name
+                window.grabFromBacklog(cleanRaw);
             }
-            document.getElementById('new-loc-val').focus();
         };
 
         window.advanceBacklog = function() {
@@ -5242,7 +5383,41 @@
             div.className = 'log-line';
             div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.06); padding: 5px 4px; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s; border-radius: 2px;';
             div.title = 'Click to copy & use in Custom Locations';
-            div.textContent = line;
+
+            let logDate;
+            let logText = line;
+            const match = typeof line === 'string' ? line.match(/^<(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)>\s*/) : null;
+            if (match) {
+                logDate = new Date(match[1]);
+                logText = line.substring(match[0].length);
+            } else {
+                logDate = new Date();
+            }
+
+            let formattedTime = '';
+            try {
+                formattedTime = logDate.toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            } catch (e) {
+                formattedTime = logDate.toISOString();
+            }
+
+            const timeSpan = document.createElement('span');
+            timeSpan.style.fontWeight = 'bold';
+            timeSpan.style.color = '#ff9f0a'; // UK orange/amber accent
+            timeSpan.style.marginRight = '8px';
+            timeSpan.textContent = `[${formattedTime}]`;
+
+            const textNode = document.createTextNode(logText);
+            div.appendChild(timeSpan);
+            div.appendChild(textNode);
 
             div.onclick = () => {
                 navigator.clipboard.writeText(line);
@@ -5494,23 +5669,21 @@
             const type = document.getElementById('new-loc-type')?.value || 'station';
             const system = document.getElementById('new-loc-system').value;
             const parentBody = document.getElementById('new-loc-parent')?.value || '';
-            const orbitType = document.getElementById('new-loc-orbit')?.value || '';
-            const parentDisplay = parentBody ? (orbitType ? parentBody + ' (' + orbitType + ')' : parentBody) : '';
             if (!key || !val) return alert('Please enter both a raw code and a friendly name.');
 
             // Build object with type info
-            // Auto-detect type for numeric location IDs: they're likely planets/moons
             const selectedType = document.getElementById('new-loc-type')?.value || 'station';
-            const finalType = key.startsWith('LOCATION_') && selectedType === 'station' ? 'moon' : selectedType;
-            let finalObj = { name: val, type: finalType, system: system !== 'Auto' ? system : '', parentBody: parentDisplay };
-            // planet/moon → shows under Planet/Moon on the HUD
-            // station/outpost/gateway/etc. → shows under Location, parentBody → Planet/Moon
+            const finalType = selectedType;
+            let finalObj = { name: val, type: finalType, system: system !== 'Auto' ? system : '', parentBody };
 
             // Fetch current from main to avoid overwriting other session changes
             const current = await ipcRenderer.invoke('settings:get-custom-locations');
             current[key] = finalObj;
             await ipcRenderer.invoke('settings:save-custom-locations', current);
             customLocations = current;
+
+            // Force HUD to reflect this location immediately
+            ipcRenderer.invoke('hud:refresh-location', key, finalObj).catch(() => {});
 
             // Feedback
             addDashItem('✅', `Mapped <span style="color:#ffaa00; font-family:monospace;">${escapeHtml(key)}</span> → <span style="color:#00ff88;">${escapeHtml(val)}</span>`);
@@ -5521,7 +5694,7 @@
             document.getElementById('new-loc-system').value = 'Auto';
             if (document.getElementById('new-loc-type')) document.getElementById('new-loc-type').value = 'station';
             if (document.getElementById('new-loc-parent')) document.getElementById('new-loc-parent').value = '';
-            if (document.getElementById('new-loc-orbit')) document.getElementById('new-loc-orbit').value = 'on';
+            toggleParentDropdown();
             renderCustomLocationList();
         }
 
@@ -5536,14 +5709,22 @@
                 return;
             }
 
-            const targetKey = await vcModal.prompt('Add as Alias', `Enter the raw code of the existing location to alias "${aliasKey}" to (from the list above):`);
-            if (!targetKey || !targetKey.trim()) return;
+            const selectEl = document.getElementById('alias-target-select');
+            const targetKey = selectEl ? selectEl.value : '';
+            
+            
 
-            const trimmedTarget = targetKey.trim();
+            
+            
+            if (!targetKey) {
+                showNotification('No Target', 'Select an existing location from the dropdown first.');
+                return;
+            }
+
             const current = await ipcRenderer.invoke('settings:get-custom-locations');
-            const existing = current[trimmedTarget];
+            const existing = current[targetKey];
             if (!existing) {
-                showNotification('Not Found', `"${trimmedTarget}" is not mapped yet. Map it first, then alias to it.`);
+                showNotification('Not Found', 'Selected location no longer exists.');
                 return;
             }
 
@@ -5563,6 +5744,19 @@
             document.getElementById('new-loc-val').value = '';
         }
 
+        function refreshAliasDropdown() {
+            const selectEl = document.getElementById('alias-target-select');
+            if (!selectEl) return;
+            const currentVal = selectEl.value;
+            const entries = Object.entries(customLocations);
+            selectEl.innerHTML = '<option value="">Alias to...</option>' +
+                entries.map(([key, val]) => {
+                    const name = typeof val === 'object' ? val.name : val;
+                    return `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`;
+                }).join('');
+            selectEl.value = entries.some(([k]) => k === currentVal) ? currentVal : '';
+        }
+
         window.deleteCustomLocation = async function (key) {
             if (await vcModal.confirm('Delete Location Mapping', `Remove location mapping for "${key}"?`)) {
                 const current = await ipcRenderer.invoke('settings:get-custom-locations');
@@ -5576,6 +5770,10 @@
                 }
             }
         };
+
+        function toggleParentDropdown() { const parentEl = document.getElementById('new-loc-parent'); if (parentEl) parentEl.style.display = ''; }
+
+        function toggleEditParentDropdown() { const parentEl = document.getElementById('location-edit-parent'); if (parentEl) parentEl.style.display = ''; }
 
         window.addLocationAlias = async function(primaryKey) {
             const decodedKey = decodeURIComponent(primaryKey);
@@ -6135,15 +6333,13 @@
             const editTypeEl = document.getElementById('location-edit-type');
             if (editTypeEl) editTypeEl.value = typeof valObj === 'object' ? valObj.type || 'station' : 'station';
             const parentBodyRaw = typeof valObj === 'object' ? valObj.parentBody || '' : '';
-            // Parse "Hurston (orbiting)" or "Ita (on)" or just "Hurston"
+            // Strip legacy orbit suffix if present: "Hurston (orbiting)" → "Hurston"
             let parentName = parentBodyRaw.replace(/\s*\(.*?\)\s*$/, '').trim();
-            let orbitType = (parentBodyRaw.match(/\(([^)]+)\)$/) || [])[1] || 'on';
             const editParentEl = document.getElementById('location-edit-parent');
             if (editParentEl) editParentEl.value = parentName || '';
-            const editOrbitEl = document.getElementById('location-edit-orbit');
-            if (editOrbitEl) editOrbitEl.value = orbitType;
             document.getElementById('location-edit-system').value = typeof valObj === 'object' ? valObj.system || 'Auto' : 'Auto';
             document.getElementById('location-edit-panel').style.display = 'block';
+            toggleEditParentDropdown();
             renderLocationSearchResults(); // Re-render to show selection highlighting
         }
 
@@ -6151,8 +6347,6 @@
             const newVal = document.getElementById('location-edit-val').value.trim();
             const newType = document.getElementById('location-edit-type')?.value || 'station';
             const newParent = document.getElementById('location-edit-parent')?.value || '';
-            const newOrbit = document.getElementById('location-edit-orbit')?.value || 'on';
-            const parentDisplay = newParent ? newParent + ' (' + newOrbit + ')' : '';
             const newSystem = document.getElementById('location-edit-system').value;
             const originalKey = document.getElementById('location-edit-original-key').value;
 
@@ -6170,10 +6364,13 @@
             }
 
             // Update with new value
-            const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '', parentBody: parentDisplay };
+            const finalObj = { name: newVal, type: newType, system: newSystem !== 'Auto' ? newSystem : '', parentBody: newParent };
             current[selectedLocationKey] = finalObj;
             await ipcRenderer.invoke('settings:save-custom-locations', current);
             customLocations = current;
+
+            // Force HUD to reflect this location immediately
+            ipcRenderer.invoke('hud:refresh-location', selectedLocationKey, finalObj).catch(() => {});
 
             // Update both modal and main location list
             addDashItem('✅', `Updated: ${selectedLocationKey} → ${escapeHtml(newVal)}`);
@@ -6298,6 +6495,314 @@
             renderPatternDB(filtered);
         }
 
+        function toggleStatefulFields() {
+            const isStateful = document.getElementById('pm-is-stateful').checked;
+            document.getElementById('pm-stateful-fields').style.display = isStateful ? 'flex' : 'none';
+            document.getElementById('pm-duration-container').style.display = isStateful ? 'none' : 'block';
+        }
+
+        let pmTokens = [];
+
+        function escapeRegExpString(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function onExampleLineInput() {
+            const exampleLine = document.getElementById('pm-example').value.trim();
+            const container = document.getElementById('pm-tokenizer-container');
+            const list = document.getElementById('pm-tokens-list');
+            if (!exampleLine) {
+                container.style.display = 'none';
+                list.innerHTML = '';
+                pmTokens = [];
+                return;
+            }
+
+            container.style.display = 'flex';
+            
+            const tokenRegex = /(<[^>]+>|\[[^\]]+\]|\b\d+\.\d+\b|\b\d+\b|\b[a-zA-Z0-9_-]+\b|[^a-zA-Z0-9\s]|\s+)/g;
+            const rawTokens = exampleLine.match(tokenRegex) || [];
+            
+            const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
+
+            pmTokens = rawTokens.map(tok => {
+                let defaultType = 'literal';
+                if (tok.startsWith('<') && tok.endsWith('>') && (tok.includes('-') || tok.includes(':'))) {
+                    defaultType = 'ignored';
+                } else if (playerHandle && tok.includes(playerHandle)) {
+                    defaultType = 'player';
+                }
+                
+                return {
+                    text: tok,
+                    originalText: tok,
+                    type: defaultType
+                };
+            });
+
+            renderTokens();
+            updateGeneratedRegex();
+        }
+
+        function renderTokens() {
+            const list = document.getElementById('pm-tokens-list');
+            list.innerHTML = '';
+            
+            const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
+
+            pmTokens.forEach((tok, idx) => {
+                if (tok.originalText.trim() === '') return;
+
+                const btn = document.createElement('button');
+                btn.className = 'cyber-btn small';
+                btn.style.margin = '2px';
+                btn.style.fontSize = '0.7rem';
+                btn.style.fontFamily = 'monospace';
+                btn.style.padding = '2px 6px';
+                btn.style.textTransform = 'none';
+                btn.style.letterSpacing = 'normal';
+                btn.style.height = 'auto';
+                
+                if (tok.type === 'ignored') {
+                    btn.style.background = 'rgba(255,255,255,0.05)';
+                    btn.style.color = '#777';
+                    btn.style.border = '1px solid rgba(255,255,255,0.1)';
+                    btn.textContent = `Ignore: ${tok.originalText}`;
+                } else if (tok.type === 'player') {
+                    btn.style.background = 'rgba(0,170,255,0.2)';
+                    btn.style.color = '#00aaff';
+                    btn.style.border = '1px solid #00aaff';
+                    btn.textContent = `{player}`;
+                } else {
+                    btn.style.background = 'rgba(255,165,0,0.1)';
+                    btn.style.color = '#ffa500';
+                    btn.style.border = '1px solid rgba(255,165,0,0.3)';
+                    btn.textContent = tok.originalText;
+                }
+
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    if (tok.type === 'literal') {
+                        if (playerHandle && tok.originalText.includes(playerHandle)) {
+                            tok.type = 'player';
+                        } else {
+                            tok.type = 'ignored';
+                        }
+                    } else if (tok.type === 'player') {
+                        tok.type = 'ignored';
+                    } else {
+                        tok.type = 'literal';
+                    }
+                    renderTokens();
+                    updateGeneratedRegex();
+                };
+
+                list.appendChild(btn);
+            });
+        }
+
+        function updateGeneratedRegex() {
+            const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
+
+            let regexParts = [];
+            let lastWasIgnored = false;
+
+            pmTokens.forEach(tok => {
+                if (tok.originalText.trim() === '') {
+                    regexParts.push(tok.originalText);
+                    lastWasIgnored = false;
+                    return;
+                }
+
+                if (tok.type === 'ignored') {
+                    if (!lastWasIgnored) {
+                        if (tok.originalText.startsWith('[') && tok.originalText.endsWith(']')) {
+                            if (/\[\d+\.\d+\]/.test(tok.originalText)) {
+                                regexParts.push('\\[\\d+\\.\\d+\\]');
+                            } else if (/\[\d+\]/.test(tok.originalText)) {
+                                regexParts.push('\\[\\d+\\]');
+                            } else {
+                                regexParts.push('\\[.*?\\]');
+                            }
+                            lastWasIgnored = false;
+                        } else if (tok.originalText.startsWith('<') && tok.originalText.endsWith('>')) {
+                            regexParts.push('<.*?>');
+                            lastWasIgnored = false;
+                        } else if (/^\d+\.\d+$/.test(tok.originalText)) {
+                            regexParts.push('\\d+\\.\\d+');
+                            lastWasIgnored = false;
+                        } else if (/^\d+$/.test(tok.originalText)) {
+                            regexParts.push('\\d+');
+                            lastWasIgnored = false;
+                        } else {
+                            regexParts.push('.*?');
+                            lastWasIgnored = true;
+                        }
+                    }
+                } else if (tok.type === 'player') {
+                    let raw = tok.originalText;
+                    let replaced = raw.replace(playerHandle, '{player}');
+                    replaced = escapeRegExpString(replaced).replace('\\{player\\}', '{player}');
+                    regexParts.push(replaced);
+                    lastWasIgnored = false;
+                } else {
+                    regexParts.push(escapeRegExpString(tok.originalText));
+                    lastWasIgnored = false;
+                }
+            });
+
+            document.getElementById('pm-regex').value = regexParts.join('');
+        }
+
+        let pmStopTokens = [];
+
+        function onStopExampleLineInput() {
+            const exampleLine = document.getElementById('pm-stop-example').value.trim();
+            const container = document.getElementById('pm-stop-tokenizer-container');
+            const list = document.getElementById('pm-stop-tokens-list');
+            if (!exampleLine) {
+                container.style.display = 'none';
+                list.innerHTML = '';
+                pmStopTokens = [];
+                return;
+            }
+
+            container.style.display = 'flex';
+            
+            const tokenRegex = /(<[^>]+>|\[[^\]]+\]|\b\d+\.\d+\b|\b\d+\b|\b[a-zA-Z0-9_-]+\b|[^a-zA-Z0-9\s]|\s+)/g;
+            const rawTokens = exampleLine.match(tokenRegex) || [];
+            
+            const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
+
+            pmStopTokens = rawTokens.map(tok => {
+                let defaultType = 'literal';
+                if (tok.startsWith('<') && tok.endsWith('>') && (tok.includes('-') || tok.includes(':'))) {
+                    defaultType = 'ignored';
+                } else if (playerHandle && tok.includes(playerHandle)) {
+                    defaultType = 'player';
+                }
+                
+                return {
+                    text: tok,
+                    originalText: tok,
+                    type: defaultType
+                };
+            });
+
+            renderStopTokens();
+            updateGeneratedStopRegex();
+        }
+
+        function renderStopTokens() {
+            const list = document.getElementById('pm-stop-tokens-list');
+            list.innerHTML = '';
+            
+            const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
+
+            pmStopTokens.forEach((tok, idx) => {
+                if (tok.originalText.trim() === '') return;
+
+                const btn = document.createElement('button');
+                btn.className = 'cyber-btn small';
+                btn.style.margin = '2px';
+                btn.style.fontSize = '0.7rem';
+                btn.style.fontFamily = 'monospace';
+                btn.style.padding = '2px 6px';
+                btn.style.textTransform = 'none';
+                btn.style.letterSpacing = 'normal';
+                btn.style.height = 'auto';
+                
+                if (tok.type === 'ignored') {
+                    btn.style.background = 'rgba(255,255,255,0.05)';
+                    btn.style.color = '#777';
+                    btn.style.border = '1px solid rgba(255,255,255,0.1)';
+                    btn.textContent = `Ignore: ${tok.originalText}`;
+                } else if (tok.type === 'player') {
+                    btn.style.background = 'rgba(0,170,255,0.2)';
+                    btn.style.color = '#00aaff';
+                    btn.style.border = '1px solid #00aaff';
+                    btn.textContent = `{player}`;
+                } else {
+                    btn.style.background = 'rgba(255,165,0,0.1)';
+                    btn.style.color = '#ffa500';
+                    btn.style.border = '1px solid rgba(255,165,0,0.3)';
+                    btn.textContent = tok.originalText;
+                }
+
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    if (tok.type === 'literal') {
+                        if (playerHandle && tok.originalText.includes(playerHandle)) {
+                            tok.type = 'player';
+                        } else {
+                            tok.type = 'ignored';
+                        }
+                    } else if (tok.type === 'player') {
+                        tok.type = 'ignored';
+                    } else {
+                        tok.type = 'literal';
+                    }
+                    renderStopTokens();
+                    updateGeneratedStopRegex();
+                };
+
+                list.appendChild(btn);
+            });
+        }
+
+        function updateGeneratedStopRegex() {
+            const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
+
+            let regexParts = [];
+            let lastWasIgnored = false;
+
+            pmStopTokens.forEach(tok => {
+                if (tok.originalText.trim() === '') {
+                    regexParts.push(tok.originalText);
+                    lastWasIgnored = false;
+                    return;
+                }
+
+                if (tok.type === 'ignored') {
+                    if (!lastWasIgnored) {
+                        if (tok.originalText.startsWith('[') && tok.originalText.endsWith(']')) {
+                            if (/\[\d+\.\d+\]/.test(tok.originalText)) {
+                                regexParts.push('\\[\\d+\\.\\d+\\]');
+                            } else if (/\[\d+\]/.test(tok.originalText)) {
+                                regexParts.push('\\[\\d+\\]');
+                            } else {
+                                regexParts.push('\\[.*?\\]');
+                            }
+                            lastWasIgnored = false;
+                        } else if (tok.originalText.startsWith('<') && tok.originalText.endsWith('>')) {
+                            regexParts.push('<.*?>');
+                            lastWasIgnored = false;
+                        } else if (/^\d+\.\d+$/.test(tok.originalText)) {
+                            regexParts.push('\\d+\\.\\d+');
+                            lastWasIgnored = false;
+                        } else if (/^\d+$/.test(tok.originalText)) {
+                            regexParts.push('\\d+');
+                            lastWasIgnored = false;
+                        } else {
+                            regexParts.push('.*?');
+                            lastWasIgnored = true;
+                        }
+                    }
+                } else if (tok.type === 'player') {
+                    let raw = tok.originalText;
+                    let replaced = raw.replace(playerHandle, '{player}');
+                    replaced = escapeRegExpString(replaced).replace('\\{player\\}', '{player}');
+                    regexParts.push(replaced);
+                    lastWasIgnored = false;
+                } else {
+                    regexParts.push(escapeRegExpString(tok.originalText));
+                    lastWasIgnored = false;
+                }
+            });
+
+            document.getElementById('pm-stop-regex').value = regexParts.join('');
+        }
+
         function showAddPatternModal() {
             document.getElementById('logdb-modal-title').textContent = 'Add Pattern';
             document.getElementById('pm-name').value = '';
@@ -6306,13 +6811,21 @@
             document.getElementById('pm-status').value = 'research';
             document.getElementById('pm-regex').value = '';
             document.getElementById('pm-example').value = '';
-            document.getElementById('pm-hue').value = '';
+            document.getElementById('pm-hue').value = 'none';
             document.getElementById('pm-overlay').value = 'none';
             document.getElementById('pm-alert').value = 'none';
             document.getElementById('pm-warning').value = '';
             document.getElementById('pm-reaction').value = '';
             document.getElementById('pm-notes').value = '';
             document.getElementById('pm-edit-id').value = '';
+            document.getElementById('pm-is-stateful').checked = false;
+            document.getElementById('pm-sub-hud-label').value = '';
+            document.getElementById('pm-sub-hud-duration').value = '';
+            document.getElementById('pm-stop-regex').value = '';
+            document.getElementById('pm-stop-example').value = '';
+            toggleStatefulFields();
+            onExampleLineInput();
+            onStopExampleLineInput();
             document.getElementById('pm-test-result').textContent = 'Click Test to verify regex against example';
             document.getElementById('pm-test-result').style.color = '#666';
             document.getElementById('logdb-modal').style.display = 'flex';
@@ -6335,6 +6848,14 @@
             document.getElementById('pm-reaction').value = p.reaction || '';
             document.getElementById('pm-notes').value = p.notes || '';
             document.getElementById('pm-edit-id').value = id;
+            document.getElementById('pm-is-stateful').checked = !!p.isStateful;
+            document.getElementById('pm-sub-hud-label').value = p.subHudLabel || '';
+            document.getElementById('pm-sub-hud-duration').value = p.subHudDuration || '';
+            document.getElementById('pm-stop-regex').value = p.stopRegex || '';
+            document.getElementById('pm-stop-example').value = p.stopExample || '';
+            toggleStatefulFields();
+            onExampleLineInput();
+            onStopExampleLineInput();
             document.getElementById('pm-test-result').textContent = 'Click Test to verify regex against example';
             document.getElementById('pm-test-result').style.color = '#666';
             document.getElementById('logdb-modal').style.display = 'flex';
@@ -6358,7 +6879,12 @@
                 alert: document.getElementById('pm-alert').value,
                 warning: document.getElementById('pm-warning').value.trim(),
                 reaction: document.getElementById('pm-reaction').value.trim(),
-                notes: document.getElementById('pm-notes').value.trim()
+                notes: document.getElementById('pm-notes').value.trim(),
+                isStateful: document.getElementById('pm-is-stateful').checked,
+                subHudLabel: document.getElementById('pm-sub-hud-label').value.trim(),
+                subHudDuration: parseInt(document.getElementById('pm-sub-hud-duration').value) || 0,
+                stopRegex: document.getElementById('pm-stop-regex').value.trim(),
+                stopExample: document.getElementById('pm-stop-example').value.trim()
             };
 
             if (!data.name || !data.regex) {
@@ -6414,7 +6940,19 @@
             }
 
             try {
-                const re = new RegExp(regex, 'i');
+                let regexBody = regex;
+                const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
+                const escapedHandle = escapeRegExpString(playerHandle);
+                regexBody = regexBody.replace(/{player}/g, escapedHandle);
+
+                let flags = 'i';
+                if (regexBody.startsWith('/') && regexBody.lastIndexOf('/') > 0) {
+                    const lastSlash = regexBody.lastIndexOf('/');
+                    flags = regexBody.substring(lastSlash + 1);
+                    regexBody = regexBody.substring(1, lastSlash);
+                }
+
+                const re = new RegExp(regexBody, flags);
                 const match = example.match(re);
                 if (match) {
                     resultEl.style.color = '#00ff88';
@@ -6655,6 +7193,23 @@
         loadCustomShipList();
         loadPatternDB();
         updateTeamUIs();
+
+        // ─── Unmapped Location Backlog Sync ─────────────────────────────
+        // The main process caches every NEW_LOCATION event even before the
+        // dashboard window is ready. We fetch that cache here so that any
+        // locations discovered during the initial log scan (e.g. Jackson's
+        // Swamp) show up in the backlog queue immediately on startup.
+        ipcRenderer.invoke('settings:get-unmapped-backlog').then(backlog => {
+            if (!Array.isArray(backlog) || backlog.length === 0) return;
+            console.log(`[Dashboard] Restoring ${backlog.length} unmapped location(s) from startup backlog.`);
+            backlog.forEach(raw => {
+                if (typeof addToBacklog === 'function') addToBacklog(raw);
+            });
+        }).catch(err => {
+            console.warn('[Dashboard] Could not fetch unmapped backlog:', err);
+        });
+        // ────────────────────────────────────────────────────────────────
+
         function setAccent(color) {
             document.getElementById('config-accent-color').value = color;
             saveConfig();
@@ -7411,8 +7966,9 @@
                 unreleasedList.innerHTML = uniqueUnreleased.map(b => {
                     const isCollected = isMasterCollected(b.name, true);
                     return bpRow(b.name, b.category, isCollected, 'In Files (Not Available In-Game)', normTimestampMap);
-                }).join('');
-            }
+            }).join('');
+            refreshAliasDropdown();
+        }
         }
 
         function bpRow(name, category, have, source, normTimestampMap = {}) {

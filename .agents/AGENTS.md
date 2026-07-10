@@ -90,6 +90,42 @@ This document records critical implementation details, log parsing formats, and 
 | 2.11.26 | Completely disable the duplicate small alert box (showAlert) in overlay.html to resolve overlapping warnings under all scenarios. |
 | 2.11.27 | Sync tablet filters from configuration, group multiple loading ships (>1 threshold), resolve duplicate ship entering alerts, style blueprint category options, and display user's customized location names in respawn alerts. |
 | 2.11.28 | Implement KOS targets tab with a search/filter, a list of recently detected ships/IDs, and settings for auto-recording clips (hotkeys and triggers). |
+| 2.11.29 | Implement unmapped location backlog caching in main.js to fix startup race condition (Jackson's Swamp now populates immediately); format live log stream with bold UK-formatted timestamps (en-GB locale) on the left. |
+
+## 10. Unmapped Location Backlog Queue Startup Sync
+- **The Issue**: During initial startup log scanning, `NEW_LOCATION` events (like Jackson's Swamp or other raw unmapped locations) fire before the dashboard window has loaded. Without caching, these events are lost, causing the unmapped location sniffer queue on the dashboard to start empty.
+- **Backlog Cache**:
+  - `main.js` maintains an in-memory `Set` called `unmappedLocationBacklog`.
+  - When `NEW_LOCATION` is emitted, if the raw key is not already in `config.customLocations`, it is added to `unmappedLocationBacklog` (capped at 100 entries).
+  - An IPC handler `settings:get-unmapped-backlog` is exposed to return the array of uncached unmapped location keys.
+  - When a location is mapped (saved), it is deleted from the `unmappedLocationBacklog` set.
+- **Dashboard Restoration**: On startup, `dashboard.html` invokes `settings:get-unmapped-backlog` and calls `addToBacklog(raw)` on each key to populate the sniffer list. Do NOT remove or bypass this IPC sync sequence.
+
+## 11. Live Log Stream Bold UK Timestamps
+- **Formatting**: Raw log lines displayed in the dashboard's "Live Log Stream" (#raw-log-list) must show the date and time on the left in bold, formatted in the UK locale (`en-GB` format: `DD/MM/YYYY, HH:mm:ss`).
+- **Implementation**:
+  - `addRawLogLine(line)` in `dashboard.html` parses the standard ISO/UTC timestamp from the beginning of the `Game.log` line using regex matching.
+  - If a timestamp isn't present, it falls back to the current local system date and time.
+  - It creates a bold span with `#ff9f0a` (amber/orange) styling containing `[DD/MM/YYYY, HH:mm:ss] ` prepended to the log text.
+  - The raw line text remains fully copyable to the clipboard when clicked (so custom location parsing remains fully functional).
+
+## 12. Non-Regression and Pattern Integrity Policy
+- **No Feature Deletions**: Do not delete, disable, or speculative-bypass any modular parsers (such as `navigation.js`, `combat.js`, `vehicle.js`, etc.) or their corresponding HUD overlays.
+- **Verification Requirement**: Whenever modifications are made to main.js, parsers, or dashboard/overlay layouts, the application must be packaged and tested using `npm run build:fast` to ensure syntactic and operational integrity.
+
+## 13. Custom Pattern Manager Features & Dynamic Placeholders
+- **Dynamic `{player}` Handle Replacement**:
+  - Both starting and stop patterns support the `{player}` placeholder string.
+  - The compiler in `custom.js` replaces `{player}` with the escaped RSI handle configuration (falling back to `TypicallyBrit_ish` if empty) to ensure custom patterns remain player-agnostic.
+  - The regex tester inside `dashboard.html` likewise swaps `{player}` with the active user settings value before testing against example logs.
+- **Dual Click-to-Ignore Regex Builders**:
+  - The modal has visual tokenizers for both the primary pattern and the stateful stop pattern.
+  - Segment lists (`pm-tokens-list`, `pm-stop-tokens-list`) dynamically parse lines, highlight literal matching elements, and allow selecting tokens to automatically translate them to ignoring regex rules (like numeric wildcards `\d+`, float wildcards `\d+\.\d+`, or general wildcards `.*?`).
+- **Sub-HUD Text & Timers**:
+  - Sub-HUD Text Labels are exposed globally and can be added to both stateful and non-stateful alerts.
+  - Stateful alerts clear the Sub-HUD banner when their stop pattern matches.
+  - Non-stateful alerts support a `subHudDuration` parameter. The engine in `custom.js` utilizes `setTimeout` to automatically clear/emit the removal state after the specified number of seconds. Active timeouts are cleared upon actor death, game disconnect/quit, or if the same custom alert triggers again.
+
 
 
 
