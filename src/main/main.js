@@ -549,6 +549,12 @@ function loadConfig() {
                 config.friendCode = generateFriendCode();
                 saveConfig();
             }
+            if (!config.customShipNames) {
+                config.customShipNames = {};
+            }
+            if (!config.rawLogIgnoredPhrases) {
+                config.rawLogIgnoredPhrases = [];
+            }
             console.log('[Main] Config loaded:', config);
         }
     } catch (e) {
@@ -1352,6 +1358,15 @@ ipcMain.on('settings:save', (event, newConfig) => {
     if (newConfig.afkEnabled !== undefined) config.afkEnabled = newConfig.afkEnabled;
     if (newConfig.afkInterval !== undefined) config.afkInterval = newConfig.afkInterval;
     if (newConfig.afkAction !== undefined) config.afkAction = newConfig.afkAction;
+    
+    // GitHub Sync Settings
+    if (newConfig.gitRepo !== undefined) config.gitRepo = newConfig.gitRepo;
+    if (newConfig.gitToken !== undefined) config.gitToken = newConfig.gitToken;
+    if (newConfig.gitBranch !== undefined) config.gitBranch = newConfig.gitBranch;
+
+    // Live Log Ignored Phrases (persisted filter for live log stream)
+    if (newConfig.rawLogIgnoredPhrases !== undefined) config.rawLogIgnoredPhrases = newConfig.rawLogIgnoredPhrases;
+
     restartAfkTimer();
 
     saveConfig();
@@ -2785,6 +2800,169 @@ ipcMain.handle('settings:export-blueprints-dialog', async () => {
     }
 });
 
+// ═══ GITHUB CLOUD SYNC SYSTEM (v2.11.29) ═══
+ipcMain.handle('sync:github-upload', async () => {
+    try {
+        const repo = config.gitRepo ? config.gitRepo.trim() : '';
+        const token = config.gitToken ? config.gitToken.trim() : '';
+        const branch = config.gitBranch ? config.gitBranch.trim() : 'main';
+
+        if (!repo || !token) {
+            throw new Error('GitHub configuration parameters (Repository or Personal Access Token) are missing.');
+        }
+
+        const axios = require('axios');
+        
+        // Clean repo format (in case owner/repo was pasted as full URL)
+        let cleanRepo = repo.replace(/\\/g, '/');
+        if (cleanRepo.includes('github.com/')) {
+            const parts = cleanRepo.split('github.com/');
+            cleanRepo = parts[parts.length - 1];
+        }
+        cleanRepo = cleanRepo.replace(/^\/+|\/+$/g, ''); // Trim leading/trailing slashes
+
+        // We will sync three primary files: custom locations, custom ship names, custom alerts (patterns)
+        const customLocs = config.customLocations || {};
+        const customShips = config.customShipNames || {};
+        const customPatterns = config.customPatterns || [];
+        const customOverrides = config.patternOverrides || {};
+        const bodyMap = config.bodyMap || {};
+
+        const dataPayload = {
+            customLocations: customLocs,
+            customShipNames: customShips,
+            customPatterns: customPatterns,
+            patternOverrides: customOverrides,
+            bodyMap: bodyMap
+        };
+
+        const content = Buffer.from(JSON.stringify(dataPayload, null, 2)).toString('base64');
+        const url = `https://api.github.com/repos/${cleanRepo}/contents/versecon-sync-data.json`;
+        const headers = {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'versecon-link-app'
+        };
+
+        // Get file SHA if it exists so we can update it
+        let sha = null;
+        try {
+            const res = await axios.get(`${url}?ref=${branch}`, { headers });
+            if (res.data && res.data.sha) {
+                sha = res.data.sha;
+            }
+        } catch (e) {
+            // If file does not exist, sha remains null (which is correct for creation)
+            if (e.response && e.response.status !== 404) {
+                throw new Error(`GitHub check error: ${e.response.data?.message || e.message}`);
+            }
+        }
+
+        const putBody = {
+            message: `Cloud sync update from Verse Link client [${new Date().toISOString()}]`,
+            content,
+            branch
+        };
+        if (sha) {
+            putBody.sha = sha;
+        }
+
+        await axios.put(url, putBody, { headers });
+        console.log('[Sync] Upload completed to repo:', cleanRepo);
+        return { success: true, branch };
+    } catch (err) {
+        console.error('[Sync] Upload error:', err);
+        return { success: false, error: err.response?.data?.message || err.message };
+    }
+});
+
+ipcMain.handle('sync:github-download', async () => {
+    try {
+        const repo = config.gitRepo ? config.gitRepo.trim() : '';
+        const branch = config.gitBranch ? config.gitBranch.trim() : 'main';
+
+        if (!repo) {
+            throw new Error('GitHub Repository path is missing.');
+        }
+
+        const axios = require('axios');
+        let cleanRepo = repo.replace(/\\/g, '/');
+        if (cleanRepo.includes('github.com/')) {
+            const parts = cleanRepo.split('github.com/');
+            cleanRepo = parts[parts.length - 1];
+        }
+        cleanRepo = cleanRepo.replace(/^\/+|\/+$/g, '');
+
+        const url = `https://raw.githubusercontent.com/${cleanRepo}/${branch}/versecon-sync-data.json`;
+        console.log('[Sync] Pulling raw content from:', url);
+        
+        const res = await axios.get(url, { responseType: 'json' });
+        const data = res.data;
+
+        if (!data || typeof data !== 'object') {
+            throw new Error('Invalid repository sync payload format.');
+        }
+
+        // Merge properties into local config
+        let updated = false;
+        if (data.customLocations && typeof data.customLocations === 'object') {
+            config.customLocations = { ...(config.customLocations || {}), ...data.customLocations };
+            updated = true;
+        }
+        if (data.customShipNames && typeof data.customShipNames === 'object') {
+            config.customShipNames = { ...(config.customShipNames || {}), ...data.customShipNames };
+            updated = true;
+        }
+        if (data.customPatterns && Array.isArray(data.customPatterns)) {
+            // Deduplicate incoming custom patterns by name or id
+            const existingNames = new Set((config.customPatterns || []).map(p => p.name.toLowerCase()));
+            const toMerge = data.customPatterns.filter(p => p && p.name && !existingNames.has(p.name.toLowerCase()));
+            config.customPatterns = [...(config.customPatterns || []), ...toMerge];
+            updated = true;
+        }
+        if (data.patternOverrides && typeof data.patternOverrides === 'object') {
+            config.patternOverrides = { ...(config.patternOverrides || {}), ...data.patternOverrides };
+            updated = true;
+        }
+        if (data.bodyMap && typeof data.bodyMap === 'object') {
+            config.bodyMap = { ...(config.bodyMap || {}), ...data.bodyMap };
+            updated = true;
+        }
+
+        if (updated) {
+            saveConfig();
+            // Update unified patterns & settings states
+            updateUnifiedPatterns();
+            if (config.customLocations) {
+                let merged = {};
+                try {
+                    const bundledLocPath = path.join(__dirname, '..', '..', 'data', 'locations.json');
+                    if (fs.existsSync(bundledLocPath)) {
+                        merged = JSON.parse(fs.readFileSync(bundledLocPath, 'utf-8'));
+                    }
+                } catch (e) {}
+                merged = { ...merged, ...config.customLocations };
+                NavigationParser.setCustomLocations(merged);
+                broadcast('settings:custom-locations-updated', config.customLocations);
+            }
+            if (config.customShipNames) {
+                LogWatcher.setCustomShipNames(config.customShipNames);
+                broadcast('settings:custom-shipnames-updated', config.customShipNames);
+            }
+            if (config.bodyMap) {
+                NavigationParser.setBodyMap(config.bodyMap);
+                broadcast('settings:bodymap-updated', config.bodyMap);
+            }
+            broadcast('settings:updated', config);
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error('[Sync] Download error:', err);
+        return { success: false, error: err.response?.data?.message || err.message };
+    }
+});
+
 let hueRestoreTimers = {};
 
 async function triggerHueAlert(color) {
@@ -3203,21 +3381,25 @@ function savePatternDB(db) {
     }
 }
 
-ipcMain.handle('patterns:load', async () => {
-    const db = loadPatternDB();
-
-    // Inject built-in parser patterns so they appear in the Log Database for search and export
+/**
+ * Injects built-in parser patterns into an in-memory DB object (same logic as patterns:load).
+ * Call this before returning a DB snapshot to the renderer so patternDB stays consistent
+ * regardless of which IPC handler triggered the update.
+ */
+function injectBuiltinsIntoDb(db) {
     const builtinPatterns = getBuiltinPatterns();
     const userIds = new Set(db.patterns.map(p => p.id));
-
-    // Prepend built-in patterns that aren't already in the user DB
     for (const bp of builtinPatterns) {
         if (!userIds.has(bp.id)) {
             db.patterns.unshift(bp);
         }
     }
-
     return db;
+}
+
+ipcMain.handle('patterns:load', async () => {
+    const db = loadPatternDB();
+    return injectBuiltinsIntoDb(db);
 });
 
 ipcMain.handle('patterns:save', async (event, db) => {
@@ -3233,18 +3415,35 @@ ipcMain.handle('patterns:add', async (event, pattern) => {
     db.patterns.push(pattern);
     savePatternDB(db);
     updateUnifiedPatterns();
-    return db;
+    // Return builtins-injected DB so renderer patternDB stays consistent with patterns:load
+    return injectBuiltinsIntoDb(db);
 });
 
 ipcMain.handle('patterns:update', async (event, patternId, updates) => {
     const db = loadPatternDB();
     const idx = db.patterns.findIndex(p => p.id === patternId);
     if (idx !== -1) {
+        // Pattern exists in user DB — merge updates in
         db.patterns[idx] = { ...db.patterns[idx], ...updates };
-        savePatternDB(db);
-        updateUnifiedPatterns();
+    } else {
+        // Pattern only exists as a builtin/seeded entry (not yet in user DB).
+        // Promote it to a user-owned copy so stateful/custom settings are persisted.
+        const builtinSeed = getBuiltinPatterns().find(b => b.id === patternId);
+        const base = builtinSeed || { id: patternId };
+        const promoted = {
+            ...base,
+            ...updates,
+            id: patternId, // keep original id so UI finds it correctly
+            addedBy: 'user',
+            addedDate: new Date().toISOString().split('T')[0]
+        };
+        db.patterns.push(promoted);
+        console.log(`[Main] Promoted builtin pattern '${patternId}' to user DB with custom settings.`);
     }
-    return db;
+    savePatternDB(db);
+    updateUnifiedPatterns();
+    // Return builtins-injected DB so renderer patternDB stays consistent with patterns:load
+    return injectBuiltinsIntoDb(db);
 });
 
 ipcMain.handle('overlay:save-positions', (event, positions) => {
@@ -3262,7 +3461,7 @@ ipcMain.handle('patterns:delete', async (event, patternId) => {
     db.patterns = db.patterns.filter(p => p.id !== patternId);
     savePatternDB(db);
     updateUnifiedPatterns();
-    return db;
+    return injectBuiltinsIntoDb(db);
 });
 
 ipcMain.handle('patterns:export', async () => {

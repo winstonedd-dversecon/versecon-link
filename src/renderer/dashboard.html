@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>VerseCon Link - Dashboard</title>
+    <title>Verse Link - Dashboard</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap');
 
@@ -597,7 +597,7 @@
 <body>
     <div class="sidebar title-bar-drag">
         <div class="brand">
-            VerseCon <span style="color:white; font-weight:300;">Link</span>
+            Verse <span style="color:white; font-weight:300;">Link</span>
             <div style="font-size: 0.6rem; opacity: 0.5; margin-top: -5px; font-weight: 400;">v2.11.0</div>
         </div>
 
@@ -734,15 +734,23 @@
         <!-- ═══ NEW: LIVE RAW LOG FEED ═══ -->
         <div
             style="margin-top: 20px; flex: 1; display: flex; flex-direction: column; overflow: hidden; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <h3
-                        style="font-size: 0.9rem; color: #555; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
-                        Live Log Stream</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <h3 style="font-size: 0.9rem; color: #555; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Live Log Stream</h3>
                     <input type="text" id="raw-log-filter" class="modern-input" placeholder="Search logs..."
-                        style="width: 200px; padding: 4px 8px; font-size: 0.8rem; margin: 0;" oninput="filterRawLogs()">
+                        style="width: 180px; padding: 4px 8px; font-size: 0.8rem; margin: 0;" oninput="filterRawLogs()">
+                    <button class="cyber-btn small" id="raw-log-ignored-toggle"
+                        onclick="toggleIgnoredPanel()"
+                        style="font-size: 0.7rem; padding: 2px 8px; margin: 0; background: rgba(255,60,60,0.1); border-color: rgba(255,60,60,0.4);">
+                        🚫 Ignored <span id="raw-log-ignored-badge" style="color:#ff6060;"></span>
+                    </button>
                 </div>
-                <span style="font-size: 0.7rem; color: #444;">Showing last 100 lines</span>
+                <span style="font-size: 0.7rem; color: #444;">Hover line → 🚫 to ignore pattern</span>
+            </div>
+            <!-- Ignored Phrases Management Panel -->
+            <div id="raw-log-ignored-panel-wrap" style="display:none; background:rgba(255,40,40,0.06); border:1px solid rgba(255,60,60,0.25); border-radius:6px; padding:8px 10px; margin-bottom:8px;">
+                <div style="font-size:0.7rem; color:#ff6060; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">🚫 Ignored Log Patterns — click Restore to un-ignore</div>
+                <div id="raw-log-ignored-panel"><div style="color:#555; font-style:italic; font-size:0.75rem;">No phrases ignored yet.</div></div>
             </div>
             <div id="raw-log-list"
                 style="flex: 1; overflow-y: auto; font-family: 'Consolas', 'Fira Code', 'Courier New', monospace; font-size: 0.85rem; line-height: 1.5; color: #aaa; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px;">
@@ -1033,6 +1041,12 @@
                         <input type="checkbox" id="vis-networkPanel" onchange="saveConfig()"> Network & Tactical HUD
                     </label>
                 </div>
+                <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;">
+                    <label style="font-size: 0.85rem; color: var(--text-dim);">
+                        Main HUD Zoom/Size Scale (e.g., 0.8 = 80%, 1.2 = 120%)
+                    </label>
+                    <input type="range" id="config-overlay-scale" min="0.5" max="2.0" step="0.1" value="1.0" onchange="saveConfig()" style="width: 100%;">
+                </div>
             </div>
 
             <!-- Ship Radar Target Visibility Config (v2.11.25) -->
@@ -1128,10 +1142,13 @@
                     <div id="squad-host-container" style="display: none; flex-direction: column; gap: 5px;">
                         <span style="font-size: 0.75rem; color: var(--success);">Direct Sync Active (Port 55100)</span>
                         <div style="font-size: 0.65rem; color: #888;">UPnP Status: <span id="squad-upnp-status" style="color: var(--accent);">None</span></div>
+                        <div style="font-size: 0.65rem; color: #888; display: none;" id="squad-wan-ip-container">WAN IP: <span id="squad-wan-ip" style="color: var(--accent); user-select: text;"></span></div>
                         <div style="font-size: 0.65rem; color: #666;">Share your IP with squad members.</div>
+                        <button class="cyber-btn small" onclick="openSquadFirewall()" style="font-size: 0.6rem; padding: 2px 5px; background: rgba(0, 150, 255, 0.1); border-color: #0099ff; color: #0099ff; display: block; width: 100%;">🛡️ Allow in Windows Firewall</button>
                         <div style="display: flex; gap: 5px; margin-top: 5px;">
                             <button class="cyber-btn small warning" onclick="openCncOverlay()">Command & Control</button>
                             <button class="cyber-btn small success" onclick="openSquadHud()">Squad HUD</button>
+                            <button class="cyber-btn small info" onclick="testPartyList()" style="border-color:#00ccff; color:#00ccff;">Test Party List</button>
                         </div>
                     </div>
 
@@ -1763,6 +1780,43 @@
                 </div>
             </div>
 
+            <!-- Cloud Sync (v2.12) -->
+            <div style="background: rgba(0, 150, 255, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #0099ff; margin-bottom: 15px;">
+                <div class="section-title" style="margin-top: 0; color: #0099ff; display: flex; align-items: center; gap: 6px;">☁️ Cloud Sync (GitHub)</div>
+                <div style="font-size:0.75rem; color:#aaa; margin-bottom:12px;">
+                    Keep your custom locations, ship mappings, blueprints, and pattern alerts synchronized.
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.65rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">GitHub Repository</label>
+                        <input type="text" id="config-git-repo" class="modern-input" placeholder="e.g. winstonedd-dversecon/versecon-link" style="margin:0;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 2;">
+                            <label style="font-size: 0.65rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">Developer Token (PAT) - Only required for uploads</label>
+                            <input type="password" id="config-git-token" class="modern-input" placeholder="ghp_xxxxxxxxxxxx" style="margin:0;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.65rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">Branch</label>
+                            <input type="text" id="config-git-branch" class="modern-input" placeholder="main" style="margin:0;">
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button class="cyber-btn success" onclick="cloudSyncUpload()" style="margin:0; flex: 1;">📤 Push Data to Git</button>
+                        <button class="cyber-btn info" onclick="cloudSyncDownload()" style="margin:0; flex: 1; border-color: #00ccff; color: #00ccff;">📥 Pull Data from Git</button>
+                    </div>
+                    
+                    <div id="cloud-sync-status" style="font-family:monospace; font-size:0.7rem; color:#aaa; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; min-height:18px; line-height: 1.3;">
+                        Ready.
+                    </div>
+                </div>
+            </div>
+
+
+
             <!-- Stream Deck API (v2.10) -->
             <div
                 style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -2038,8 +2092,8 @@
                         🛡 Host Session
                     </button>
                     <div style="display:flex; gap:6px; align-items:center;">
-                        <input id="squad-join-code" type="text" placeholder="Paste session code" maxlength="10"
-                            style="width:160px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+                        <input id="squad-join-code" type="text" placeholder="Session code or IP" maxlength="30"
+                            style="width:200px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
                                    border-radius:4px; padding:7px 10px; color:#fff; font-size:0.85rem; font-family:inherit;
                                    outline:none; text-transform:uppercase; letter-spacing:1px;"
                             onkeydown="if(event.key==='Enter') squadJoin()">
@@ -2061,6 +2115,8 @@
                     </div>
                     <div id="squad-host-note" style="font-size:0.7rem; color:#888; margin-top:6px;"></div>
                 </div>
+
+                <button class="cyber-btn small" onclick="openSquadFirewall()" style="font-size: 0.7rem; padding: 6px 10px; margin-bottom: 12px; background: rgba(0, 150, 255, 0.1); border-color: #0099ff; color: #0099ff; width: 100%;">🛡️ Allow in Windows Firewall (Host & Client Fix)</button>
 
                 <div id="squad-msg" style="font-size:0.8rem; margin-bottom:12px; min-height:18px;"></div>
 
@@ -2472,6 +2528,16 @@
                         <input type="text" id="pm-reaction" class="modern-input"
                             placeholder="TTS: Fire detected / /emergency" style="margin:0;">
                     </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#888; text-transform:uppercase;">👥 Squad Status Override</label>
+                        <select id="pm-squad-status" class="modern-input" style="margin:0;">
+                            <option value="none">None</option>
+                            <option value="inventory">🎒 Inventory</option>
+                            <option value="menu">📱 mobiGlas</option>
+                            <option value="fire">🔥 Ship on Fire</option>
+                            <option value="normal">🏃 On Foot (Clear)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Sub-HUD Configuration -->
@@ -2529,6 +2595,22 @@
                 <input type="hidden" id="pm-edit-id">
                 <button class="cyber-btn" onclick="savePatternFromModal()" style="margin-top:5px;">💾 Save
                     Pattern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- First Launch RSI Handle Onboarding Modal -->
+    <div id="first-launch-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.85); z-index:100000; align-items:center; justify-content:center; backdrop-filter: blur(5px);">
+        <div style="background:#111; border:2px solid var(--accent); border-radius:8px; padding:25px; width:450px; box-shadow: 0 0 30px rgba(255, 165, 0, 0.3); text-align: center; display:flex; flex-direction:column; gap:15px; font-family:'Outfit', sans-serif;">
+            <div style="font-size: 2rem;">🚀</div>
+            <h2 style="margin:0; color:#fff; text-transform:uppercase; letter-spacing:1px; font-size:1.4rem;">Profile Initialization</h2>
+            <p style="margin:0; font-size:0.85rem; color:#aaa; line-height:1.4;">Please enter your Star Citizen RSI Handle to set up your profile and synchronize telemetry correctly.</p>
+            <div>
+                <input type="text" id="first-launch-rsi-handle" class="modern-input" style="text-align:center; font-size:1.1rem; letter-spacing:0.5px; border-color:var(--accent); font-weight:bold; margin:0;" placeholder="RSI Handle...">
+            </div>
+            <div>
+                <button class="cyber-btn" onclick="saveFirstLaunchHandle()" style="width:100%; font-weight:bold; padding:10px; margin:0;">Initialize Profile</button>
             </div>
         </div>
     </div>
@@ -2786,6 +2868,7 @@
                     networkPanel: document.getElementById('vis-networkPanel')?.checked || false
                 },
                 accentColor: document.getElementById('config-accent-color')?.value,
+                overlayScale: parseFloat(document.getElementById('config-overlay-scale').value) || 1.0,
                 ttsEnabled: document.getElementById('config-tts-enabled').checked,
                 ttsKosNameEnabled: document.getElementById('config-tts-kos-name').checked,
                 ttsVolume: document.getElementById('config-tts-volume').value,
@@ -2853,7 +2936,10 @@
                 clipTriggerQuantum: document.getElementById('config-clip-trigger-quantum').checked,
                 afkEnabled: document.getElementById('config-afk-enabled')?.checked || false,
                 afkInterval: parseInt(document.getElementById('config-afk-interval')?.value || '60'),
-                afkAction: document.getElementById('config-afk-action')?.value || 'jump'
+                afkAction: document.getElementById('config-afk-action')?.value || 'jump',
+                gitRepo: document.getElementById('config-git-repo').value.trim(),
+                gitToken: document.getElementById('config-git-token').value.trim(),
+                gitBranch: document.getElementById('config-git-branch').value.trim(),
             };
             // Handle optional elements
             const overlayEl = document.getElementById('config-overlay-enabled');
@@ -3012,6 +3098,11 @@
                 }
             }
 
+            if (config.overlayScale !== undefined) {
+                const scaleEl = document.getElementById('config-overlay-scale');
+                if (scaleEl) scaleEl.value = config.overlayScale;
+            }
+
             if (config.monitorHealth !== undefined) {
                 const el = document.getElementById('config-health-monitor');
                 if (el) el.checked = config.monitorHealth;
@@ -3036,6 +3127,16 @@
             if (config.rsiId) document.getElementById('config-rsi-id').value = config.rsiId;
             if (config.shareHealth !== undefined) document.getElementById('config-share-health').checked = config.shareHealth;
             if (config.squadHostIp) document.getElementById('config-squad-host-ip').value = config.squadHostIp;
+            if (config.gitRepo !== undefined) document.getElementById('config-git-repo').value = config.gitRepo;
+            if (config.gitToken !== undefined) document.getElementById('config-git-token').value = config.gitToken;
+            if (config.gitBranch !== undefined) document.getElementById('config-git-branch').value = config.gitBranch;
+
+            // Trigger onboarding if handle is unset or default fallback
+            if (!config.rsiHandle || config.rsiHandle.trim() === '' || config.rsiHandle === 'TypicallyBrit_ish') {
+                document.getElementById('first-launch-modal').style.display = 'flex';
+            } else {
+                document.getElementById('first-launch-modal').style.display = 'none';
+            }
 
             if (config.performanceMode !== undefined) document.getElementById('config-perf-mode').checked = config.performanceMode;
             if (config.logLimit !== undefined) {
@@ -4103,7 +4204,7 @@
                     const kosDisabled = isTracked ? 'disabled style="opacity:0.5; cursor:default; border-color:#555; color:#555;"' : '';
                     btns = `
                         <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
-                            <button class="cyber-btn small" onclick="addKosTarget('${escapeHtml(s.id)}', '${escapeHtml(s.name)}')" ${kosDisabled} style="margin:0; width:auto; border-color:var(--danger); color:var(--danger); padding:4px 8px; font-size:0.7rem; flex-shrink:0;">
+                            <button class="cyber-btn small" onclick="addKosTarget('${escapeHtml(s.id)}', '${escapeHtml(s.name)}', '${escapeHtml(s.rawShip || '')}', '${escapeHtml(s.rawLocation || '')}')" ${kosDisabled} style="margin:0; width:auto; border-color:var(--danger); color:var(--danger); padding:4px 8px; font-size:0.7rem; flex-shrink:0;">
                                 ${isTracked ? 'Tracked' : '🎯 +KOS'}
                             </button>
                             <button class="cyber-btn small" onclick="addIgnoreTarget('${escapeHtml(s.id)}', '${escapeHtml(s.name)}')" style="margin:0; width:auto; border-color:#0099ff; color:#0099ff; padding:4px 8px; font-size:0.7rem; flex-shrink:0;">
@@ -4212,7 +4313,7 @@
             if (labelInput) labelInput.value = '';
         };
 
-        window.addKosTarget = async function(id, label) {
+        window.addKosTarget = async function(id, label, rawShip = '', rawLocation = '') {
             if (kosTargets.some(t => String(t.id) === String(id))) {
                 alert('This ID is already being tracked.');
                 return;
@@ -4226,8 +4327,8 @@
                 id: id,
                 label: finalLabel,
                 addedAt: Date.now(),
-                rawShip: '',
-                rawLocation: lastRawLocation || '',
+                rawShip: rawShip,
+                rawLocation: rawLocation || lastRawLocation || '',
                 lastSeen: Date.now()
             };
             kosTargets.push(newTarget);
@@ -4369,10 +4470,14 @@
             document.getElementById('squad-join-btn').disabled = true;
             document.getElementById('squad-join-code').disabled = true;
 
-            const note = result.upnpOk
+            let note = result.upnpOk
                 ? `✅ UPnP port forward active on port ${result.port}`
-                : `⚠ UPnP unavailable. If friends can't connect, manually forward port ${result.port} on your router.`;
-            document.getElementById('squad-host-note').textContent = note;
+                : `⚠ UPnP unavailable. You may need to manually forward port ${result.port} on your router.`;
+            
+            note += `<br><br><b>Code Details:</b> Maps to WAN IP: <b>${result.publicIP}</b><br>`;
+            note += `If connecting locally, friends can join with your LAN IP: <b>${result.localIP}</b>`;
+            
+            document.getElementById('squad-host-note').innerHTML = note;
 
             setSquadBadge('● HOSTING', '#00cc44');
             setSquadMsg('Session active — share your code!', '#00cc44');
@@ -4380,14 +4485,21 @@
         }
 
         async function squadJoin() {
-            const code = document.getElementById('squad-join-code').value.trim().toUpperCase();
-            if (code.length !== 10) { setSquadMsg('⚠ Code must be 10 characters.', '#ffaa00'); return; }
+            const codeInput = document.getElementById('squad-join-code').value.trim();
+            const code = codeInput.toUpperCase();
+            
+            if (code.length === 0) { setSquadMsg('⚠ Please enter a code or IP.', '#ffaa00'); return; }
+            if (code.length !== 10 && !codeInput.includes('.')) { 
+                setSquadMsg('⚠ Code must be 10 characters or a valid IP.', '#ffaa00'); 
+                return; 
+            }
 
             document.getElementById('squad-join-btn').disabled = true;
             document.getElementById('squad-host-btn').disabled = true;
             setSquadMsg('Connecting…', '#aaa');
 
-            const result = await ipcRenderer.invoke('squad:join', code);
+            // Send the raw input to ipc handler
+            const result = await ipcRenderer.invoke('squad:join', codeInput);
 
             if (!result.success) {
                 document.getElementById('squad-join-btn').disabled = false;
@@ -4427,14 +4539,39 @@
             setSquadMsg('📋 Code copied to clipboard!', '#aaa');
         }
 
-        ipcRenderer.on('squad:update', (e, squad) => {
+        ipcRenderer.on('squad:update', (e, data) => {
             const list = document.getElementById('squad-member-list');
             if (!list) return;
-            if (!squad || squad.length === 0) {
+            const peers = data?.peers || {};
+            const squadArray = Object.values(peers).sort((a,b) => {
+                if (a.isHost) return -1;
+                if (b.isHost) return 1;
+                return (a.handle || '').localeCompare(b.handle || '');
+            });
+
+            if (squadArray.length === 0) {
                 list.innerHTML = '<div style="color:#555; text-align:center; padding:20px; font-style:italic;">Waiting for squad members…</div>';
                 return;
             }
-            list.innerHTML = squad.map((p, i) => `
+            list.innerHTML = squadArray.map((p, i) => {
+                let stateText = p.ship ? `🚀 ${p.ship}` : '🏃 On Foot';
+                let stateColor = p.ship ? '#aaa' : '#888';
+                
+                if (p.status === 'dead' || (p.health !== undefined && p.health !== null && p.health <= 0)) {
+                    stateText = '💀 DEAD';
+                    stateColor = '#ff6666';
+                } else if (p.status === 'menu') {
+                    stateText = '📱 mobiGlas';
+                    stateColor = '#44ccff';
+                } else if (p.status === 'inventory') {
+                    stateText = '🎒 Inventory';
+                    stateColor = '#ffaa00';
+                } else if (p.status === 'fire') {
+                    stateText = '🔥 SHIP ON FIRE';
+                    stateColor = '#ff3300';
+                }
+
+                return `
                 <div style="display:flex; align-items:center; gap:12px; padding:10px 14px;
                             border-radius:6px; background:rgba(255,255,255,0.04); margin-bottom:6px;
                             border-left:3px solid ${i === 0 ? '#00cc44' : 'rgba(255,255,255,0.1)'};">
@@ -4445,16 +4582,14 @@
                             ${p.isHost ? '<span style="font-size:0.65rem; color:#00cc44; background:rgba(0,200,60,0.15); border:1px solid #00cc44; border-radius:3px; padding:1px 5px;">HOST</span>' : ''}
                         </div>
                         ${p.location ? `<div style="font-size:0.72rem; color:#888; margin-top:2px;">📍 ${escapeHtml(p.location)}</div>` : ''}
-                        ${p.ship     ? `<div style="font-size:0.72rem; color:#aaa; margin-top:1px;">🚀 ${escapeHtml(p.ship)}</div>`     : ''}
                     </div>
                     <div style="text-align:right; flex-shrink:0;">
-                        <div style="font-size:0.8rem; color:${(p.health||0) > 50 ? '#00cc44' : '#ff6666'}; font-weight:600;">
-                            ${p.health !== undefined ? p.health + '%' : '--'}
+                        <div style="font-size:0.75rem; color:${stateColor}; font-weight:600; background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">
+                            ${stateText}
                         </div>
-                        <div style="font-size:0.65rem; color:#555; margin-top:2px;">HEALTH</div>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         });
 
         function showNotification(title, body) {
@@ -4649,6 +4784,14 @@
                 // ═══ NEW: Unmapped Location Toast ═══
                 case 'NEW_LOCATION': {
                     const locRaw = data.raw || data.value;
+                    // Suppress if this location is already mapped/ignored (use fuzzy match)
+                    const _locMatch = typeof customLocations !== 'undefined' ? getCustomLocationMatch(locRaw, locRaw, customLocations) : null;
+                    if (_locMatch && (typeof _locMatch === 'object' ? _locMatch.type === 'ignore' : false)) {
+                        break; // Silently drop — user already ignored this location
+                    }
+                    if (_locMatch) {
+                        break; // Already mapped — no need to notify
+                    }
                     addToBacklog(locRaw);
                     showNewLocationToast(data.value || data.raw, data.raw);
                     const dashBtn = `<button class="cyber-btn small" onclick="document.getElementById('new-loc-key').value='${escapeHtml(locRaw)}'; document.getElementById('new-loc-val').focus(); switchTab('config');" style="margin:0; font-size:0.6rem; padding:1px 5px; vertical-align:middle;">📍 Map</button>`;
@@ -5109,9 +5252,8 @@
         // ═══ UNMAPPED LOCATION BACKLOG QUEUE ═══
         window.addToBacklog = function(raw) {
             if (!raw || unmappedLocationQueue.some(e => e.raw === raw)) return;
-            // Use exact key match only — fuzzy matching was too aggressive and could
-            // prevent legitimate new LOCATION_ codes from showing up in the backlog
-            if (customLocations && Object.prototype.hasOwnProperty.call(customLocations, raw)) return;
+            // Use fuzzy match so typo variants (e.g. Asteriod vs Asteroid) are caught as already-mapped
+            if (customLocations && getCustomLocationMatch(raw, raw, customLocations)) return;
             unmappedLocationQueue.push({ raw, time: Date.now() });
             if (unmappedLocationQueue.length > 50) unmappedLocationQueue.shift();
             updateBacklogUI();
@@ -5373,15 +5515,112 @@
         // Legacy support if needed
         ipcRenderer.on('log:raw', (e, line) => addRawLogLine(line));
 
+        // ═══ LIVE LOG IGNORE SYSTEM ═══
+        let rawLogIgnoredPhrases = []; // Array of phrase strings to suppress
+
+        // Load persisted ignored phrases from config
+        (async () => {
+            try {
+                const cfg = await ipcRenderer.invoke('settings:get');
+                if (cfg && cfg.rawLogIgnoredPhrases && Array.isArray(cfg.rawLogIgnoredPhrases)) {
+                    rawLogIgnoredPhrases = cfg.rawLogIgnoredPhrases;
+                }
+            } catch (e) { /* ignore */ }
+        })();
+
+        function isLineIgnoredByRawFilter(line) {
+            if (!rawLogIgnoredPhrases.length) return false;
+            const lower = (line || '').toLowerCase();
+            return rawLogIgnoredPhrases.some(p => p && lower.includes(p.toLowerCase()));
+        }
+
+        function addRawLogIgnorePhrase(phrase) {
+            if (!phrase || rawLogIgnoredPhrases.includes(phrase)) return;
+            rawLogIgnoredPhrases.push(phrase);
+            ipcRenderer.send('settings:save', { rawLogIgnoredPhrases });
+            // Hide existing matching lines
+            const rawFeed = document.getElementById('raw-log-list');
+            if (rawFeed) {
+                Array.from(rawFeed.children).forEach(child => {
+                    if (child.classList.contains('log-line') && child.dataset.rawLine) {
+                        if (child.dataset.rawLine.toLowerCase().includes(phrase.toLowerCase())) {
+                            child.style.display = 'none';
+                        }
+                    }
+                });
+            }
+            renderIgnoredPhrasesPanel();
+        }
+
+        function removeRawLogIgnorePhrase(phrase) {
+            rawLogIgnoredPhrases = rawLogIgnoredPhrases.filter(p => p !== phrase);
+            ipcRenderer.send('settings:save', { rawLogIgnoredPhrases });
+            // Re-show lines that were hidden by this phrase
+            const rawFeed = document.getElementById('raw-log-list');
+            if (rawFeed) {
+                Array.from(rawFeed.children).forEach(child => {
+                    if (child.classList.contains('log-line') && child.dataset.rawLine) {
+                        if (child.dataset.rawLine.toLowerCase().includes(phrase.toLowerCase())) {
+                            // Only show if not hidden by another phrase
+                            if (!isLineIgnoredByRawFilter(child.dataset.rawLine)) {
+                                child.style.display = '';
+                            }
+                        }
+                    }
+                });
+            }
+            renderIgnoredPhrasesPanel();
+        }
+
+        function renderIgnoredPhrasesPanel() {
+            const panel = document.getElementById('raw-log-ignored-panel');
+            const badge = document.getElementById('raw-log-ignored-badge');
+            if (badge) badge.textContent = rawLogIgnoredPhrases.length ? `(${rawLogIgnoredPhrases.length} ignored)` : '';
+            if (!panel) return;
+            panel.innerHTML = '';
+            if (rawLogIgnoredPhrases.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.cssText = 'color:#555; font-style:italic; font-size:0.75rem;';
+                empty.textContent = 'No phrases ignored. Hover any log line and click 🚫 to hide patterns.';
+                panel.appendChild(empty);
+                return;
+            }
+            rawLogIgnoredPhrases.forEach(p => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.06);';
+
+                const label = document.createElement('span');
+                label.style.cssText = 'flex:1; font-size:0.75rem; color:#ccc; font-family:monospace; word-break:break-all;';
+                label.textContent = p; // textContent — safe, no HTML injection
+
+                const btn = document.createElement('button');
+                btn.className = 'cyber-btn small danger';
+                btn.style.cssText = 'font-size:0.6rem; padding:1px 5px; margin:0; flex-shrink:0;';
+                btn.textContent = 'Restore';
+                btn.dataset.phrase = p; // store phrase in data attr, not in onclick HTML
+                btn.addEventListener('click', () => removeRawLogIgnorePhrase(btn.dataset.phrase));
+
+                row.appendChild(label);
+                row.appendChild(btn);
+                panel.appendChild(row);
+            });
+        }
+
+        window.removeRawLogIgnorePhrase = removeRawLogIgnorePhrase;
+
         function addRawLogLine(line) {
             updateRecentLocations(line); // Pass to Settings Sniffer
 
             const rawFeed = document.getElementById('raw-log-list');
             if (!rawFeed) return;
 
+            // ─── Check if this line should be hidden by an ignored phrase ───
+            const isIgnoredLine = isLineIgnoredByRawFilter(line);
+
             const div = document.createElement('div');
             div.className = 'log-line';
-            div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.06); padding: 5px 4px; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s; border-radius: 2px;';
+            div.dataset.rawLine = line || ''; // Store for filtering/restore
+            div.style.cssText = 'border-bottom: 1px solid rgba(255,255,255,0.06); padding: 5px 4px; white-space: pre-wrap; word-break: break-all; cursor: pointer; transition: background 0.2s; border-radius: 2px; position: relative;';
             div.title = 'Click to copy & use in Custom Locations';
 
             let logDate;
@@ -5411,7 +5650,7 @@
 
             const timeSpan = document.createElement('span');
             timeSpan.style.fontWeight = 'bold';
-            timeSpan.style.color = '#ff9f0a'; // UK orange/amber accent
+            timeSpan.style.color = '#ff9f0a';
             timeSpan.style.marginRight = '8px';
             timeSpan.textContent = `[${formattedTime}]`;
 
@@ -5419,7 +5658,36 @@
             div.appendChild(timeSpan);
             div.appendChild(textNode);
 
-            div.onclick = () => {
+            // ─── Ignore Button ───
+            const ignoreBtn = document.createElement('button');
+            ignoreBtn.className = 'cyber-btn small danger';
+            ignoreBtn.title = 'Ignore lines containing this text pattern';
+            ignoreBtn.textContent = '🚫';
+            ignoreBtn.style.cssText = 'position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:0.6rem; padding:1px 5px; margin:0; opacity:0; transition:opacity 0.15s; pointer-events:auto; z-index:2;';
+            ignoreBtn.onclick = async (e) => {
+                e.stopPropagation();
+                // Extract a meaningful sub-phrase for ignoring
+                // Try to pull a specific tag like <GenerateLocationProperty>, <ActorDeath> etc.
+                const tagMatch = logText.match(/^<([^>]{3,60})>/);
+                let phrase = tagMatch ? `<${tagMatch[1]}>` : logText.slice(0, 80).trim();
+                // Use vcModal.prompt() — Electron blocks native prompt() in renderer
+                const confirmed = await window.vcModal.prompt(
+                    '🚫 Ignore Log Pattern',
+                    'Ignore all log lines containing this phrase. You can edit it before confirming:',
+                    phrase
+                );
+                if (confirmed && confirmed.trim()) {
+                    addRawLogIgnorePhrase(confirmed.trim());
+                    div.style.display = 'none';
+                }
+            };
+            div.appendChild(ignoreBtn);
+
+            div.onmouseenter = () => { ignoreBtn.style.opacity = '0.7'; };
+            div.onmouseleave = () => { ignoreBtn.style.opacity = '0'; };
+
+            div.onclick = (e) => {
+                if (e.target === ignoreBtn) return;
                 navigator.clipboard.writeText(line);
                 div.style.background = 'rgba(255,165,0,0.2)';
                 setTimeout(() => div.style.background = 'transparent', 200);
@@ -5438,10 +5706,15 @@
                 }
             };
 
-            const filterInput = document.getElementById('raw-log-filter');
-            const filterText = filterInput && filterInput.value ? filterInput.value.toLowerCase() : '';
-            if (filterText && typeof line === 'string' && !line.toLowerCase().includes(filterText)) {
+            // Apply filter/ignore visibility
+            if (isIgnoredLine) {
                 div.style.display = 'none';
+            } else {
+                const filterInput = document.getElementById('raw-log-filter');
+                const filterText = filterInput && filterInput.value ? filterInput.value.toLowerCase() : '';
+                if (filterText && typeof line === 'string' && !line.toLowerCase().includes(filterText)) {
+                    div.style.display = 'none';
+                }
             }
 
             // Newest logs at top
@@ -5459,7 +5732,13 @@
             if (rawFeed) {
                 Array.from(rawFeed.children).forEach(child => {
                     if (child.classList.contains('log-line')) {
-                        if (!term || child.textContent.toLowerCase().includes(term)) {
+                        const rawLine = child.dataset.rawLine || child.textContent;
+                        // Never show a line that's been ignored
+                        if (isLineIgnoredByRawFilter(rawLine)) {
+                            child.style.display = 'none';
+                            return;
+                        }
+                        if (!term || rawLine.toLowerCase().includes(term)) {
                             child.style.display = '';
                         } else {
                             child.style.display = 'none';
@@ -5467,6 +5746,14 @@
                     }
                 });
             }
+        }
+
+        function toggleIgnoredPanel() {
+            const wrap = document.getElementById('raw-log-ignored-panel-wrap');
+            if (!wrap) return;
+            const isHidden = wrap.style.display === 'none' || !wrap.style.display;
+            wrap.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) renderIgnoredPhrasesPanel();
         }
 
         // ═══ NEW: Mission List Renderer ═══
@@ -6121,6 +6408,117 @@
             }
         };
 
+        window.pushToLive = async function() {
+            const statusLabel = document.getElementById('push-live-status');
+            statusLabel.textContent = 'Gathering knowledge and preparing sync payload...';
+            statusLabel.style.color = '#fff';
+            
+            try {
+                const result = await ipcRenderer.invoke('sync:push-to-live');
+                if (result.canceled) {
+                    statusLabel.textContent = 'Push canceled by user.';
+                    statusLabel.style.color = '#aaa';
+                    return;
+                }
+                
+                if (result.success) {
+                    let msg = `✅ Exported ${result.stats.locations} locations, ${result.stats.ships} ships, and ${result.stats.patterns} patterns.`;
+                    if (result.hasPublicDir) {
+                        msg += ` Saved to ${result.destination}.`;
+                        if (result.pushedToGit) {
+                            msg += ` \n🚀 Git push executed on public repo!`;
+                        }
+                    } else {
+                        msg += ` \nManual file saved to ${result.destination}`;
+                    }
+                    statusLabel.textContent = msg;
+                    statusLabel.style.color = '#00ff64';
+                    addDashItem('🚀', `Public Sync pushed successfully! (${result.stats.patterns} patterns)`);
+                } else {
+                    statusLabel.textContent = '❌ Push failed: ' + result.error;
+                    statusLabel.style.color = '#ff4444';
+                    addDashItem('❌', `Push to live failed: ${result.error}`);
+                }
+            } catch(e) {
+                statusLabel.textContent = '❌ IPC Error: ' + e.message;
+                statusLabel.style.color = '#ff4444';
+            }
+        };
+
+        window.exportUnmappedLocations = async function() {
+            try {
+                const result = await ipcRenderer.invoke('settings:export-unmapped-locations');
+                if (result.canceled) return;
+                
+                if (result.success) {
+                    alert(`✅ Exported ${result.count} unmapped locations to:\n${result.filePath}\n\nYou can now share this file with the developer!`);
+                    addDashItem('🔍', `Exported ${result.count} unmapped locations.`);
+                } else {
+                    alert(`❌ Export failed: ${result.error || 'Unknown error'}`);
+                }
+            } catch(e) {
+                alert(`❌ IPC Error: ${e.message}`);
+            }
+        };
+
+        window.saveFirstLaunchHandle = function() {
+            const val = document.getElementById('first-launch-rsi-handle').value.trim();
+            if (!val) {
+                alert('Please enter a valid RSI Handle.');
+                return;
+            }
+            document.getElementById('config-rsi-handle').value = val;
+            document.getElementById('first-launch-modal').style.display = 'none';
+            saveConfig();
+        };
+
+        window.cloudSyncUpload = async function() {
+            const statusLabel = document.getElementById('cloud-sync-status');
+            statusLabel.textContent = 'Uploading data to GitHub repository...';
+            statusLabel.style.color = '#fff';
+            
+            try {
+                saveConfig();
+                const result = await ipcRenderer.invoke('sync:github-upload');
+                if (result.success) {
+                    statusLabel.textContent = `✅ Successfully uploaded all config/data files to GitHub branch ${result.branch}!`;
+                    statusLabel.style.color = '#00ff64';
+                    addDashItem('☁️', `Pushed engine data to Git branch ${result.branch}`);
+                } else {
+                    statusLabel.textContent = `❌ Upload failed: ${result.error}`;
+                    statusLabel.style.color = '#ff4444';
+                }
+            } catch(e) {
+                statusLabel.textContent = `❌ IPC Error: ${e.message}`;
+                statusLabel.style.color = '#ff4444';
+            }
+        };
+
+        window.cloudSyncDownload = async function() {
+            const statusLabel = document.getElementById('cloud-sync-status');
+            statusLabel.textContent = 'Pulling data from GitHub...';
+            statusLabel.style.color = '#fff';
+            
+            try {
+                saveConfig();
+                const result = await ipcRenderer.invoke('sync:github-download');
+                if (result.success) {
+                    statusLabel.textContent = `✅ Successfully pulled and merged all data from GitHub! App configuration refreshed.`;
+                    statusLabel.style.color = '#00ff64';
+                    addDashItem('☁️', `Synced settings and databases from Git`);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    statusLabel.textContent = `❌ Pull failed: ${result.error}`;
+                    statusLabel.style.color = '#ff4444';
+                }
+            } catch(e) {
+                statusLabel.textContent = `❌ IPC Error: ${e.message}`;
+                statusLabel.style.color = '#ff4444';
+            }
+        };
+
         window.exportCustomLocationsForPublic = function () {
             ipcRenderer.invoke('settings:export-custom-locations').then(res => {
                 if (res.success) {
@@ -6507,7 +6905,7 @@
             return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
 
-        function onExampleLineInput() {
+        function onExampleLineInput(ignoredTokensList = null) {
             const exampleLine = document.getElementById('pm-example').value.trim();
             const container = document.getElementById('pm-tokenizer-container');
             const list = document.getElementById('pm-tokens-list');
@@ -6525,12 +6923,16 @@
             
             const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
 
-            pmTokens = rawTokens.map(tok => {
+            pmTokens = rawTokens.map((tok, idx) => {
                 let defaultType = 'literal';
-                if (tok.startsWith('<') && tok.endsWith('>') && (tok.includes('-') || tok.includes(':'))) {
-                    defaultType = 'ignored';
-                } else if (playerHandle && tok.includes(playerHandle)) {
-                    defaultType = 'player';
+                if (ignoredTokensList && ignoredTokensList[idx] && ignoredTokensList[idx].text === tok) {
+                    defaultType = ignoredTokensList[idx].type;
+                } else {
+                    if (tok.startsWith('<') && tok.endsWith('>') && (tok.includes('-') || tok.includes(':'))) {
+                        defaultType = 'ignored';
+                    } else if (playerHandle && tok.includes(playerHandle)) {
+                        defaultType = 'player';
+                    }
                 }
                 
                 return {
@@ -6541,7 +6943,9 @@
             });
 
             renderTokens();
-            updateGeneratedRegex();
+            if (!ignoredTokensList) {
+                updateGeneratedRegex();
+            }
         }
 
         function renderTokens() {
@@ -6656,7 +7060,7 @@
 
         let pmStopTokens = [];
 
-        function onStopExampleLineInput() {
+        function onStopExampleLineInput(ignoredTokensList = null) {
             const exampleLine = document.getElementById('pm-stop-example').value.trim();
             const container = document.getElementById('pm-stop-tokenizer-container');
             const list = document.getElementById('pm-stop-tokens-list');
@@ -6674,12 +7078,16 @@
             
             const playerHandle = (document.getElementById('config-rsi-handle') ? document.getElementById('config-rsi-handle').value.trim() : '') || 'TypicallyBrit_ish';
 
-            pmStopTokens = rawTokens.map(tok => {
+            pmStopTokens = rawTokens.map((tok, idx) => {
                 let defaultType = 'literal';
-                if (tok.startsWith('<') && tok.endsWith('>') && (tok.includes('-') || tok.includes(':'))) {
-                    defaultType = 'ignored';
-                } else if (playerHandle && tok.includes(playerHandle)) {
-                    defaultType = 'player';
+                if (ignoredTokensList && ignoredTokensList[idx] && ignoredTokensList[idx].text === tok) {
+                    defaultType = ignoredTokensList[idx].type;
+                } else {
+                    if (tok.startsWith('<') && tok.endsWith('>') && (tok.includes('-') || tok.includes(':'))) {
+                        defaultType = 'ignored';
+                    } else if (playerHandle && tok.includes(playerHandle)) {
+                        defaultType = 'player';
+                    }
                 }
                 
                 return {
@@ -6690,7 +7098,9 @@
             });
 
             renderStopTokens();
-            updateGeneratedStopRegex();
+            if (!ignoredTokensList) {
+                updateGeneratedStopRegex();
+            }
         }
 
         function renderStopTokens() {
@@ -6816,6 +7226,7 @@
             document.getElementById('pm-alert').value = 'none';
             document.getElementById('pm-warning').value = '';
             document.getElementById('pm-reaction').value = '';
+            document.getElementById('pm-squad-status').value = 'none';
             document.getElementById('pm-notes').value = '';
             document.getElementById('pm-edit-id').value = '';
             document.getElementById('pm-is-stateful').checked = false;
@@ -6846,6 +7257,7 @@
             document.getElementById('pm-alert').value = p.alert || 'none';
             document.getElementById('pm-warning').value = p.warning || '';
             document.getElementById('pm-reaction').value = p.reaction || '';
+            document.getElementById('pm-squad-status').value = p.squadStatus || 'none';
             document.getElementById('pm-notes').value = p.notes || '';
             document.getElementById('pm-edit-id').value = id;
             document.getElementById('pm-is-stateful').checked = !!p.isStateful;
@@ -6854,8 +7266,8 @@
             document.getElementById('pm-stop-regex').value = p.stopRegex || '';
             document.getElementById('pm-stop-example').value = p.stopExample || '';
             toggleStatefulFields();
-            onExampleLineInput();
-            onStopExampleLineInput();
+            onExampleLineInput(p.ignoredTokens || null);
+            onStopExampleLineInput(p.stopIgnoredTokens || null);
             document.getElementById('pm-test-result').textContent = 'Click Test to verify regex against example';
             document.getElementById('pm-test-result').style.color = '#666';
             document.getElementById('logdb-modal').style.display = 'flex';
@@ -6879,12 +7291,15 @@
                 alert: document.getElementById('pm-alert').value,
                 warning: document.getElementById('pm-warning').value.trim(),
                 reaction: document.getElementById('pm-reaction').value.trim(),
+                squadStatus: document.getElementById('pm-squad-status').value,
                 notes: document.getElementById('pm-notes').value.trim(),
                 isStateful: document.getElementById('pm-is-stateful').checked,
                 subHudLabel: document.getElementById('pm-sub-hud-label').value.trim(),
                 subHudDuration: parseInt(document.getElementById('pm-sub-hud-duration').value) || 0,
                 stopRegex: document.getElementById('pm-stop-regex').value.trim(),
-                stopExample: document.getElementById('pm-stop-example').value.trim()
+                stopExample: document.getElementById('pm-stop-example').value.trim(),
+                ignoredTokens: pmTokens.map(t => ({ text: t.originalText, type: t.type })),
+                stopIgnoredTokens: pmStopTokens.map(t => ({ text: t.originalText, type: t.type }))
             };
 
             if (!data.name || !data.regex) {
@@ -7248,7 +7663,7 @@
         setTimeout(populateVoices, 1000); // Fallback
 
         function testVoice() {
-            speak('VerseCon Link Voice Protocol active. Ready for deployment.');
+            speak('Verse Link Voice Protocol active. Ready for deployment.');
         }
 
         // ═══ INTERDICTION SHIP MANAGEMENT (v2.10.44) ═══
@@ -8717,6 +9132,57 @@
             addDashItem('📱', 'Opening Squad HUD...');
         }
 
+        function testPartyList() {
+            const mockData = {
+                peers: {
+                    'Commander_Shepard': {
+                        isHost: true,
+                        isLocal: true,
+                        health: 100,
+                        ship: 'Constellation Andromeda',
+                        location: 'Stanton1_Lorville',
+                        planet: 'Hurston',
+                        serverIP: '192.168.1.100',
+                        status: 'normal',
+                        lastUpdate: Date.now()
+                    },
+                    'Jenkins': {
+                        isHost: false,
+                        health: 0,
+                        ship: '',
+                        location: 'Deep Space',
+                        planet: '',
+                        serverIP: '192.168.1.100',
+                        status: 'dead',
+                        lastUpdate: Date.now() - 5000
+                    },
+                    'Chakwas': {
+                        isHost: false,
+                        health: 100,
+                        ship: 'Cutlass Red',
+                        location: 'Stanton2_Orison',
+                        planet: 'Crusader',
+                        serverIP: '192.168.1.100',
+                        status: 'inventory',
+                        lastUpdate: Date.now() - 2000
+                    },
+                    'Garrus': {
+                        isHost: false,
+                        health: 80,
+                        ship: '',
+                        location: 'Stanton4_NewBabbage',
+                        planet: 'microTech',
+                        serverIP: '10.0.0.5',
+                        status: 'normal',
+                        lastUpdate: Date.now() - 1000
+                    }
+                }
+            };
+            // Send to dashboard itself (if there's a list) and broadcast to overlay
+            ipcRenderer.send('test-squad-data', mockData);
+            addDashItem('📱', 'Injected mock Squad session for UI testing.');
+        }
+
         function openNetProximityHud() {
             ipcRenderer.send('net-proximity:open-hud');
             addDashItem('📡', 'Opening Net & Proximity HUD...');
@@ -8757,7 +9223,25 @@
                     upnpEl.style.color = data.upnp === 'Active' ? 'var(--success)' : '#ff4444';
                 }
             }
+            if (data.ip) {
+                const ipCont = document.getElementById('squad-wan-ip-container');
+                const ipSpan = document.getElementById('squad-wan-ip');
+                if (ipCont && ipSpan) {
+                    ipSpan.innerText = data.ip;
+                    ipCont.style.display = 'block';
+                }
+            }
         });
+
+        async function openSquadFirewall() {
+            try {
+                setSquadMsg('Requesting Firewall access...', '#0099ff');
+                await ipcRenderer.invoke('squad:firewall');
+                setSquadMsg('✅ Windows Firewall Rule Added! Your squad can now connect.', '#00cc44');
+            } catch (e) {
+                setSquadMsg('⚠️ Firewall Rule Failed: ' + e.message, '#ff6666');
+            }
+        }
 
         // Request initial log watcher status from main process on startup
         // Uses invoke (request-response) instead of send (fire-and-forget) for reliability
