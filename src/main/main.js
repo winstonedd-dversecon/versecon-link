@@ -40,6 +40,121 @@ let lastHudWarningBroadcastTimes = {}; // warning text -> last broadcast timesta
 // Populated whenever a NEW_LOCATION event fires, so the dashboard can
 // fetch the full list via IPC once its renderer has finished loading.
 const unmappedLocationBacklog = new Set();
+const unmappedNumericBacklog = new Set();
+
+// ═══ DISCOVERED LOCATIONS DATABASE ═══
+const DISCOVERED_DB_PATH = path.join(app.getPath('userData'), 'discovered-locations-db.json');
+const DISCOVERED_TXT_PATH = path.join(app.getPath('userData'), 'discovered-locations-db.txt');
+
+let discoveredLocationsDb = {};
+
+function loadDiscoveredDb() {
+    try {
+        if (fs.existsSync(DISCOVERED_DB_PATH)) {
+            discoveredLocationsDb = JSON.parse(fs.readFileSync(DISCOVERED_DB_PATH, 'utf-8'));
+        } else {
+            discoveredLocationsDb = {};
+        }
+    } catch (e) {
+        console.error('[Main] Failed to load discovered locations database:', e);
+        discoveredLocationsDb = {};
+    }
+
+    // Sync with existing customLocations from config
+    const custom = config.customLocations || {};
+    let changed = false;
+    for (const [k, v] of Object.entries(custom)) {
+        const nameVal = typeof v === 'object' ? v.name : v;
+        const type = (k.startsWith('LOCATION_') || /^\d+$/.test(k)) ? 'numeric' : 'string';
+        if (!discoveredLocationsDb[k]) {
+            discoveredLocationsDb[k] = {
+                key: k,
+                name: nameVal || null,
+                type: type,
+                firstSeen: Date.now(),
+                lastSeen: Date.now()
+            };
+            changed = true;
+        } else if (discoveredLocationsDb[k].name !== nameVal) {
+            discoveredLocationsDb[k].name = nameVal;
+            changed = true;
+        }
+    }
+    if (changed) {
+        saveDiscoveredDb();
+    }
+}
+
+function saveDiscoveredDb() {
+    try {
+        fs.writeFileSync(DISCOVERED_DB_PATH, JSON.stringify(discoveredLocationsDb, null, 2), 'utf-8');
+        
+        // Also write the txt format
+        let txtContent = `=== VERSECON-LINK DISCOVERED LOCATIONS DATABASE ===\r\n`;
+        txtContent += `Total Entries: ${Object.keys(discoveredLocationsDb).length}\r\n`;
+        txtContent += `Generated: ${new Date().toLocaleString('en-GB')}\r\n`;
+        txtContent += `==================================================\r\n\r\n`;
+
+        const sorted = Object.values(discoveredLocationsDb).sort((a, b) => a.key.localeCompare(b.key));
+        const strings = sorted.filter(x => x.type === 'string');
+        const numerics = sorted.filter(x => x.type === 'numeric');
+
+        txtContent += `--- LETTER/STRING CODES (${strings.length}) ---\r\n`;
+        for (const item of strings) {
+            const status = item.name ? `[MAPPED] -> ${item.name}` : `[UNMAPPED]`;
+            txtContent += `${item.key.padEnd(50)} ${status}\r\n`;
+        }
+        txtContent += `\r\n`;
+
+        txtContent += `--- NUMERIC IDS (${numerics.length}) ---\r\n`;
+        for (const item of numerics) {
+            const status = item.name ? `[MAPPED] -> ${item.name}` : `[UNMAPPED]`;
+            txtContent += `${item.key.padEnd(50)} ${status}\r\n`;
+        }
+
+        fs.writeFileSync(DISCOVERED_TXT_PATH, txtContent, 'utf-8');
+    } catch (e) {
+        console.error('[Main] Failed to save discovered locations database:', e);
+    }
+}
+
+function recordDiscoveredLocation(key, name = null) {
+    if (!key || typeof key !== 'string') return;
+    
+    // Ignore obviously invalid codes/names
+    if (key.length < 3 || key === 'Unknown') return;
+    
+    let changed = false;
+    const type = (key.startsWith('LOCATION_') || /^\d+$/.test(key)) ? 'numeric' : 'string';
+    
+    // Check if it's already mapped in custom locations
+    const custom = config.customLocations || {};
+    const customVal = custom[key];
+    const customName = customVal ? (typeof customVal === 'object' ? customVal.name : customVal) : null;
+    const finalName = customName || name || null;
+
+    if (!discoveredLocationsDb[key]) {
+        discoveredLocationsDb[key] = {
+            key,
+            name: finalName,
+            type,
+            firstSeen: Date.now(),
+            lastSeen: Date.now()
+        };
+        changed = true;
+    } else {
+        discoveredLocationsDb[key].lastSeen = Date.now();
+        if (finalName && discoveredLocationsDb[key].name !== finalName) {
+            discoveredLocationsDb[key].name = finalName;
+            changed = true;
+        }
+    }
+    
+    if (changed) {
+        saveDiscoveredDb();
+        broadcast('settings:discovered-db-updated', discoveredLocationsDb);
+    }
+}
 
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
 // ═══ SQUAD SYNC MANAGER (v2.8) ═══
@@ -556,6 +671,7 @@ function loadConfig() {
                 config.rawLogIgnoredPhrases = [];
             }
             console.log('[Main] Config loaded:', config);
+            loadDiscoveredDb();
         }
     } catch (e) {
         console.error('[Main] Failed to load config:', e);
@@ -2133,15 +2249,35 @@ LogWatcher.on('gamestate', (data) => {
             // Only cache if not already a known/mapped custom location
             const alreadyMapped = config.customLocations && Object.prototype.hasOwnProperty.call(config.customLocations, rawKey);
             if (!alreadyMapped) {
-                unmappedLocationBacklog.add(rawKey);
-                // Cap at 100 entries to avoid unbounded growth
-                if (unmappedLocationBacklog.size > 100) {
-                    const first = unmappedLocationBacklog.values().next().value;
-                    unmappedLocationBacklog.delete(first);
+                if (rawKey.startsWith('LOCATION_') || /^\d+$/.test(rawKey)) {
+                    unmappedNumericBacklog.add(rawKey);
+                    // Cap at 100 entries to avoid unbounded growth
+                    if (unmappedNumericBacklog.size > 100) {
+                        const first = unmappedNumericBacklog.values().next().value;
+                        unmappedNumericBacklog.delete(first);
+                    }
+                } else {
+                    unmappedLocationBacklog.add(rawKey);
+                    // Cap at 100 entries to avoid unbounded growth
+                    if (unmappedLocationBacklog.size > 100) {
+                        const first = unmappedLocationBacklog.values().next().value;
+                        unmappedLocationBacklog.delete(first);
+                    }
                 }
             }
+            recordDiscoveredLocation(rawKey, data.raw ? data.value : null);
         }
         showTrayNotification('📍 New Location Detected', `${data.value || data.raw}\nClick to name it in the app.`);
+    }
+
+    if (data.type === 'LOCATION') {
+        const rawKey = data.raw || data.value;
+        const name = data.raw ? data.value : null;
+        recordDiscoveredLocation(rawKey, name);
+    }
+
+    if (data.type === 'LOCATION_RAW') {
+        recordDiscoveredLocation(data.value, null);
     }
 
     // Custom Alerts (User Defined)
@@ -2436,10 +2572,31 @@ ipcMain.handle('settings:save-custom-locations', async (event, locations) => {
     
     config.customLocations = locations;
     saveConfig();
-    // Remove newly mapped keys from the in-memory backlog so they no longer
-    // appear in the dashboard's unmapped location queue.
+    // Remove newly mapped keys from the in-memory backlogs so they no longer
+    // appear in the dashboard's unmapped location queues.
     for (const key of Object.keys(locations)) {
         unmappedLocationBacklog.delete(key);
+        unmappedNumericBacklog.delete(key);
+    }
+
+    // Sync names in discovered DB with current mapped locations
+    let dbChanged = false;
+    for (const [key, item] of Object.entries(discoveredLocationsDb)) {
+        if (locations[key]) {
+            const locVal = locations[key];
+            const nameVal = typeof locVal === 'object' ? locVal.name : locVal;
+            if (item.name !== nameVal) {
+                item.name = nameVal;
+                dbChanged = true;
+            }
+        } else if (item.name !== null) {
+            // Mapped name removed
+            item.name = null;
+            dbChanged = true;
+        }
+    }
+    if (dbChanged) {
+        saveDiscoveredDb();
     }
 
     // Verify save
@@ -2517,6 +2674,13 @@ ipcMain.handle('settings:get-unmapped-backlog', async () => {
     // Filter out any that have since been mapped
     const mapped = config.customLocations || {};
     const filtered = [...unmappedLocationBacklog].filter(k => !Object.prototype.hasOwnProperty.call(mapped, k));
+    return filtered;
+});
+
+ipcMain.handle('settings:get-unmapped-numeric-backlog', async () => {
+    // Filter out any that have since been mapped
+    const mapped = config.customLocations || {};
+    const filtered = [...unmappedNumericBacklog].filter(k => !Object.prototype.hasOwnProperty.call(mapped, k));
     return filtered;
 });
 
@@ -2712,6 +2876,61 @@ ipcMain.handle('settings:export-custom-locations-dialog', async () => {
         return { success: true, count: unlockedCount, filePath };
     } catch (e) {
         console.error('[Main] Export locations dialog error:', e);
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('settings:export-discovered-locations-dialog', async () => {
+    try {
+        const { filePath, canceled } = await dialog.showSaveDialog({
+            title: 'Export Discovered Locations Database',
+            defaultPath: 'discovered-locations-database.json',
+            filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'Text Files', extensions: ['txt'] }
+            ]
+        });
+        
+        if (canceled || !filePath) return { success: false, canceled: true };
+        
+        // Refresh names in database using customLocations from config just in case
+        const custom = config.customLocations || {};
+        for (const [k, item] of Object.entries(discoveredLocationsDb)) {
+            if (custom[k]) {
+                const nameVal = typeof custom[k] === 'object' ? custom[k].name : custom[k];
+                item.name = nameVal;
+            }
+        }
+        
+        if (filePath.endsWith('.txt')) {
+            let output = `=== VERSECON-LINK DISCOVERED LOCATIONS DATABASE ===\r\n`;
+            output += `Total Entries: ${Object.keys(discoveredLocationsDb).length}\r\n`;
+            output += `Exported: ${new Date().toLocaleString('en-GB')}\r\n`;
+            output += `==================================================\r\n\r\n`;
+
+            const sorted = Object.values(discoveredLocationsDb).sort((a, b) => a.key.localeCompare(b.key));
+            const strings = sorted.filter(x => x.type === 'string');
+            const numerics = sorted.filter(x => x.type === 'numeric');
+
+            output += `--- LETTER/STRING CODES (${strings.length}) ---\r\n`;
+            for (const item of strings) {
+                const status = item.name ? `[MAPPED] -> ${item.name}` : `[UNMAPPED]`;
+                output += `Raw Code: ${item.key}\r\nStatus:   ${status}\r\nFirst Seen: ${new Date(item.firstSeen).toISOString()}\r\nLast Seen:  ${new Date(item.lastSeen).toISOString()}\r\n--------------------------------------\r\n`;
+            }
+            output += `\r\n`;
+
+            output += `--- NUMERIC IDS (${numerics.length}) ---\r\n`;
+            for (const item of numerics) {
+                const status = item.name ? `[MAPPED] -> ${item.name}` : `[UNMAPPED]`;
+                output += `Raw Code: ${item.key}\r\nStatus:   ${status}\r\nFirst Seen: ${new Date(item.firstSeen).toISOString()}\r\nLast Seen:  ${new Date(item.lastSeen).toISOString()}\r\n--------------------------------------\r\n`;
+            }
+            fs.writeFileSync(filePath, output, 'utf-8');
+        } else {
+            fs.writeFileSync(filePath, JSON.stringify(discoveredLocationsDb, null, 2), 'utf-8');
+        }
+        return { success: true, count: Object.keys(discoveredLocationsDb).length, filePath };
+    } catch (e) {
+        console.error('[Main] Export discovered database dialog error:', e);
         return { success: false, error: e.message };
     }
 });

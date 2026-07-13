@@ -1,0 +1,294 @@
+﻿
+Name                                         ProcessId ExecutablePath                                                  
+----                                         --------- --------------                                                  
+System Idle Process                                  0                                                                 
+System                                               4                                                                 
+Secure System                                      428                                                                 
+Registry                                           472                                                                 
+smss.exe                                          1280                                                                 
+csrss.exe                                         1848                                                                 
+wininit.exe                                       2036                                                                 
+services.exe                                      1844                                                                 
+LsaIso.exe                                        2072                                                                 
+lsass.exe                                         2080                                                                 
+svchost.exe                                       2232                                                                 
+fontdrvhost.exe                                   2264                                                                 
+WUDFHost.exe                                      2292                                                                 
+svchost.exe                                       2404                                                                 
+WUDFHost.exe                                      2564                                                                 
+WUDFHost.exe                                      2680                                                                 
+svchost.exe                                       2800                                                                 
+svchost.exe                                       2808                                                                 
+svchost.exe                                       2824                                                                 
+WUDFHost.exe                                      3016                                                                 
+svchost.exe                                       3024                                                                 
+svchost.exe                                       3076                                                                 
+svchost.exe                                       3184                                                                 
+svchost.exe                                       3212                                                                 
+platform_runtime_IS5LEYETRACKER5_service.exe      3404                                                                 
+svchost.exe                                       3484                                                                 
+NVDisplay.Container.exe                           3664                                                                 
+svchost.exe                                       3676                                                                 
+atiesrxx.exe                                      3828                                                                 
+amdfendrsr.exe                                    3836                                                                 
+svchost.exe                                       3936                                                                 
+svchost.exe                                       3952                                                                 
+Memory Compression                                4024                                                                 
+svchost.exe                                       4076                                                                 
+svchost.exe                                       3164                                                                 
+svchost.exe                                       4116                                                                 
+svchost.exe                                       4320                                                                 
+svchost.exe                                       4328                                                                 
+svchost.exe                                       4484                                                                 
+spoolsv.exe                                       4564                                                                 
+svchost.exe                                       4648                                                                 
+svchost.exe                                       4716                                                                 
+amd3dvcacheSvc.exe                                5212                                                                 
+AmdAppCompatSvc.exe                               5220                                                                 
+mDNSResponder.exe                                 5232                                                                 
+AmdPpkgSvc.exe                                    5240                                                                 
+barrierd.exe                                      5256                                                                 
+AorusLcdService.exe                               5268                                                                 
+GameInputRedistService.exe                        5288                                                                 
+HPPrintScanDoctorService.exe                      5320                                                                 
+ScreenConnect.ClientService.exe                   5328                                                                 
+svchost.exe                                       5348                                                                 
+pservice.exe                                      5356                                                                 
+logi_lamparray_service.AMD64.exe                  5364                                                                 
+input-leapd.exe                                   5372                                                                 
+Tobii.Service.exe                                 5396                                                                 
+svchost.exe                                       5444                                                                 
+srvstub.exe                                       5452                                                                 
+nvcontainer.exe                                   5460                                                                 
+OVRServiceLauncher.exe                            5468                                                                 
+lghub_updater.exe                                 5480                                                                 
+MuseAuthService.exe                               5488                                                                 
+WavelinkSEService.exe                             5496                                                                 
+TobiiVirtualDevice.exe                            5504                                                                 
+MsMpEng.exe                                       5512                                                                 
+VirtualDesktop.Service.exe                        5520                                                                 
+RtkAudUService64.exe                              5528                                                                 
+MpDefenderCoreService.exe                         5572                                                                 
+ProcessGovernor.exe                               5896                                                                 
+svchost.exe                                       6136                                                                 
+NgcIso.exe                                        6332                                                                 
+dasHost.exe                                       6508                                                                 
+WUDFHost.exe                                      6560                                                                 
+audiodg.exe                                       6856                                                                 
+svchost.exe                                       7644                                                                 
+dasHost.exe                                       9072                                                                 
+svchost.exe                                      10568                                                                 
+gamingservices.exe                               10748                                                                 
+gamingservicesnet.exe                            10760                                                                 
+cowork-svc.exe                                   10816                                                                 
+svchost.exe                                      10832                                                                 
+wlanext.exe                                      10076                                                                 
+svchost.exe                                       5072                                                                 
+vmcompute.exe                                    13160                                                                 
+svchost.exe                                      13652                                                                 
+svchost.exe                                      14032                                                                 
+svchost.exe                                      14216                                                                 
+SearchIndexer.exe                                13436                                                                 
+WmiPrvSE.exe                                      4764                                                                 
+GameInputSvc.exe                                 19524                                                                 
+NisSrv.exe                                       22184                                                                 
+MidiSrv.exe                                      28708                                                                 
+EasyTuneEngineService.exe                        30560                                                                 
+svchost.exe                                      22384                                                                 
+Plex Update Service.exe                           2180                                                                 
+svchost.exe                                      10552                                                                 
+svchost.exe                                       9568                                                                 
+svchost.exe                                       3500                                                                 
+dllhost.exe                                      50820                                                                 
+svchost.exe                                      57208                                                                 
+csrss.exe                                        69452                                                                 
+winlogon.exe                                     74876                                                                 
+fontdrvhost.exe                                  76028                                                                 
+dwm.exe                                          79636                                                                 
+GameInputSvc.exe                                 21100                                                                 
+atieclxx.exe                                     78328                                                                 
+NVDisplay.Container.exe                          70252                                                                 
+nvcontainer.exe                                  21224                                                                 
+MouseWithoutBorders.exe                          23820                                                                 
+MouseWithoutBorders.exe                           4888                                                                 
+GameInputRedistService.exe                       26696 C:\Program Files\Microsoft GameInput\x64\GameInputRedistServi...
+amd3dvcacheUser.exe                              23840 C:\WINDOWS\System32\DriverStore\FileRepository\amd3dvcache.in...
+nvcontainer.exe                                  26116 C:\Program Files\NVIDIA Corporation\NvContainer\nvcontainer.exe 
+OVRServer_x64.exe                                72044 C:\Program Files\Meta Horizon\Support\oculus-runtime\OVRServe...
+conhost.exe                                      51096 C:\WINDOWS\system32\conhost.exe                                 
+OVRRedir.exe                                     56092                                                                 
+sihost.exe                                       72284 C:\WINDOWS\system32\sihost.exe                                  
+svchost.exe                                      49740 C:\WINDOWS\system32\svchost.exe                                 
+svchost.exe                                      75340 C:\WINDOWS\system32\svchost.exe                                 
+taskhostw.exe                                    59960 C:\WINDOWS\system32\taskhostw.exe                               
+ProcessLasso.exe                                 58596                                                                 
+bitsumsessionagent.exe                           74264 C:\Program Files\Process Lasso\bitsumsessionagent.exe           
+MSIAfterburner.exe                               64132                                                                 
+explorer.exe                                     76020 C:\WINDOWS\Explorer.EXE                                         
+ShellHost.exe                                    64764 C:\Windows\System32\ShellHost.exe                               
+Tobii.EyeX.Engine.exe                            51724 C:\Program Files\Tobii\Tobii EyeX\Tobii.EyeX.Engine.exe         
+Tobii.EyeX.Interaction.exe                       74368                                                                 
+CrossDeviceResume.exe                            29392 C:\WINDOWS\SystemApps\MicrosoftWindows.Client.CBS_cw5n1h2txye...
+ScreenConnect.WindowsClient.exe                  76244 C:\Program Files (x86)\Windows MV\ScreenConnect.WindowsClient...
+SearchHost.exe                                   26224 C:\WINDOWS\SystemApps\MicrosoftWindows.Client.CBS_cw5n1h2txye...
+StartMenuExperienceHost.exe                      26576 C:\Windows\SystemApps\Microsoft.Windows.StartMenuExperienceHo...
+Widgets.exe                                      69040 C:\Program Files\WindowsApps\MicrosoftWindows.Client.WebExper...
+UserOOBEBroker.exe                               26016 C:\Windows\System32\oobe\UserOOBEBroker.exe                     
+RuntimeBroker.exe                                27416 C:\Windows\System32\RuntimeBroker.exe                           
+svchost.exe                                      23316 C:\WINDOWS\system32\svchost.exe                                 
+WidgetService.exe                                21040 C:\Program Files\WindowsApps\Microsoft.WidgetsPlatformRuntime...
+RemoteDesktopCompanion.exe                       26156 C:\Program Files\Meta Horizon\Support\oculus-remote-desktop\R...
+msedgewebview2.exe                               65976 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               38892 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+MQRDCrashpadHandler.exe                          28752 C:\Program Files\Meta Horizon\Support\oculus-remote-desktop\M...
+msedgewebview2.exe                               60980 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                                3852 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               75748 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               70856 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+ctfmon.exe                                       16260                                                                 
+TabTip.exe                                       29336                                                                 
+LockApp.exe                                      76136 C:\WINDOWS\SystemApps\Microsoft.LockApp_cw5n1h2txyewy\LockApp...
+RuntimeBroker.exe                                62444 C:\Windows\System32\RuntimeBroker.exe                           
+svchost.exe                                      29640 C:\WINDOWS\system32\svchost.exe                                 
+powershell.exe                                   24356 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                       5888 C:\WINDOWS\system32\conhost.exe                                 
+TextInputHost.exe                                10436 C:\WINDOWS\SystemApps\MicrosoftWindows.Client.CBS_cw5n1h2txye...
+RtkAudUService64.exe                             74976 C:\Windows\System32\DriverStore\FileRepository\realtekservice...
+Discord.exe                                      52764 C:\Users\DEVIL\AppData\Local\Discord\app-1.0.9245\Discord.exe   
+Discord.exe                                      72976 C:\Users\DEVIL\AppData\Local\Discord\app-1.0.9245\Discord.exe   
+Discord.exe                                      70220 C:\Users\DEVIL\AppData\Local\Discord\app-1.0.9245\Discord.exe   
+Discord.exe                                      68888 C:\Users\DEVIL\AppData\Local\Discord\app-1.0.9245\Discord.exe   
+Discord.exe                                      31060 C:\Users\DEVIL\AppData\Local\Discord\app-1.0.9245\Discord.exe   
+MouseWithoutBordersHelper.exe                    67332 C:\Program Files (x86)\Microsoft Garage\Mouse without Borders...
+Discord.exe                                      73352 C:\Users\DEVIL\AppData\Local\Discord\app-1.0.9245\Discord.exe   
+ElgatoAudioControlServerWatcher.exe              32544 C:\Program Files\Elgato\Volume Controller\ElgatoAudioControlS...
+ElgatoAudioControlServer.exe                     68732 C:\Program Files\Elgato\Volume Controller\ElgatoAudioControlS...
+secd.exe                                         38180 C:\Program Files\WindowsApps\AppleInc.iCloud_15.8.127.0_x64__...
+WaveCastDriverEnabler.exe                         3612 C:\Program Files\Elgato\WaveCastDriver\WaveCastDriverEnabler.exe
+GoogleDriveFS.exe                                64504 C:\Program Files\Google\Drive File Stream\127.0.1.0\GoogleDri...
+crashpad_handler.exe                              7800 C:\Program Files\Google\Drive File Stream\127.0.1.0\crashpad_...
+Camera Hub.exe                                   46212 C:\Program Files\Elgato\CameraHub\Camera Hub.exe                
+crashpad_handler.exe                             11668 C:\Program Files\Elgato\CameraHub\crashpad_handler.exe          
+Elgato.WaveCast.exe                              50140 C:\Program Files\WindowsApps\Elgato.WaveCast_1.2.2.2976_x64__...
+crashpad_handler.exe                             75608 C:\Users\DEVIL\AppData\Local\Packages\Elgato.WaveCast_g54w8zt...
+GoogleDriveFS.exe                                47044 C:\Program Files\Google\Drive File Stream\127.0.1.0\GoogleDri...
+conhost.exe                                      77144 C:\WINDOWS\system32\conhost.exe                                 
+msedgewebview2.exe                               50876 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               50500 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               52664 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               50784 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               52104 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               32988 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               46856 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               42304 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               51628 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               49376 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               67204 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+msedgewebview2.exe                               54228 C:\Program Files (x86)\Microsoft\EdgeWebView\Application\150....
+Elgato.WaveLink.exe                              48092 C:\Program Files\WindowsApps\Elgato.WaveLink_3.2.4.3627_x64__...
+RuntimeBroker.exe                                45144 C:\Windows\System32\RuntimeBroker.exe                           
+iCloudHome.exe                                   46616 C:\Program Files\WindowsApps\AppleInc.iCloud_15.8.127.0_x64__...
+iCloudCKKS.exe                                   34760 C:\Program Files\WindowsApps\AppleInc.iCloud_15.8.127.0_x64__...
+ApplePhotoStreams.exe                            25240 C:\Program Files\WindowsApps\AppleInc.iCloud_15.8.127.0_x64__...
+APSDaemon.exe                                    12100 C:\Program Files\WindowsApps\AppleInc.iCloud_15.8.127.0_x64__...
+RuntimeBroker.exe                                12280 C:\Windows\System32\RuntimeBroker.exe                           
+svchost.exe                                      16592 C:\WINDOWS\system32\svchost.exe                                 
+powershell.exe                                   23976 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      35664 C:\WINDOWS\system32\conhost.exe                                 
+logioptionsplus_updater.exe                      35528                                                                 
+logioptionsplus_agent.exe                        24468 C:\Program Files\LogiOptionsPlus\logioptionsplus_agent.exe      
+unsecapp.exe                                     16796 C:\WINDOWS\system32\wbem\unsecapp.exe                           
+logioptionsplus_appbroker.exe                    23672                                                                 
+Antigravity.exe                                   4124 C:\Users\DEVIL\AppData\Local\Programs\Antigravity\Antigravity...
+Antigravity.exe                                  75416 C:\Users\DEVIL\AppData\Local\Programs\Antigravity\Antigravity...
+Antigravity.exe                                  36724 C:\Users\DEVIL\AppData\Local\Programs\Antigravity\Antigravity...
+language_server.exe                              56752 C:\Users\DEVIL\AppData\Local\Programs\Antigravity\resources\b...
+conhost.exe                                      16872 C:\WINDOWS\system32\conhost.exe                                 
+Antigravity.exe                                  68968 C:\Users\DEVIL\AppData\Local\Programs\Antigravity\Antigravity...
+Antigravity.exe                                  76188 C:\Users\DEVIL\AppData\Local\Programs\Antigravity\Antigravity...
+Antigravity.exe                                  79832 C:\Users\DEVIL\AppData\Local\Programs\Antigravity\Antigravity...
+WmiPrvSE.exe                                     60804                                                                 
+powershell.exe                                   24460 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      68048 C:\WINDOWS\system32\conhost.exe                                 
+RSI Launcher.exe                                 10484 C:\Program Files\Roberts Space Industries\RSI Launcher\RSI La...
+RSI Launcher.exe                                 33644 C:\Program Files\Roberts Space Industries\RSI Launcher\RSI La...
+RSI Launcher.exe                                 65256 C:\Program Files\Roberts Space Industries\RSI Launcher\RSI La...
+RSI Launcher.exe                                 32672 C:\Program Files\Roberts Space Industries\RSI Launcher\RSI La...
+RSI Launcher.exe                                 36264 C:\Program Files\Roberts Space Industries\RSI Launcher\RSI La...
+RSI Launcher.exe                                 62220 C:\Program Files\Roberts Space Industries\RSI Launcher\RSI La...
+powershell.exe                                   48936 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      48132 C:\WINDOWS\system32\conhost.exe                                 
+RegAsm.exe                                       43588 C:\Windows\Microsoft.NET\Framework\v4.0.30319\RegAsm.exe        
+StarCitizen_Launcher.exe                         43976 C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\St...
+EasyAntiCheat_EOS.exe                            44044                                                                 
+StarCitizen.exe                                  74252                                                                 
+svchost.exe                                      47220                                                                 
+powershell.exe                                   19340 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      19376 C:\WINDOWS\system32\conhost.exe                                 
+GameBarPresenceWriter.exe                        19496 C:\Windows\System32\GameBarPresenceWriter.exe                   
+powershell.exe                                   78256 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      58900 C:\WINDOWS\system32\conhost.exe                                 
+mscopilot_proxy.exe                               6844 C:\Program Files (x86)\Microsoft\Copilot\Application\mscopilo...
+powershell.exe                                   16752 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      32968 C:\WINDOWS\system32\conhost.exe                                 
+chrome.exe                                       70312 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       41544 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       41548 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       52832 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       51784 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       50404 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       49772 C:\Program Files\Google\Chrome\Application\chrome.exe           
+cmd.exe                                          34944 C:\WINDOWS\system32\cmd.exe                                     
+cmd.exe                                          47328 C:\WINDOWS\system32\cmd.exe                                     
+conhost.exe                                      47740 C:\WINDOWS\system32\conhost.exe                                 
+conhost.exe                                      50448 C:\WINDOWS\system32\conhost.exe                                 
+chrome-native-host.exe                           72660 C:\Users\DEVIL\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\Lo...
+iCloudPasswordsExtensionHelper.exe               39056 C:\Program Files\WindowsApps\AppleInc.iCloud_15.8.127.0_x64__...
+powershell.exe                                   35728 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      52204 C:\WINDOWS\system32\conhost.exe                                 
+chrome.exe                                       30740 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       19668 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       38352 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       32740 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       44504 C:\Program Files\Google\Chrome\Application\chrome.exe           
+chrome.exe                                       32452 C:\Program Files\Google\Chrome\Application\chrome.exe           
+powershell.exe                                   55888 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      55412 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   72396 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      39084 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   59028 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      67952 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   28352 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      54112 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   22780 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      23992 C:\WINDOWS\system32\conhost.exe                                 
+JoyToKey.exe                                     21344 C:\Program Files (x86)\JoyToKey\JoyToKey.exe                    
+powershell.exe                                   72752 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                       9400 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   41324 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      63996 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   35744 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      30408 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   75752 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      26952 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   59736 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      19124 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   66128 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      31500 C:\WINDOWS\system32\conhost.exe                                 
+powershell.exe                                   29208 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      63076 C:\WINDOWS\system32\conhost.exe                                 
+smartscreen.exe                                  64688 C:\Windows\System32\smartscreen.exe                             
+OpenWith.exe                                     15936 C:\WINDOWS\system32\OpenWith.exe                                
+powershell.exe                                   70860 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      51208 C:\WINDOWS\system32\conhost.exe                                 
+SearchProtocolHost.exe                           78180                                                                 
+WmiPrvSE.exe                                     50656                                                                 
+RuntimeBroker.exe                                44040 C:\Windows\System32\RuntimeBroker.exe                           
+powershell.exe                                   42116 C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe       
+conhost.exe                                      76280 C:\WINDOWS\system32\conhost.exe                                 
+SearchFilterHost.exe                             18020                                                                 
+SearchFilterHost.exe                             56800                                                                 
+RuntimeBroker.exe                                46248 C:\Windows\System32\RuntimeBroker.exe                           
+powershell.exe                                   25968 c:\windows\system32\windowspowershell\v1.0\powershell.exe       
+
+

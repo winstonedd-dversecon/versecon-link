@@ -96,7 +96,7 @@ class SquadHost extends EventEmitter {
         this.port = preferredPort || 30000;
 
         // Start WS server
-        this.wss = new WebSocket.Server({ port: this.port });
+        this.wss = new WebSocket.Server({ port: this.port, host: '0.0.0.0' });
         console.log('[SquadHost] WS server on port', this.port);
 
         this.wss.on('connection', ws => this._onConnect(ws));
@@ -117,7 +117,20 @@ class SquadHost extends EventEmitter {
         this.code = encodeCode(publicIP, this.port);
         console.log(`[SquadHost] Code: ${this.code} (${publicIP}:${this.port}, UPnP: ${upnpOk})`);
 
-        return { code: this.code, port: this.port, publicIP, upnpOk };
+        let localIP = '127.0.0.1';
+        try {
+            const os = require('os');
+            const nets = os.networkInterfaces();
+            for (const name of Object.keys(nets)) {
+                for (const net of nets[name]) {
+                    if (net.family === 'IPv4' && !net.internal) {
+                        localIP = net.address;
+                    }
+                }
+            }
+        } catch(e) {}
+
+        return { code: this.code, port: this.port, publicIP, localIP, upnpOk };
     }
 
     _onConnect(ws) {
@@ -167,11 +180,15 @@ class SquadHost extends EventEmitter {
     }
 
     _squadList() {
-        const list = [];
-        // Host is always first
-        if (this.hostInfo) list.push({ ...this.hostInfo, isHost: true });
-        this.players.forEach(p => list.push(p));
-        return list;
+        const peers = {};
+        // Host is always first conceptually, but now it's an object
+        if (this.hostInfo) {
+            peers[this.hostInfo.handle] = { ...this.hostInfo, isHost: true };
+        }
+        this.players.forEach(p => {
+            peers[p.handle] = p;
+        });
+        return { peers };
     }
 
     _send(ws, type, data) {

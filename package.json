@@ -30,7 +30,13 @@
   },
   "build": {
     "appId": "com.versecon.link",
-    "productName": "VerseCon Link",
+    "productName": "Verse Link",
+    "win": {
+      "icon": "assets/icon.png",
+      "target": "nsis",
+      "verifyUpdateCodeSignature": false,
+      "signAndEditExecutable": false
+    },
     "asarUnpack": [
       "node_modules/screenshot-desktop"
     ],
@@ -49,18 +55,18 @@
       "owner": "winstonedd-dversecon",
       "repo": ".gemini"
     },
-    "win": {
-      "target": "nsis"
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "protocols": {
-      "name": "VerseCon Link Protocol",
+      "name": "Verse Link Protocol",
       "schemes": [
         "versecon-link"
       ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
     }
   }
 }

@@ -5,11 +5,13 @@
     <title>SQUAD HUD</title>
     <style>
         :root {
-            --bg: rgba(0, 0, 0, 0.4);
-            --border: rgba(0, 255, 136, 0.3);
+            --bg: rgba(11, 12, 16, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
             --accent: #00ff88;
-            --danger: #ff4444;
+            --danger: #ff3333;
             --warning: #ffaa00;
+            --info: #00ccff;
+            --menu: #888888;
             --text: #ffffff;
             --font: 'Segoe UI', Roboto, sans-serif;
         }
@@ -25,25 +27,37 @@
             overflow: hidden;
             user-select: none;
             -webkit-app-region: drag;
+            border: 2px solid transparent;
+            transition: background 0.3s, border 0.3s;
+        }
+
+        body.unlocked {
+            background: rgba(0, 255, 136, 0.1) !important;
+            border: 2px dashed var(--accent) !important;
+            cursor: move;
         }
 
         .hud-container {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 8px;
             width: 100%;
         }
 
         .unit-box {
             background: var(--bg);
-            border-left: 3px solid var(--accent);
-            padding: 8px 12px;
-            border-radius: 0 4px 4px 0;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+            padding: 6px 8px;
+            border-radius: 4px;
             position: relative;
             backdrop-filter: blur(4px);
             transition: all 0.3s ease;
             -webkit-app-region: no-drag;
             animation: slideIn 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         @keyframes slideIn {
@@ -51,62 +65,52 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
-        .unit-box.mia {
-            border-left-color: #555;
-            opacity: 0.6;
-        }
-
-        .unit-box.dead {
-            border-left-color: var(--danger);
-            background: rgba(255, 0, 0, 0.2);
-        }
+        .unit-box.mia { border-left-color: #555; opacity: 0.6; }
+        .unit-box.dead { border-left-color: var(--danger); background: rgba(255, 0, 0, 0.15); border-color: rgba(255, 0, 0, 0.3); }
+        .unit-box.menu { border-left-color: var(--menu); }
+        .unit-box.diff-server { border-left-color: var(--warning); }
+        .unit-box.in-ship { border-left-color: var(--info); }
 
         .unit-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px;
         }
 
         .unit-name {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: bold;
+            color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            max-width: 180px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
+        .unit-box.dead .unit-name { color: var(--danger); }
+        .unit-box.menu .unit-name { color: var(--menu); }
+        .unit-box.diff-server .unit-name { color: var(--warning); }
+        .unit-box.in-ship .unit-name { color: var(--info); }
+
         .unit-health-text {
-            font-size: 0.75rem;
-            font-weight: 800;
+            font-size: 0.7rem;
+            font-weight: bold;
             font-family: monospace;
         }
 
-        .health-bar-container {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 4px 0;
-        }
-
-        .health-bar-fill {
-            height: 100%;
-            width: 100%;
-            background: var(--accent);
-            transition: width 0.5s ease;
-        }
-
-        .unit-location {
+        .unit-details {
             font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
+            color: #aaa;
+            line-height: 1.2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -114,19 +118,23 @@
 
         .status-tag {
             position: absolute;
-            top: -5px;
-            right: 5px;
+            top: -6px;
+            right: -6px;
             font-size: 0.55rem;
             background: var(--accent);
             color: #000;
-            padding: 1px 4px;
-            border-radius: 2px;
+            padding: 2px 5px;
+            border-radius: 3px;
             font-weight: bold;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
             display: none;
+            z-index: 2;
         }
 
         .unit-box.mia .status-tag { display: block; background: #666; color: #fff; content: 'MIA'; }
         .unit-box.dead .status-tag { display: block; background: var(--danger); color: #fff; content: 'KIA'; }
+        .unit-box.diff-server .status-tag { display: block; background: var(--warning); color: #000; content: 'DIFF SERVER'; }
+        .unit-box.menu .status-tag { display: block; background: var(--menu); color: #fff; content: 'IN MENU'; }
 
     </style>
 </head>
@@ -138,8 +146,31 @@
     <script>
         const { ipcRenderer } = require('electron');
 
+        let myServerIP = '';
+
+        // Capture local server IP for comparison
+        ipcRenderer.on('settings:loaded', (e, config) => {
+            // we can try to get it if passed, but usually we just get it from the squad state
+        });
+
         ipcRenderer.on('squad:update', (event, data) => {
-            const { peers } = data;
+            const peers = data?.peers || {};
+            
+            if (Object.keys(peers).length === 0) {
+                renderHud({});
+                return;
+            }
+
+            // Try to find local player to know our server IP
+            const localPlayerKey = Object.keys(peers).find(k => peers[k].isLocal);
+            if (localPlayerKey) {
+                myServerIP = peers[localPlayerKey].serverIP || '';
+            } else {
+                // If local isn't flagged, assume the host or first peer
+                const p1 = Object.values(peers)[0];
+                if (p1) myServerIP = p1.serverIP || '';
+            }
+
             renderHud(peers);
         });
 
@@ -151,60 +182,138 @@
                 if (peers[b].isHost) return 1;
                 return a.localeCompare(b);
             });
-
-            // Keep track of current elements to avoid flickering
-            const existingKeys = Array.from(container.querySelectorAll('.unit-box')).map(el => el.dataset.handle);
             
-            // For now, simplify and redraw
             container.innerHTML = '';
             
+            if (handles.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 10px; color: #666; font-style: italic; border: 1px solid var(--border); border-radius: 4px; background: rgba(0,0,0,0.5); text-align: center;">
+                        <div style="font-size: 1.2rem; margin-bottom: 5px;">📡</div>
+                        No Active Signal
+                    </div>
+                `;
+                return;
+            }
+
             handles.forEach(handle => {
                 const p = peers[handle];
                 const now = Date.now();
                 const diff = (now - p.lastUpdate) / 1000;
                 
                 const isLost = p.health === null || p.health === undefined;
-                const isMia = !isLost && diff > 20;
-                const isDead = !isLost && p.health !== null && p.health <= 5;
-                
+                const isMia = !isLost && diff > 30; // MIA after 30s
+                const isDead = p.status === 'dead' || (!isLost && p.health !== null && p.health <= 0);
+                const isMenu = p.status === 'menu' || p.status === 'inventory';
+                const getShard = s => {
+                    if (!s) return '';
+                    if (typeof s === 'object') return s.shard || s.address || '';
+                    return s;
+                };
+                const myShard = getShard(myServerIP);
+                const pShard = getShard(p.serverIP);
+                const diffServer = myShard && pShard && myShard !== pShard;
+                const inShip = p.ship && p.ship.length > 0;
+
+                let boxClass = '';
+                if (isLost) boxClass = 'lost';
+                else if (isDead) boxClass = 'dead';
+                else if (diffServer) boxClass = 'diff-server';
+                else if (isMenu) boxClass = 'menu';
+                else if (inShip) boxClass = 'in-ship';
+                else if (isMia) boxClass = 'mia';
+
                 const box = document.createElement('div');
-                box.className = `unit-box ${isMia ? 'mia' : ''} ${isDead ? 'dead' : ''} ${isLost ? 'lost' : ''}`;
+                box.className = `unit-box ${boxClass}`;
                 box.dataset.handle = handle;
                 
                 let healthColor = 'var(--accent)';
                 let healthText = `${p.health}%`;
-                let healthWidth = `${p.health}%`;
 
                 if (isLost) {
                     healthColor = 'var(--warning)';
                     healthText = '---%';
-                    healthWidth = '0%';
                 } else if (isDead) {
                     healthColor = 'var(--danger)';
+                    healthText = '0%';
                 } else if (p.health < 40) {
                     healthColor = 'var(--warning)';
                 }
 
                 let statusLabel = '';
-                if (isLost) statusLabel = 'SIGNAL LOST';
+                if (isLost) statusLabel = 'NO SIGNAL';
                 else if (isDead) statusLabel = 'KIA';
+                else if (diffServer) statusLabel = 'DIFF SERVER';
+                else if (isMenu) statusLabel = p.status.toUpperCase();
                 else if (isMia) statusLabel = 'MIA';
 
+                let stateIcon = '🏃';
+                let stateText = 'On Foot';
+                if (inShip) {
+                    stateIcon = '🚀';
+                    stateText = p.ship;
+                }
+                if (isDead) {
+                    stateIcon = '💀';
+                    stateText = 'Deceased';
+                } else if (isMenu) {
+                    stateIcon = '📱';
+                    stateText = p.status === 'inventory' ? 'Inventory' : 'mobiGlas';
+                } else if (p.status === 'fire') {
+                    stateIcon = '🔥';
+                    stateText = 'Ship on Fire';
+                }
+
+                const planetStr = p.planet ? `<span style="color:#ddd;">${p.planet}</span> • ` : '';
+                const locStr = p.location || 'Unknown Sector';
+
                 box.innerHTML = `
-                    <div class="status-tag" style="display: ${statusLabel ? 'block' : 'none'}; background: ${isLost ? 'var(--warning)' : (isDead ? 'var(--danger)' : '#666')}">${statusLabel}</div>
-                    <div class="unit-header">
-                        <div class="unit-name">${handle} ${p.isHost ? '<span style="color:var(--accent); font-size:0.6rem;">(CMD)</span>' : ''}</div>
-                        <div class="unit-health-text" style="color: ${healthColor}">${healthText}</div>
+                    <div class="status-tag" style="display: ${statusLabel ? 'block' : 'none'}; background: ${isLost || diffServer ? 'var(--warning)' : (isDead ? 'var(--danger)' : '#666')}">${statusLabel}</div>
+                    <div class="unit-header" style="align-items:center;">
+                        <div class="unit-name">${handle} ${p.isHost ? '<span style="color:#aaa; font-size:0.6rem;">(CMD)</span>' : ''}</div>
                     </div>
-                    <div class="health-bar-container">
-                        <div class="health-bar-fill" style="width: ${healthWidth}; background: ${healthColor}"></div>
+                    <div class="unit-details" style="margin-top: 4px;">
+                        <div class="detail-row"><span>${stateIcon}</span> <strong style="color:#ddd;">${stateText}</strong></div>
+                        <div class="detail-row" style="margin-top: 2px;"><span>📍</span> <span>${planetStr}${locStr}</span></div>
                     </div>
-                    <div class="unit-location">${p.ship ? p.ship + ' • ' : ''}${p.location || 'Unknown Orbit'}</div>
                 `;
                 
                 container.appendChild(box);
             });
         }
+
+        let isUnlocked = false;
+        ipcRenderer.on('overlay:unlock', (e, unlocked) => {
+            isUnlocked = unlocked;
+            document.body.classList.toggle('unlocked', unlocked);
+        });
+
+        // Handle overlay interaction for click-through vs drag
+        window.addEventListener('mousemove', (event) => {
+            if (isUnlocked) return;
+            let isInteractive = false;
+            let target = event.target;
+            while (target && target !== document.documentElement) {
+                if (target.dataset && target.dataset.clickable) {
+                    isInteractive = true;
+                    break;
+                }
+                // The body handles drag, so we need to enable interactivity if they hover the body
+                // BUT if they hover empty space in the body, we WANT to drag it.
+                // However, wait, if we make the whole body interactive, they can't click the game beneath it!
+                // Since this is a small dedicated HUD, let's just make the empty padding areas draggable.
+                if (target.tagName === 'BODY' || target.id === 'hud-list') {
+                    isInteractive = true;
+                    break;
+                }
+                target = target.parentElement;
+            }
+            ipcRenderer.send('squad:details-interaction', { active: isInteractive });
+        });
+
+        document.addEventListener('mouseleave', () => {
+            if (isUnlocked) return;
+            ipcRenderer.send('squad:details-interaction', { active: false });
+        });
     </script>
 </body>
 </html>

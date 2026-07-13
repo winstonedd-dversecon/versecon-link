@@ -75,6 +75,12 @@ class CustomParser extends BaseParser {
                 const stopMatch = line.match(p.stopCompiled);
                 if (stopMatch) {
                     delete this.activeStates[p.id];
+                    if (p.squadStatus && p.squadStatus !== 'none') {
+                        this.emit('gamestate', {
+                            type: 'SQUAD_STATUS',
+                            value: 'normal'
+                        });
+                    }
                     this.emit('gamestate', {
                         type: 'SUB_HUD_STATE',
                         id: p.id,
@@ -161,6 +167,13 @@ class CustomParser extends BaseParser {
                     }
                 }
 
+                if (p.squadStatus && p.squadStatus !== 'none') {
+                    this.emit('gamestate', {
+                        type: 'SQUAD_STATUS',
+                        value: p.squadStatus
+                    });
+                }
+
                 this.emit('gamestate', {
                     type: 'CUSTOM',
                     id: p.id,
@@ -179,6 +192,12 @@ class CustomParser extends BaseParser {
     clearActiveStates() {
         for (const id of Object.keys(this.activeStates)) {
             const p = this.patterns.find(x => x.id === id);
+            if (p && p.squadStatus && p.squadStatus !== 'none') {
+                this.emit('gamestate', {
+                    type: 'SQUAD_STATUS',
+                    value: 'normal'
+                });
+            }
             this.emit('gamestate', {
                 type: 'SUB_HUD_STATE',
                 id: id,
@@ -191,6 +210,12 @@ class CustomParser extends BaseParser {
         for (const id of Object.keys(this.timeouts)) {
             clearTimeout(this.timeouts[id]);
             const p = this.patterns.find(x => x.id === id);
+            if (p && p.squadStatus && p.squadStatus !== 'none') {
+                this.emit('gamestate', {
+                    type: 'SQUAD_STATUS',
+                    value: 'normal'
+                });
+            }
             this.emit('gamestate', {
                 type: 'SUB_HUD_STATE',
                 id: id,

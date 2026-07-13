@@ -1534,6 +1534,8 @@
                         style="font-size: 0.7rem; margin-left: 5px; background:rgba(0,150,255,0.15); border-color:#0099ff;">💾 Export File</button>
                     <button class="cyber-btn small info" onclick="importCustomLocationsFromFile()"
                         style="font-size: 0.7rem; margin-left: 5px; background:rgba(168,85,247,0.15); border-color:#a855f7;">📥 Import File</button>
+                    <button class="cyber-btn small info" onclick="exportDiscoveredLocationsDb()"
+                        style="font-size: 0.7rem; margin-left: 5px; background:rgba(234,179,8,0.15); border-color:#eab308; color:#eab308;" title="Export the complete database of all discovered string and numeric locations">🗃️ Export Discovered DB</button>
                     <!-- Help tooltip -->
                     <span style="font-size:0.7rem; color:#666; margin-left:10px; cursor:help;"
                         onclick="alert('Map raw log values (e.g. OOC_Stanton_1b_Aberdeen) to friendly names (e.g. Vivere PAF-1).\nWorks with Location[...] and RoomName: logs.')">ℹ️
@@ -1673,6 +1675,20 @@
                         <div style="display:flex; gap:5px; margin-top:5px;">
                             <button class="cyber-btn small" onclick="advanceBacklog()" style="flex:1; margin:0; font-size:0.65rem;">Next Unmapped</button>
                             <button class="cyber-btn small" onclick="clearBacklog()" style="flex:1; margin:0; font-size:0.65rem; background:rgba(255,100,100,0.15); border-color:#ff4444; color:#ff4444;">Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Unmapped Numeric Backlog Queue -->
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.2); border-radius: 4px;">
+                        <div style="font-size: 0.7rem; color: var(--success); opacity: 0.8; text-transform: uppercase; margin-bottom: 5px;">
+                            🔢 Unmapped Numeric IDs Backlog <span id="numeric-backlog-count" style="color:#666; font-size:0.6rem;">(0)</span>
+                        </div>
+                        <div id="numeric-backlog-list" style="max-height: 200px; overflow-y: auto; display:flex; flex-direction:column; gap:2px; font-family: monospace; font-size: 0.75rem;">
+                            <div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped numeric IDs.</div>
+                        </div>
+                        <div style="display:flex; gap:5px; margin-top:5px;">
+                            <button class="cyber-btn small" onclick="advanceNumericBacklog()" style="flex:1; margin:0; font-size:0.65rem;">Next Unmapped</button>
+                            <button class="cyber-btn small" onclick="clearNumericBacklog()" style="flex:1; margin:0; font-size:0.65rem; background:rgba(255,100,100,0.15); border-color:#ff4444; color:#ff4444;">Clear</button>
                         </div>
                     </div>
 
@@ -3230,7 +3246,42 @@
         // ═══ FEED HELPERS ═══
         function addFeedItem(feedId, icon, text, hostId = null, rawShip = '', rawLocation = '') {
             const feed = document.getElementById(feedId);
+            if (!feed) return null;
             const time = new Date().toLocaleTimeString([], { hour12: false });
+            const now = Date.now();
+            
+            // Clean/normalize text to check for duplicates
+            const cleanText = text.replace(/<[^>]+>/g, '').trim();
+
+            const lastEntry = feed.firstElementChild;
+            if (lastEntry) {
+                const textSpan = lastEntry.querySelector('.feed-text');
+                let lastCleanText = '';
+                if (textSpan) {
+                    const temp = textSpan.cloneNode(true);
+                    const buttons = temp.querySelectorAll('button');
+                    buttons.forEach(btn => btn.remove());
+                    lastCleanText = temp.textContent.replace(/💰|📐|🎨|📦|🛡️|☠️|🎯|Map|Edit|⚡/g, '').replace(/\s*\(×\d+\)\s*$/, '').trim();
+                }
+                const lastTimestamp = parseInt(lastEntry.dataset.timestamp || '0');
+
+                // If identical event text within 2.5s, stack/increment count instead of adding another line
+                if (lastCleanText && cleanText.replace(/💰|📐|🎨|📦|🛡️|☠️|🎯|Map|Edit|⚡/g, '').trim() === lastCleanText && (now - lastTimestamp < 2500)) {
+                    const count = parseInt(lastEntry.dataset.count || '1') + 1;
+                    lastEntry.dataset.count = count;
+                    lastEntry.dataset.timestamp = now.toString();
+                    
+                    // Re-render button if present
+                    const buttons = lastEntry.querySelectorAll('button');
+                    let buttonsHtml = '';
+                    buttons.forEach(b => { buttonsHtml += ' ' + b.outerHTML; });
+                    const baseText = cleanText.replace(/Map|Edit/g, '').trim();
+                    if (textSpan) {
+                        textSpan.innerHTML = `${baseText} <span style="color:#ff9f0a; font-weight:bold; font-size:0.75rem;">(×${count})</span>${buttonsHtml}`;
+                    }
+                    return lastEntry;
+                }
+            }
             
             let extraButton = '';
             if (hostId) {
@@ -3285,6 +3336,8 @@
             
             const item = document.createElement('div');
             item.className = 'feed-item';
+            item.dataset.count = '1';
+            item.dataset.timestamp = now.toString();
             item.innerHTML = `
                 <span class="feed-time">${time}</span>
                 <span class="feed-icon">${icon}</span>
@@ -4792,7 +4845,11 @@
                     if (_locMatch) {
                         break; // Already mapped — no need to notify
                     }
-                    addToBacklog(locRaw);
+                    if (locRaw.startsWith('LOCATION_') || /^\d+$/.test(locRaw)) {
+                        addToNumericBacklog(locRaw);
+                    } else {
+                        addToBacklog(locRaw);
+                    }
                     showNewLocationToast(data.value || data.raw, data.raw);
                     const dashBtn = `<button class="cyber-btn small" onclick="document.getElementById('new-loc-key').value='${escapeHtml(locRaw)}'; document.getElementById('new-loc-val').focus(); switchTab('config');" style="margin:0; font-size:0.6rem; padding:1px 5px; vertical-align:middle;">📍 Map</button>`;
                     addDashItem('📍', `New location: <span class="feed-highlight">${escapeHtml(data.value || locRaw)}</span> ${dashBtn}`);
@@ -5252,6 +5309,8 @@
         // ═══ UNMAPPED LOCATION BACKLOG QUEUE ═══
         window.addToBacklog = function(raw) {
             if (!raw || unmappedLocationQueue.some(e => e.raw === raw)) return;
+            // Ignore numeric IDs in the string backlog
+            if (raw.startsWith('LOCATION_') || /^\d+$/.test(raw)) return;
             // Use fuzzy match so typo variants (e.g. Asteriod vs Asteroid) are caught as already-mapped
             if (customLocations && getCustomLocationMatch(raw, raw, customLocations)) return;
             unmappedLocationQueue.push({ raw, time: Date.now() });
@@ -5333,17 +5392,97 @@
         };
 
         window.grabFromBacklog = function(raw) {
-            // Directly populate form with this specific backlog entry — don't call grabRawLocation()
-            // which would overwrite the key with lastRawLocation (potentially a different location)
             const keyInput = document.getElementById('new-loc-key');
             const valInput = document.getElementById('new-loc-val');
             if (keyInput) keyInput.value = raw;
-            // Auto-fill the suggested friendly name
             const suggested = getSuggestedName(raw);
             if (valInput && suggested) valInput.value = suggested;
             if (valInput) valInput.focus();
-            // Switch to config tab if not already there
             if (typeof switchTab === 'function') switchTab('config');
+        };
+
+        // ═══ UNMAPPED NUMERIC BACKLOG QUEUE ═══
+        window.addToNumericBacklog = function(raw) {
+            if (!raw || unmappedNumericQueue.some(e => e.raw === raw)) return;
+            if (customLocations && getCustomLocationMatch(raw, raw, customLocations)) return;
+            unmappedNumericQueue.push({ raw, time: Date.now() });
+            if (unmappedNumericQueue.length > 50) unmappedNumericQueue.shift();
+            updateNumericBacklogUI();
+        };
+
+        function updateNumericBacklogUI() {
+            const list = document.getElementById('numeric-backlog-list');
+            const countEl = document.getElementById('numeric-backlog-count');
+            if (!list) return;
+            if (countEl) countEl.textContent = `(${unmappedNumericQueue.length})`;
+            if (unmappedNumericQueue.length === 0) {
+                list.innerHTML = '<div style="color:#666; font-style:italic; padding:4px; text-align:center;">No unmapped numeric IDs.</div>';
+                return;
+            }
+
+            const shown = unmappedNumericQueue;
+            list.innerHTML = shown.map((entry, i) => {
+                const raw = entry.raw || entry;
+                const ts = entry.time;
+                const isActive = i === 0;
+                const suggested = getSuggestedName(raw);
+                const timeStr = ts ? formatTime(ts) : '';
+                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:3px 4px; border-bottom:1px solid rgba(0,255,136,0.1); ${isActive ? 'background:rgba(0,255,136,0.15); border-left:2px solid var(--success);' : ''}">
+                    <div style="flex:1; overflow:hidden;">
+                        <div style="${isActive ? 'color:#fff; font-weight:600;' : 'color:#aaa;'}">${escapeHtml(raw)}</div>
+                        <div style="font-size:0.65rem; color:#666;">Suggested: ${escapeHtml(suggested)}${timeStr ? ' <span style="color:#555;">· ' + timeStr + '</span>' : ''}</div>
+                    </div>
+                    <button class="cyber-btn small" onclick="grabFromNumericBacklog('${escapeHtml(raw)}')" style="margin:0; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Map</button>
+                    <button class="cyber-btn small danger" onclick="ignoreFromNumericBacklog('${escapeHtml(raw)}')" style="margin:0 0 0 5px; font-size:0.6rem; padding:1px 4px; flex-shrink:0;">Ignore</button>
+                </div>`;
+            }).join('');
+            if (unmappedNumericQueue.length > 10) {
+                list.innerHTML += `<div style="color:#555; font-size:0.6rem; padding:2px; text-align:center;">${unmappedNumericQueue.length} total — scroll for more</div>`;
+            }
+        }
+
+        window.ignoreFromNumericBacklog = async function(raw) {
+            if (!raw) return;
+            const finalObj = { name: 'Ignore', type: 'ignore', system: '', parentBody: '' };
+            const current = await ipcRenderer.invoke('settings:get-custom-locations');
+            current[raw] = finalObj;
+            await ipcRenderer.invoke('settings:save-custom-locations', current);
+            customLocations = current;
+
+            // Remove from backlog
+            const idx = unmappedNumericQueue.findIndex(e => (e.raw || e) === raw);
+            if (idx !== -1) unmappedNumericQueue.splice(idx, 1);
+            updateNumericBacklogUI();
+
+            // Refresh HUD to reflect this ignored location immediately
+            ipcRenderer.invoke('hud:refresh-location', raw, finalObj).catch(() => {});
+
+            // Feedback
+            addDashItem('🚫', `Ignored location ${escapeHtml(raw)}`);
+            renderCustomLocationList();
+        };
+
+        window.grabFromNumericBacklog = function(raw) {
+            const keyInput = document.getElementById('new-loc-key');
+            const valInput = document.getElementById('new-loc-val');
+            if (keyInput) keyInput.value = raw;
+            const suggested = getSuggestedName(raw);
+            if (valInput && suggested) valInput.value = suggested;
+            if (valInput) valInput.focus();
+            if (typeof switchTab === 'function') switchTab('config');
+        };
+
+        window.advanceNumericBacklog = function() {
+            if (unmappedNumericQueue.length === 0) return;
+            const entry = unmappedNumericQueue.shift();
+            const raw = entry.raw || entry;
+            grabFromNumericBacklog(raw);
+            updateNumericBacklogUI();
+        };
+
+        window.clearNumericBacklog = function() {
+            unmappedNumericQueue = [];
+            updateNumericBacklogUI();
         };
 
         window.editOrMapLocation = function(raw) {
@@ -5356,7 +5495,11 @@
                 selectLocationForEdit(encodeURIComponent(cleanRaw));
             } else {
                 // Not mapped — switch to config tab, grab the code, suggest a name
-                window.grabFromBacklog(cleanRaw);
+                if (cleanRaw.startsWith('LOCATION_') || /^\d+$/.test(cleanRaw)) {
+                    window.grabFromNumericBacklog(cleanRaw);
+                } else {
+                    window.grabFromBacklog(cleanRaw);
+                }
             }
         };
 
@@ -5381,6 +5524,10 @@
                 const idx = unmappedLocationQueue.findIndex(e => (e.raw || e) === key);
                 if (idx !== -1) unmappedLocationQueue.splice(idx, 1);
                 updateBacklogUI();
+
+                const nIdx = unmappedNumericQueue.findIndex(e => (e.raw || e) === key);
+                if (nIdx !== -1) unmappedNumericQueue.splice(nIdx, 1);
+                updateNumericBacklogUI();
             }
             await _origSaveLoc();
         };
@@ -6550,6 +6697,19 @@
             });
         };
 
+        window.exportDiscoveredLocationsDb = function () {
+            ipcRenderer.invoke('settings:export-discovered-locations-dialog').then(res => {
+                if (res.success) {
+                    const msg = `Successfully exported ${res.count} discovered database locations to ${res.filePath}`;
+                    addDashItem('🗃️', msg);
+                    alert(msg);
+                } else if (res.error) {
+                    addDashItem('❌', `Failed to export discovered database: ${res.error}`);
+                    alert(`Failed to export: ${res.error}`);
+                }
+            });
+        };
+
         window.exportBlueprintsToFile = function () {
             ipcRenderer.invoke('settings:export-blueprints-dialog').then(res => {
                 if (res.success) {
@@ -7622,6 +7782,16 @@
             });
         }).catch(err => {
             console.warn('[Dashboard] Could not fetch unmapped backlog:', err);
+        });
+
+        ipcRenderer.invoke('settings:get-unmapped-numeric-backlog').then(backlog => {
+            if (!Array.isArray(backlog) || backlog.length === 0) return;
+            console.log(`[Dashboard] Restoring ${backlog.length} unmapped numeric ID(s) from startup backlog.`);
+            backlog.forEach(raw => {
+                if (typeof addToNumericBacklog === 'function') addToNumericBacklog(raw);
+            });
+        }).catch(err => {
+            console.warn('[Dashboard] Could not fetch unmapped numeric backlog:', err);
         });
         // ────────────────────────────────────────────────────────────────
 

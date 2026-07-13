@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>VerseCon Overlay</title>
+    <title>Verse Link Overlay</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap');
 
@@ -47,6 +47,18 @@
 
         /* ═══ INTERACTIVE ELEMENTS ═══ */
         .interactive {
+            pointer-events: none;
+        }
+        body.edit-mode .interactive {
+            pointer-events: auto;
+        }
+        /* Only actual controls inside interactive containers receive pointer events when locked */
+        .interactive button,
+        .interactive a,
+        .interactive input,
+        .interactive select,
+        .interactive textarea,
+        .interactive [data-clickable] {
             pointer-events: auto;
         }
 
@@ -516,7 +528,7 @@
 
         .ship-image-panel.visible {
             opacity: 1;
-            pointer-events: auto;
+            pointer-events: none;
         }
 
         /* Always show and make interactive in edit mode for repositioning */
@@ -541,6 +553,28 @@
             padding: 4px 8px;
             font-size: 0.65rem;
             text-align: center;
+        }
+
+        .cyber-btn.small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        #overlay-rt-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        #overlay-rt-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        #overlay-rt-list::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
+        }
+        #overlay-rt-list::-webkit-scrollbar-thumb:hover {
+            background: #00cc6a;
+        }
+
         /* ═══ NETWORK & TACTICAL HUD ═══ */
         .hud-network-panel {
             position: absolute;
@@ -557,6 +591,59 @@
             background: rgba(0, 0, 0, 0.6) !important;
             padding: 5px;
         }
+
+        .party-block {
+            background: rgba(11, 12, 16, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 4px 6px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            position: relative;
+        }
+        .party-block.dead { border-left-color: var(--danger); background: rgba(255,0,0,0.15); }
+        .party-block.menu { border-left-color: #888; }
+        .party-block.diff-server { border-left-color: var(--warning); }
+        .party-block.in-ship { border-left-color: var(--info); }
+        .party-block.mia { border-left-color: #555; opacity: 0.6; }
+
+        .party-name {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--accent);
+            text-transform: uppercase;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .party-block.dead .party-name { color: var(--danger); }
+        .party-block.menu .party-name { color: #888; }
+        .party-block.diff-server .party-name { color: var(--warning); }
+        .party-block.in-ship .party-name { color: var(--info); }
+
+        .party-details {
+            font-size: 0.6rem;
+            color: #aaa;
+            line-height: 1.2;
+        }
+        .party-tag {
+            position: absolute;
+            top: -5px; right: -5px;
+            font-size: 0.5rem;
+            background: var(--accent);
+            color: #000;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-weight: bold;
+            display: none;
+        }
+        .party-block.dead .party-tag { display: block; background: var(--danger); color: #fff; content: 'KIA'; }
+        .party-block.diff-server .party-tag { display: block; background: var(--warning); color: #000; content: 'DIFF SERVER'; }
+        .party-block.menu .party-tag { display: block; background: #888; color: #fff; content: 'MENU'; }
+        .party-block.mia .party-tag { display: block; background: #666; color: #fff; content: 'MIA'; }
 
         .net-row {
             display: flex;
@@ -757,7 +844,7 @@
     </div>
 
     <!-- ═══ SHIP IMAGE (draggable) ═══ -->
-    <div class="ship-image-panel interactive" id="ship-viz-container" style="pointer-events: auto;">
+    <div class="ship-image-panel interactive" id="ship-viz-container">
         <div class="drag-handle" style="position: absolute; top:0; left:0; width: 100%; height: 20px; z-index: 10;">
             <div class="drag-handle-bar"></div>
         </div>
@@ -821,7 +908,7 @@
                 <div id="overlay-rt-progress-bar" style="height:100%; width:0%; background:var(--accent); border-radius:4px; transition:width 0.4s;"></div>
             </div>
             <div id="overlay-rt-progress-label" style="font-size:0.7rem; color:var(--accent); margin-bottom:6px;">0/0 items done</div>
-            <div id="overlay-rt-list" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0; max-height: 250px; overflow-y: auto;">
+            <div id="overlay-rt-list" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 8px 4px 0; max-height: 250px; overflow-y: auto;">
                 <!-- Tracked items inject here -->
             </div>
         </div>
@@ -1090,18 +1177,20 @@
             if (!module || !list) return;
 
             const run = (currentConfig && currentConfig.activeRun) ? currentConfig.activeRun : null;
-            if (!run || !Array.isArray(run.items) || run.items.length === 0) {
+            const items = Array.isArray(run) ? run : (run && run.items ? run.items : []);
+            
+            if (!items || items.length === 0) {
                 module.style.display = 'none';
                 return;
             }
 
             module.style.display = 'block';
-            if (runNameEl) runNameEl.textContent = run.name ? `[${run.name}]` : '';
+            if (runNameEl) runNameEl.textContent = (!Array.isArray(run) && run.name) ? `[${run.name}]` : '';
 
             // Calculate progress
-            const total = run.items.reduce((s, r) => s + r.needed, 0);
-            const collected = run.items.reduce((s, r) => s + Math.min(r.collected, r.needed), 0);
-            const doneItems = run.items.filter(r => r.collected >= r.needed).length;
+            const total = items.reduce((s, r) => s + r.needed, 0);
+            const collected = items.reduce((s, r) => s + Math.min(r.collected, r.needed), 0);
+            const doneItems = items.filter(r => r.collected >= r.needed).length;
             const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
 
             if (bar) {
@@ -1109,10 +1198,10 @@
                 bar.style.background = pct >= 100 ? 'var(--success)' : 'var(--accent)';
             }
             if (label) {
-                label.textContent = `${doneItems}/${run.items.length} items done — ${collected}/${total} (${pct}%)`;
+                label.textContent = `${doneItems}/${items.length} items done — ${collected}/${total} (${pct}%)`;
             }
 
-            list.innerHTML = run.items.map(item => {
+            list.innerHTML = items.map(item => {
                 const done = item.collected >= item.needed;
                 return `
                 <div style="display:flex; flex-direction:column; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05); opacity: ${done ? 0.4 : 1}; text-align:right;">
@@ -1326,6 +1415,14 @@
         // Settings / Visibility
         ipcRenderer.on('settings:updated', (e, config) => {
             currentConfig = config;
+            
+            // Apply scale/zoom to the entire document
+            if (config.overlayScale) {
+                document.documentElement.style.zoom = config.overlayScale;
+            } else {
+                document.documentElement.style.zoom = 1;
+            }
+
             updateFarmingWishlistUI();
             updateRunTrackerUI();
             if (!config.overlayVisibility) return;
@@ -2248,34 +2345,80 @@
         });
 
         // Party
-        ipcRenderer.on('api:party', (e, data) => {
+        ipcRenderer.on('squad:update', (e, data) => {
             const list = document.getElementById('party-list');
-            const count = data.members ? data.members.length : 0;
+            const { peers } = data;
+            const keys = Object.keys(peers);
+            const count = keys.length;
             document.getElementById('party-count').textContent = `[${count}/4]`;
 
-            if (!data.members || data.members.length === 0) {
-                list.innerHTML = '<div class="party-item" style="opacity:0.5; font-style:italic;">No Signal</div>';
-            } else {
-                list.innerHTML = data.members.map(m => {
-                    let statusClass = 'online';
-                    let statusColor = 'var(--success)';
-
-                    if (m.status === 'combat') statusColor = 'var(--danger)';
-                    if (m.status === 'quantum') statusColor = 'var(--cyan)';
-                    if (m.status === 'offline') { statusClass = ''; statusColor = '#555'; }
-
-                    const locationText = m.location ? `<div style="font-size:0.6rem; color:#888; margin-top:-2px;">${m.location}</div>` : '';
-
-                    return `
-                    <div class="party-item">
-                        <div style="text-align:right;">
-                            <span style="display:block; color:${m.online ? '#fff' : '#777'}; line-height:1.1;">${m.name}</span>
-                            ${locationText}
-                        </div>
-                        <div class="party-status" style="background:${statusColor}; box-shadow: 0 0 5px ${statusColor};"></div>
-                    </div>
-                `}).join('');
+            if (count === 0) {
+                list.innerHTML = '<div class="party-block" style="opacity:0.5; font-style:italic;">No Signal</div>';
+                return;
             }
+
+            let myServerIP = '';
+            const localKey = keys.find(k => peers[k].isLocal);
+            if (localKey) myServerIP = peers[localKey].serverIP || '';
+            else if (peers[keys[0]]) myServerIP = peers[keys[0]].serverIP || '';
+
+            list.innerHTML = keys.map(k => {
+                const p = peers[k];
+                const now = Date.now();
+                const diff = (now - p.lastUpdate) / 1000;
+                
+                const isLost = p.health === null || p.health === undefined;
+                const isMia = !isLost && diff > 30;
+                const isDead = p.status === 'dead' || (!isLost && p.health !== null && p.health <= 0);
+                const isMenu = p.status === 'menu' || p.status === 'inventory';
+                const getShard = s => {
+                    if (!s) return '';
+                    if (typeof s === 'object') return s.shard || s.address || '';
+                    return s;
+                };
+                const myShard = getShard(myServerIP);
+                const pShard = getShard(p.serverIP);
+                const diffServer = myShard && pShard && myShard !== pShard;
+                const inShip = p.ship && p.ship.length > 0;
+
+                let boxClass = '';
+                if (isLost) boxClass = 'lost';
+                else if (isDead) boxClass = 'dead';
+                else if (diffServer) boxClass = 'diff-server';
+                else if (isMenu) boxClass = 'menu';
+                else if (inShip) boxClass = 'in-ship';
+                else if (isMia) boxClass = 'mia';
+
+                let statusLabel = '';
+                if (isLost) statusLabel = 'NO SIGNAL';
+                else if (isDead) statusLabel = 'KIA';
+                else if (diffServer) statusLabel = 'DIFF SERVER';
+                else if (isMenu) statusLabel = p.status.toUpperCase();
+                else if (isMia) statusLabel = 'MIA';
+
+                let stateIcon = '🏃';
+                let stateText = 'On Foot';
+                if (inShip) { stateIcon = '🚀'; stateText = p.ship; }
+                if (isDead) { stateIcon = '💀'; stateText = 'Deceased'; }
+                else if (isMenu) { stateIcon = '📱'; stateText = p.status === 'inventory' ? 'Inventory' : 'mobiGlas'; }
+                else if (p.status === 'fire') { stateIcon = '🔥'; stateText = 'Ship on Fire'; }
+
+                const planetStr = p.planet ? `<span style="color:#ddd;">${p.planet}</span> • ` : '';
+                const locStr = p.location || 'Unknown Sector';
+
+                return `
+                <div class="party-block ${boxClass}">
+                    <div class="party-tag" style="display: ${statusLabel ? 'block' : 'none'}; background: ${isLost || diffServer ? 'var(--warning)' : (isDead ? 'var(--danger)' : '#666')}">${statusLabel}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="party-name">${k} ${p.isHost ? '<span style="color:#aaa; font-size:0.5rem;">(CMD)</span>' : ''}</span>
+                    </div>
+                    <div class="party-details">
+                        <div style="display:flex; gap:3px; overflow:hidden; white-space:nowrap;"><span>${stateIcon}</span> <strong style="color:#ddd;">${stateText}</strong></div>
+                        <div style="display:flex; gap:3px; overflow:hidden; white-space:nowrap; margin-top:2px;"><span>📍</span> <span>${planetStr}${locStr}</span></div>
+                    </div>
+                </div>
+                `;
+            }).join('');
         });
 
         // Friend Telemetry (Squad HUD - v2.8)

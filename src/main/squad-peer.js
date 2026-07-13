@@ -17,8 +17,18 @@ class SquadPeer extends EventEmitter {
         this.playerInfo = null;
     }
 
-    connect(code, playerInfo) {
-        const { ip, port } = decodeCode(code.trim().toUpperCase());
+    connect(codeOrIp, playerInfo) {
+        let ip, port;
+        const input = codeOrIp.trim();
+        if (input.includes('.')) {
+            ip = input;
+            port = 30000;
+        } else {
+            const decoded = decodeCode(input.toUpperCase());
+            ip = decoded.ip;
+            port = decoded.port;
+        }
+
         this.playerInfo = playerInfo;
 
         const url = `ws://${ip}:${port}`;
